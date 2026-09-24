@@ -5,6 +5,7 @@ import { installAudio, useAudio } from '@/audio/store'
 import { db } from '@/data/db'
 import { useLookups, useProfiles, useSettings, useTask } from '@/data/hooks'
 import { ensureSeed } from '@/data/seed'
+import { cn } from '@/lib/cn'
 import { isNative } from '@/lib/platform'
 import { formatClock } from '@/lib/time'
 import { setHapticsEnabled } from '@/services/haptics'
@@ -35,8 +36,7 @@ import { useUi } from './ui-store'
 
 const CalendarScreen = lazy(() => import('@/features/calendar/CalendarScreen'))
 const InsightsScreen = lazy(() => import('@/features/insights/InsightsScreen'))
-const SkyScreen = lazy(() => import('@/features/sky/SkyScreen'))
-const AtlasPreview = lazy(() => import('@/features/atlas/AtlasPreview'))
+const AtlasScreen = lazy(() => import('@/features/atlas/AtlasScreen'))
 const SettingsScreen = lazy(() => import('@/features/settings/SettingsScreen'))
 
 type BootState = 'loading' | 'ready' | 'error'
@@ -104,7 +104,7 @@ function Main() {
       <TitleSync />
       <SideNav route={route.name} />
       <div className="lg:pl-60">
-        <main className="mx-auto min-h-dvh w-full pb-[calc(84px+env(safe-area-inset-bottom))] lg:pb-10">
+        <main className={cn('mx-auto min-h-dvh w-full', route.name === 'atlas' ? 'min-h-0' : 'pb-[calc(84px+env(safe-area-inset-bottom))] lg:pb-10')}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={route.name} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
               <Suspense fallback={<div className="h-[60dvh]" />}>
@@ -140,10 +140,8 @@ function Screen({ name }: { name: RouteName }) {
       return <CalendarScreen />
     case 'insights':
       return <InsightsScreen />
-    case 'sky':
-      return <SkyScreen />
     case 'atlas':
-      return <AtlasPreview />
+      return <AtlasScreen />
     case 'settings':
       return <SettingsScreen />
   }

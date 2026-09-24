@@ -207,19 +207,37 @@ export interface Playlist extends Entity {
   order: number
 }
 
-// ───────────────────────── progression ─────────────────────────
-
-export interface Unlock extends Entity {
-  /** Item id, e.g. `theme:aurora`. */
-  item: string
-  cost: number
-}
+// ───────────────────────── progression & atlas ─────────────────────────
 
 export interface ChallengeClaim extends Entity {
   challengeId: string
   /** Day key (daily) or week-start key (weekly). */
   period: string
+  /** XP awarded (challenges claimed before the Atlas paid stardust; it now counts as XP). */
   reward: number
+}
+
+export type QuestionType = 'locate' | 'identify' | 'state' | 'river' | 'relation' | 'border' | 'order' | 'fact'
+export type RecallSource = 'review' | 'card' | 'break' | 'checkpoint'
+
+/** One answered recall question. Mastery is always derived from these. */
+export interface RecallAttempt extends Entity {
+  placeId: string
+  type: QuestionType
+  correct: 0 | 1
+  at: number
+  date: DayKey
+  source: RecallSource
+}
+
+/**
+ * A stretch of time during which an expedition was the active one. Focus
+ * minutes from sessions that end inside the window move that expedition on.
+ */
+export interface ExpeditionRun extends Entity {
+  expeditionId: string
+  startedAt: number
+  endedAt: number | null
 }
 
 // ───────────────────────── system ─────────────────────────
@@ -238,6 +256,7 @@ export interface ReminderLog {
 }
 
 export type ThemePreference = 'system' | 'light' | 'dark'
+export type AtlasStyle = 'physical' | 'political' | 'night' | 'antique'
 
 export interface Settings {
   id: 'settings'
@@ -256,7 +275,12 @@ export interface Settings {
   minSessionSeconds: number
   /** Resume the current soundscape when focus starts and fade it during breaks. */
   ambientFollowsTimer: boolean
-  skyTheme: string
+  /** Atlas map style (styles beyond the first two unlock with rank). */
+  atlasStyle: AtlasStyle
+  /** Home state chosen at onboarding – explored from the start, and where free survey begins. */
+  baseCamp: string | null
+  /** Offer two quick recall questions during breaks. */
+  breakReview: boolean
   onboarded: boolean
 }
 
@@ -273,8 +297,9 @@ export interface TableMap {
   events: CalendarEvent
   audioPresets: AudioPreset
   playlists: Playlist
-  unlocks: Unlock
   claims: ChallengeClaim
+  recalls: RecallAttempt
+  expeditions: ExpeditionRun
 }
 
 export type SyncTable = keyof TableMap
@@ -291,6 +316,7 @@ export const SYNC_TABLES: SyncTable[] = [
   'events',
   'audioPresets',
   'playlists',
-  'unlocks',
   'claims',
+  'recalls',
+  'expeditions',
 ]

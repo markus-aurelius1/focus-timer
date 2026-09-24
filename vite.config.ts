@@ -71,7 +71,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
+        // The Atlas (sheets, relief plates, gazetteer) is precached so the map works offline from the first launch.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest,json,webp}'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         importScripts: ['sw-notifications.js'],

@@ -6,19 +6,123 @@
  */
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from 'react'
 import { distanceToLines, featureAt, type Sheet } from '@/atlas/sheet'
+import type { LivingWorld } from '@/atlas/living'
 import type { Place } from '@/atlas/types'
 import { cn } from '@/lib/cn'
-import { layoutLabels, STYLE_SPEC, FONT_SANS, FONT_SERIF, type PlacedLabel, type PlacedSymbol, type Transform } from './labels'
-import { colourAssignment, FOG_FILL, FOG_HATCH, HIGHLIGHT, INK, INK_SOFT, NEIGHBOUR_FILL, PHYSICAL, ROUTE, SEA_FLAT, WATER, WATER_LINE, type MasteryLevel } from './style'
+import { labelKeyOf, layoutLabels, STYLE_SPEC, FONT_SANS, FONT_SERIF, type PlacedLabel, type PlacedSymbol, type Transform } from './labels'
+import { colourAssignment, FOG_FILL, FOG_HATCH, HIGHLIGHT, INK, INK_SOFT, NEIGHBOUR_FILL, PHYSICAL, POLITICAL, ROUTE, SEA_FLAT, WATER, WATER_LINE, type MasteryLevel } from './style'
 import { MasteryBadge, Symbol } from './symbols'
+import { Animal, RoutePath, ShipGlyph } from './living'
 
 export type Plate = 'physical' | 'political'
+export type Tone = 'day' | 'night' | 'antique'
+
+interface TonePalette {
+  /** The page around the map sheet. */
+  paper: string
+  neatline: string
+  sea: string
+  neighbour: string
+  fog: string
+  fogOpacity: number
+  hatch: string
+  river: string
+  lake: string
+  lakeStroke: string
+  coast: string
+  indiaCoast: string
+  border: string
+  indiaBorder: string
+  stateBorder: string
+  halo: string
+  graticule: string
+  political?: string[]
+  imageFilter?: string
+  text: { state: string; stateMuted: string; country: string; water: string; physical: string; place: string }
+}
+
+const DAY: TonePalette = {
+  paper: '#efeadf',
+  neatline: '#5f584c',
+  sea: SEA_FLAT,
+  neighbour: NEIGHBOUR_FILL,
+  fog: FOG_FILL,
+  fogOpacity: 0.9,
+  hatch: FOG_HATCH,
+  river: WATER_LINE,
+  lake: '#8ec3ea',
+  lakeStroke: WATER,
+  coast: '#2c5f8c',
+  indiaCoast: '#2a6292',
+  border: '#2a2a2a',
+  indiaBorder: '#111',
+  stateBorder: '#3b3b3b',
+  halo: '#fff',
+  graticule: '#3f6f96',
+  text: { state: INK, stateMuted: '#6b6a66', country: INK_SOFT, water: WATER, physical: PHYSICAL, place: INK },
+}
+
+export const TONES: Record<Tone, TonePalette> = {
+  day: DAY,
+  night: {
+    ...DAY,
+    paper: '#070d19',
+    neatline: '#b8964c',
+    sea: '#0c1930',
+    neighbour: '#16243b',
+    fog: '#0a1528',
+    fogOpacity: 0.72,
+    hatch: '#b8964c',
+    river: '#4f8fd0',
+    lake: '#1d3f6a',
+    lakeStroke: '#4f8fd0',
+    coast: '#b8964c',
+    indiaCoast: '#d9b45f',
+    border: '#d2ad5a',
+    indiaBorder: '#f0cf7a',
+    stateBorder: '#a98a4a',
+    halo: '#0c1930',
+    graticule: '#b8964c',
+    political: ['#1f3558', '#253d63', '#1b2f4f', '#2b4468', '#22385b', '#29416b', '#1e3354'],
+    text: { state: '#f1d58a', stateMuted: '#8f8a78', country: '#c9c3b3', water: '#8cc2f2', physical: '#e4b98b', place: '#f3ead3' },
+  },
+  antique: {
+    ...DAY,
+    paper: '#e8dcc0',
+    neatline: '#4d3b27',
+    sea: '#d9d0b5',
+    neighbour: '#efe4c8',
+    fog: '#e6dcc2',
+    hatch: '#8a7556',
+    river: '#4d6f8a',
+    lake: '#b9c4b4',
+    lakeStroke: '#4d6f8a',
+    coast: '#5e4a33',
+    indiaCoast: '#4d3b27',
+    border: '#3d2c1a',
+    indiaBorder: '#2b1d10',
+    stateBorder: '#5a4630',
+    halo: '#f4ead3',
+    graticule: '#8a7556',
+    imageFilter: 'sepia(0.72) saturate(0.7) contrast(1.06) brightness(1.03)',
+    text: { state: '#3a2412', stateMuted: '#7a6a55', country: '#5b4430', water: '#2f4f6a', physical: '#6b3a17', place: '#2e1d0e' },
+  },
+}
 
 export type MapTarget =
   | { type: 'place'; id: string }
   | { type: 'state'; id: string }
   | { type: 'country'; id: string }
   | { type: 'point'; x: number; y: number }
+  | { type: 'pin'; id: string }
+
+export interface MapPin {
+  id: string
+  x: number
+  y: number
+  label?: string
+  tone?: 'accent' | 'correct' | 'wrong' | 'muted'
+}
 
 export interface Highlight {
   /** Outline a state/country, or glow a river/region/sea shape. */
@@ -43,6 +147,9 @@ export interface AtlasMapHandle {
 export interface AtlasMapProps {
   sheet: Sheet
   plate: Plate
+  tone?: Tone
+  /** Lettered pins (recall questions). Tapping one selects `{ type: 'pin' }`. */
+  pins?: MapPin[]
   /** State/country ids that are explored. `null` = everything explored. */
   explored: Set<string> | null
   places: Place[]
@@ -55,12 +162,18 @@ export interface AtlasMapProps {
   mutedLabels?: Set<string>
   /** Discovered places linked to sheet features (`river:ganges` → place id). */
   linkedLabels?: Map<string, string>
+  /** Sheet labels to hide entirely. */
+  hiddenLabels?: Set<string>
   onSelect?: (target: MapTarget) => void
   /** Show place symbols (off during "locate" questions). */
   showPlaces?: boolean
   className?: string
   children?: ReactNode
   initialFocus?: [number, number, number, number]
+  /** Routes, ships, wildlife and flowing rivers earned by exploring. */
+  living?: LivingWorld | null
+  /** Screen space covered by overlays, kept clear when fitting (px). */
+  insets?: { top: number; bottom: number }
 }
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
@@ -153,13 +266,17 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
     [apply, clampT, scheduleLayout],
   )
 
+  const insetsRef = useRef(props.insets)
+  insetsRef.current = props.insets
   const fitRect = useCallback(
     (r: [number, number, number, number], pad = 0.08): Transform => {
       const { w, h } = size.current
+      const top = insetsRef.current?.top ?? 0
+      const avail = Math.max(120, h - top - (insetsRef.current?.bottom ?? 0))
       const bw = r[2] - r[0]
       const bh = r[3] - r[1]
-      const k = Math.min(w / (bw * (1 + pad * 2)), h / (bh * (1 + pad * 2)))
-      return { k, x: w / 2 - ((r[0] + r[2]) / 2) * k, y: h / 2 - ((r[1] + r[3]) / 2) * k }
+      const k = Math.min(w / (bw * (1 + pad * 2)), avail / (bh * (1 + pad * 2)))
+      return { k, x: w / 2 - ((r[0] + r[2]) / 2) * k, y: top + avail / 2 - ((r[1] + r[3]) / 2) * k }
     },
     [],
   )
@@ -350,6 +467,18 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
   const tapRef = useRef<(x: number, y: number) => void>(() => {})
   tapRef.current = (wx: number, wy: number) => {
     const k = t.current.k
+    if (props.pins?.length) {
+      let best: MapPin | null = null
+      let bestD = 26 / k
+      for (const p of props.pins) {
+        const d = Math.hypot(p.x - wx, p.y - wy)
+        if (d < bestD) {
+          bestD = d
+          best = p
+        }
+      }
+      if (best) return onSelect?.({ type: 'pin', id: best.id })
+    }
     if (props.showPlaces !== false) {
       let best: Place | null = null
       let bestD = 18 / k
@@ -361,8 +490,15 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
         }
       }
       if (best) return onSelect?.({ type: 'place', id: best.id })
-      // Rivers that are discovered places can be tapped along their course.
-      for (const [key, placeId] of props.linkedLabels ?? []) {
+      // Rivers that are discovered places can be tapped along their course,
+      // and named features (ranges, seas, lakes…) by their name.
+      const linked = props.linkedLabels ?? new Map<string, string>()
+      for (const l of sheet.labels) {
+        if (l.kind === 'river' || l.x === undefined || l.y === undefined) continue
+        const placeId = linked.get(labelKeyOf(l))
+        if (placeId && Math.hypot(l.x - wx, l.y - wy) < 34 / k) return onSelect?.({ type: 'place', id: placeId })
+      }
+      for (const [key, placeId] of linked) {
         if (!key.startsWith('river:')) continue
         const r = sheet.rivers.find((x) => `river:${x.id}` === key)
         if (r && distanceToLines([wx, wy], r.coords) < 7 / k) return onSelect?.({ type: 'place', id: placeId })
@@ -384,9 +520,35 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
     return colourAssignment(ids, sheet.stateNeighbours.size ? sheet.stateNeighbours : worldNeighbours(sheet))
   }, [sheet])
 
+  /**
+   * Which place symbols to draw at this zoom: capitals always, then more detail
+   * as you zoom in, thinned so symbols never crowd. Places the base map already
+   * names (rivers, ranges, seas…) are shown through that name instead.
+   */
+  const visible = useMemo<Place[]>(() => {
+    if (!layoutT || props.showPlaces === false) return []
+    const z = layoutT.k / kFit.current
+    const { w, h } = size.current
+    const minZ = (p: Place) => (p.kind === 'capital' ? (p.tags?.includes('national') || p.level === 1 ? 0 : 1.4) : p.level === 1 ? 1.3 : p.level === 2 ? 2 : 2.9)
+    const prio = (p: Place) => (p.id === props.selectedId ? 1000 : 0) + (props.newIds?.has(p.id) ? 500 : 0) + (p.kind === 'capital' ? 60 : 0) + (4 - p.level) * 20
+    const cand = props.places
+      .filter((p) => p.id === props.selectedId || props.newIds?.has(p.id) || (!(p.geom && sheet.labels.length) && z >= minZ(p)))
+      .map((p) => ({ p, sx: p.x * layoutT.k + layoutT.x, sy: p.y * layoutT.k + layoutT.y }))
+      .filter(({ sx, sy }) => sx > -20 && sx < w + 20 && sy > -20 && sy < h + 20)
+      .sort((a, b) => prio(b.p) - prio(a.p))
+    const taken: Array<[number, number]> = []
+    const out: Place[] = []
+    for (const c of cand) {
+      if (taken.some(([x, y]) => Math.abs(x - c.sx) < 13 && Math.abs(y - c.sy) < 13) && c.p.id !== props.selectedId) continue
+      taken.push([c.sx, c.sy])
+      out.push(c.p)
+    }
+    return out
+  }, [layoutT, props.places, props.showPlaces, props.selectedId, props.newIds, sheet])
+
   const labels = useMemo<PlacedLabel[]>(() => {
     if (!layoutT) return []
-    const symbols: PlacedSymbol[] = (props.showPlaces === false ? [] : props.places).map((p) => ({
+    const symbols: PlacedSymbol[] = visible.map((p) => ({
       place: p,
       x: p.x * layoutT.k + layoutT.x,
       y: p.y * layoutT.k + layoutT.y,
@@ -407,48 +569,101 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       foggedStates: fogged,
       selectedId: props.selectedId,
       sheetId: sheet.id,
+      hidden: props.hiddenLabels,
     })
-  }, [layoutT, props.places, props.mastery, props.newIds, props.selectedId, props.explored, props.mutedLabels, props.linkedLabels, props.showPlaces, sheet])
+  }, [layoutT, visible, props.mastery, props.newIds, props.selectedId, props.explored, props.mutedLabels, props.linkedLabels, props.hiddenLabels, sheet])
 
   const symbols = useMemo(() => {
-    if (!layoutT || props.showPlaces === false) return []
-    const { w, h } = size.current
-    return props.places
-      .map((p) => ({ p, x: p.x * layoutT.k + layoutT.x, y: p.y * layoutT.k + layoutT.y }))
-      .filter(({ x, y }) => x > -20 && x < w + 20 && y > -20 && y < h + 20)
-  }, [layoutT, props.places, props.showPlaces])
+    if (!layoutT) return []
+    return visible.map((p) => ({ p, x: p.x * layoutT.k + layoutT.x, y: p.y * layoutT.k + layoutT.y }))
+  }, [layoutT, visible])
 
   const routeScreen = useMemo(() => {
     if (!layoutT || !props.route) return null
     return props.route.points.map((pt) => ({ ...pt, sx: pt.x * layoutT.k + layoutT.x, sy: pt.y * layoutT.k + layoutT.y }))
   }, [layoutT, props.route])
 
+  const livingScreen = useMemo(() => {
+    const lw = props.living
+    if (!layoutT || !lw) return null
+    const S = (x: number, y: number) => [x * layoutT.k + layoutT.x, y * layoutT.k + layoutT.y] as const
+    const { w, h } = size.current
+    const onScreen = (x: number, y: number) => x > -30 && x < w + 30 && y > -30 && y < h + 30
+    const z = layoutT.k / kFit.current
+    return {
+      routes: lw.routes.map((r) => ({ r, d: 'M' + r.points.map(([x, y]) => S(x, y).map((v) => v.toFixed(1)).join(',')).join('L') })),
+      ships: lw.ships.map((sh) => ({ ...sh, s: S(sh.x, sh.y) })).filter(({ s }) => onScreen(s[0], s[1])),
+      wildlife: z >= 1.2 ? lw.wildlife.map((a) => ({ ...a, s: S(a.x, a.y) })).filter(({ s }) => onScreen(s[0], s[1])) : [],
+    }
+  }, [layoutT, props.living])
+
+  const pinScreen = useMemo(() => {
+    if (!layoutT || !props.pins) return []
+    return props.pins.map((p) => ({ ...p, sx: p.x * layoutT.k + layoutT.x, sy: p.y * layoutT.k + layoutT.y }))
+  }, [layoutT, props.pins])
+
   const highlightScreen = useMemo(() => {
     if (!layoutT) return []
     return (props.highlights ?? []).filter((h) => h.kind === 'point' && h.x !== undefined).map((h) => ({ ...h, sx: h.x! * layoutT.k + layoutT.x, sy: h.y! * layoutT.k + layoutT.y }))
   }, [layoutT, props.highlights])
 
+  const tone = TONES[props.tone ?? 'day']
   return (
-    <div ref={container} className={cn('relative size-full touch-none overflow-hidden bg-[#c6e1f2] select-none', props.className)} role="application" aria-label={`${sheet.title} map`}>
+    <div ref={container} className={cn('relative size-full touch-none overflow-hidden select-none', props.className)} style={{ background: tone.paper }} role="application" aria-label={`${sheet.title} map`}>
       <svg className="absolute inset-0 size-full" aria-hidden="true">
         <defs>
           <pattern id={`fog-hatch-${sheet.id}`} width={hatch} height={hatch} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1={0} y1={0} x2={0} y2={hatch} stroke={FOG_HATCH} strokeWidth={hatch / 6} opacity={0.55} />
+            <line x1={0} y1={0} x2={0} y2={hatch} stroke={tone.hatch} strokeWidth={hatch / 6} opacity={0.55} />
           </pattern>
         </defs>
+        <defs>
+          <clipPath id={`sheet-clip-${sheet.id}`}>
+            <rect width={sheet.width} height={sheet.height} />
+          </clipPath>
+        </defs>
         <g ref={worldG}>
-          <BaseMap sheet={sheet} plate={props.plate} colours={colours} explored={props.explored} hatchId={`fog-hatch-${sheet.id}`} />
-          <Highlights sheet={sheet} highlights={props.highlights} selectedId={props.selectedId} />
+          <g clipPath={`url(#sheet-clip-${sheet.id})`}>
+            <BaseMap sheet={sheet} plate={props.plate} tone={props.tone ?? 'day'} colours={colours} explored={props.explored} hatchId={`fog-hatch-${sheet.id}`} flowing={props.living?.flowing} />
+            <Highlights sheet={sheet} highlights={props.highlights} selectedId={props.selectedId} />
+          </g>
+          {/* Neatline: the printed border of the map sheet. */}
+          <rect width={sheet.width} height={sheet.height} fill="none" stroke={tone.neatline} strokeWidth={1.2} vectorEffect="non-scaling-stroke" />
         </g>
       </svg>
 
       {/* Screen-space layer: route, symbols, names. */}
       <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden="true">
+        <defs>
+          <radialGradient id={`city-glow-${sheet.id}`}>
+            <stop offset="0%" stopColor="#ffd98a" stopOpacity={0.85} />
+            <stop offset="100%" stopColor="#ffd98a" stopOpacity={0} />
+          </radialGradient>
+        </defs>
         <g ref={labelG}>
+          {livingScreen && (
+            <g>
+              {livingScreen.routes.map(({ r, d }) => (
+                <RoutePath key={r.id} route={r} d={d} />
+              ))}
+              {livingScreen.ships.map((sh) => (
+                <g key={sh.id} transform={`translate(${sh.s[0] + sh.dx * 16},${sh.s[1] + sh.dy * 16})`}>
+                  <g className="atlas-ship" style={{ '--sx': `${sh.dx * 14}px`, '--sy': `${sh.dy * 14}px` } as React.CSSProperties}>
+                    <ShipGlyph />
+                  </g>
+                </g>
+              ))}
+              {livingScreen.wildlife.map((a) => (
+                <g key={a.id} transform={`translate(${a.s[0] + 16},${a.s[1] + 14})`}>
+                  <title>{`${a.name}: ${a.species.replace('-', ' ')}`}</title>
+                  <Animal species={a.species} />
+                </g>
+              ))}
+            </g>
+          )}
           {routeScreen && routeScreen.length > 1 && (
             <g>
-              <path d={'M' + routeScreen.map((p) => `${p.sx},${p.sy}`).join('L')} fill="none" stroke="#fff" strokeWidth={5.5} strokeLinecap="round" strokeLinejoin="round" opacity={0.8} />
-              <path d={'M' + routeScreen.map((p) => `${p.sx},${p.sy}`).join('L')} fill="none" stroke={props.route?.color ?? ROUTE} strokeWidth={2.4} strokeDasharray="1 6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d={'M' + routeScreen.map((p) => `${p.sx},${p.sy}`).join('L')} fill="none" stroke="#fff" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" opacity={0.75} />
+              <path d={'M' + routeScreen.map((p) => `${p.sx},${p.sy}`).join('L')} fill="none" stroke={props.route?.color ?? ROUTE} strokeWidth={2.2} strokeDasharray="7 4" strokeLinecap="round" strokeLinejoin="round" />
               {routeScreen.map((p) => (
                 <g key={p.id} transform={`translate(${p.sx},${p.sy})`}>
                   {p.state === 'next' && <circle r={11} fill="none" stroke={props.route?.color ?? ROUTE} strokeWidth={2} className="atlas-pulse" />}
@@ -459,15 +674,29 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
           )}
           {symbols.map(({ p, x, y }) => (
             <g key={p.id} transform={`translate(${x},${y})`}>
+              {props.tone === 'night' && props.living?.lights.has(p.id) && <circle r={12} fill={`url(#city-glow-${sheet.id})`} />}
               {props.newIds?.has(p.id) && <circle r={13} fill="none" stroke={HIGHLIGHT} strokeWidth={2} className="atlas-pulse" />}
               {props.selectedId === p.id && <circle r={12} fill="none" stroke={HIGHLIGHT} strokeWidth={2.5} />}
-              <Symbol kind={p.kind} tags={p.tags} national={p.tags?.includes('national-capital')} />
+              <Symbol kind={p.kind} tags={p.tags} national={p.tags?.includes('national')} />
               <MasteryBadge level={props.mastery?.(p.id) ?? 'discovered'} />
             </g>
           ))}
           {labels.map((l) => (
-            <LabelText key={l.key} label={l} />
+            <LabelText key={l.key} label={l} tone={props.tone ?? 'day'} />
           ))}
+          {pinScreen.map((p) => {
+            const c = p.tone === 'correct' ? '#2e8b57' : p.tone === 'wrong' ? '#c1121f' : p.tone === 'muted' ? '#8a8a8a' : HIGHLIGHT
+            return (
+              <g key={p.id} transform={`translate(${p.sx},${p.sy})`}>
+                <path d="M0,0 C-3,-7 -11,-11 -11,-20 A11,11 0 1 1 11,-20 C11,-11 3,-7 0,0Z" fill={c} stroke="#fff" strokeWidth={2} />
+                {p.label && (
+                  <text y={-16} textAnchor="middle" fill="#fff" fontFamily={FONT_SANS} fontWeight={800} fontSize={12}>
+                    {p.label}
+                  </text>
+                )}
+              </g>
+            )
+          })}
           {highlightScreen.map((h, i) => (
             <g key={i} transform={`translate(${h.sx},${h.sy})`}>
               <circle r={14} fill="none" stroke={h.tone === 'wrong' ? '#c1121f' : h.tone === 'correct' ? '#2e8b57' : HIGHLIGHT} strokeWidth={3} />
@@ -493,20 +722,21 @@ function worldNeighbours(sheet: Sheet): Map<string, string[]> {
   return m
 }
 
-const LabelText = memo(function LabelText({ label: l }: { label: PlacedLabel }) {
+const LabelText = memo(function LabelText({ label: l, tone: toneId }: { label: PlacedLabel; tone: Tone }) {
   const spec = STYLE_SPEC[l.style]
+  const c = TONES[toneId].text
   const fill =
     l.style === 'state'
       ? l.muted
-        ? '#6b6a66'
-        : INK
+        ? c.stateMuted
+        : c.state
       : l.style === 'country'
-        ? INK_SOFT
+        ? c.country
         : l.style.startsWith('water') || l.style === 'river' || l.style === 'place-water'
-          ? WATER
+          ? c.water
           : l.style.startsWith('physical') || l.style === 'place-physical'
-            ? PHYSICAL
-            : INK
+            ? c.physical
+            : c.place
   const common = {
     fill,
     fontFamily: spec.serif ? FONT_SERIF : FONT_SANS,
@@ -514,7 +744,7 @@ const LabelText = memo(function LabelText({ label: l }: { label: PlacedLabel }) 
     fontWeight: spec.weight,
     fontSize: l.size,
     letterSpacing: `${spec.spacing}em`,
-    stroke: '#fff',
+    stroke: TONES[toneId].halo,
     strokeWidth: l.style === 'state' || l.style === 'country' ? 3.2 : 2.8,
     strokeLinejoin: 'round' as const,
     paintOrder: 'stroke' as const,
@@ -543,70 +773,86 @@ const LabelText = memo(function LabelText({ label: l }: { label: PlacedLabel }) 
 const RIVER_WIDTH: Record<number, number> = { 1: 2.2, 2: 1.6, 3: 1.2, 4: 0.85 }
 
 /** Everything drawn in sheet coordinates. Memoised: only re-renders when data changes. */
-const BaseMap = memo(function BaseMap({ sheet, plate, colours, explored, hatchId }: { sheet: Sheet; plate: Plate; colours: Map<string, string>; explored: Set<string> | null; hatchId: string }) {
+const BaseMap = memo(function BaseMap({ sheet, plate, tone: toneId, colours, explored, hatchId, flowing }: { sheet: Sheet; plate: Plate; tone: Tone; colours: Map<string, string>; explored: Set<string> | null; hatchId: string; flowing?: Set<string> }) {
   const isIndia = sheet.states.length > 0
   const units = isIndia ? sheet.states : sheet.countries
   const fogged = explored ? units.filter((u) => !explored.has(u.id)) : []
-  const physical = plate === 'physical'
+  const tone = TONES[toneId]
+  // The night chart is always drawn in flat colours.
+  const physical = plate === 'physical' && !tone.political
+  const fill = (id: string) => {
+    const c = colours.get(id)
+    if (!c || !tone.political) return c
+    return tone.political[POLITICAL.indexOf(c) % tone.political.length] ?? tone.political[0]
+  }
   const ns = { vectorEffect: 'non-scaling-stroke' as const }
   return (
     <g>
       {physical ? (
-        <image href={sheet.reliefUrl} width={sheet.width} height={sheet.height} preserveAspectRatio="none" />
+        <image href={sheet.reliefUrl} width={sheet.width} height={sheet.height} preserveAspectRatio="none" style={tone.imageFilter ? { filter: tone.imageFilter } : undefined} />
       ) : (
         <>
-          <rect width={sheet.width} height={sheet.height} fill={SEA_FLAT} />
+          <rect width={sheet.width} height={sheet.height} fill={tone.sea} />
           {sheet.countries.map((c) => (
-            <path key={c.id} d={c.d} fill={isIndia ? NEIGHBOUR_FILL : (colours.get(c.id) ?? NEIGHBOUR_FILL)} />
+            <path key={c.id} d={c.d} fill={isIndia ? tone.neighbour : (fill(c.id) ?? tone.neighbour)} />
           ))}
           {sheet.states.map((s) => (
-            <path key={s.id} d={s.d} fill={colours.get(s.id) ?? '#eee'} />
+            <path key={s.id} d={s.d} fill={fill(s.id) ?? '#eee'} />
           ))}
-          <image href={sheet.shadeUrl} width={sheet.width} height={sheet.height} preserveAspectRatio="none" style={{ mixBlendMode: 'multiply' }} opacity={0.22} />
+          <image href={sheet.shadeUrl} width={sheet.width} height={sheet.height} preserveAspectRatio="none" style={{ mixBlendMode: tone.political ? 'soft-light' : 'multiply' }} opacity={tone.political ? 0.55 : 0.22} />
         </>
       )}
 
       {/* Rivers and lakes */}
-      <g fill="none" stroke={WATER_LINE} strokeLinecap="round" strokeLinejoin="round">
+      <g fill="none" stroke={tone.river} strokeLinecap="round" strokeLinejoin="round">
         {sheet.rivers.map((r) => (
           <path key={r.id} d={r.d} strokeWidth={RIVER_WIDTH[r.rank] ?? 0.85} {...ns} />
         ))}
       </g>
+      {flowing && flowing.size > 0 && (
+        <g fill="none" stroke="#e8f4ff" strokeLinecap="round" opacity={0.85}>
+          {sheet.rivers
+            .filter((r) => flowing.has(r.id))
+            .map((r) => (
+              <path key={r.id} d={r.d} strokeWidth={(RIVER_WIDTH[r.rank] ?? 0.85) * 0.7} strokeDasharray="2 10" className="atlas-flow" {...ns} />
+            ))}
+        </g>
+      )}
       {sheet.lakes.map((l) => {
         // Only lakes big enough to read get an outline; tiny ones stay a quiet fill.
         const big = Math.max(l.bbox[2] - l.bbox[0], l.bbox[3] - l.bbox[1]) > (isIndia ? 10 : 6)
-        return <path key={l.id} d={l.d} fill="#8ec3ea" stroke={big ? WATER : 'none'} strokeWidth={0.7} {...ns} />
+        return <path key={l.id} d={l.d} fill={tone.lake} stroke={big ? tone.lakeStroke : 'none'} strokeWidth={0.7} {...ns} />
       })}
 
       {/* Unexplored areas: a muted veil with fine hatching – still readable. */}
       {fogged.map((u) => (
         <g key={u.id}>
-          <path d={u.d} fill={FOG_FILL} opacity={physical ? 0.72 : 0.9} />
+          <path d={u.d} fill={tone.fog} opacity={physical ? 0.72 : tone.fogOpacity} />
           <path d={u.d} fill={`url(#${hatchId})`} />
         </g>
       ))}
 
-      <path d={sheet.lines.graticule} fill="none" stroke="#3f6f96" strokeWidth={0.6} opacity={0.45} {...ns} />
+      <path d={sheet.lines.graticule} fill="none" stroke={tone.graticule} strokeWidth={0.6} opacity={0.45} {...ns} />
 
       {/* Coasts */}
-      <path d={sheet.lines.coasts} fill="none" stroke="#2c5f8c" strokeWidth={0.9} {...ns} />
-      {isIndia && <path d={sheet.lines.indiaCoast} fill="none" stroke="#2a6292" strokeWidth={1} {...ns} />}
+      <path d={sheet.lines.coasts} fill="none" stroke={tone.coast} strokeWidth={0.9} {...ns} />
+      {isIndia && <path d={sheet.lines.indiaCoast} fill="none" stroke={tone.indiaCoast} strokeWidth={1} {...ns} />}
 
       {/* State boundaries: fine dashed line. */}
       {isIndia && (
         <>
-          <path d={sheet.lines.stateBorders} fill="none" stroke="#fff" strokeWidth={2.6} opacity={0.55} {...ns} />
-          <path d={sheet.lines.stateBorders} fill="none" stroke="#3b3b3b" strokeWidth={1.15} strokeDasharray="5 2.5" {...ns} />
+          <path d={sheet.lines.stateBorders} fill="none" stroke={tone.halo} strokeWidth={2.6} opacity={0.55} {...ns} />
+          <path d={sheet.lines.stateBorders} fill="none" stroke={tone.stateBorder} strokeWidth={1.15} strokeDasharray="5 2.5" {...ns} />
         </>
       )}
 
       {/* International boundaries: bold dash-dot, on a light halo. */}
-      <path d={sheet.lines.intlBorders} fill="none" stroke="#fff" strokeWidth={isIndia ? 3.6 : 2.4} opacity={0.7} {...ns} />
-      <path d={sheet.lines.intlBorders} fill="none" stroke="#2a2a2a" strokeWidth={isIndia ? 1.6 : 0.9} strokeDasharray={isIndia ? '8 2.5 2 2.5' : '4 2'} {...ns} />
+      <path d={sheet.lines.intlBorders} fill="none" stroke={tone.halo} strokeWidth={isIndia ? 3.6 : 2.4} opacity={0.7} {...ns} />
+      <path d={sheet.lines.intlBorders} fill="none" stroke={tone.border} strokeWidth={isIndia ? 1.6 : 0.9} strokeDasharray={isIndia ? '8 2.5 2 2.5' : '4 2'} {...ns} />
       {isIndia && (
         <>
-          <path d={sheet.lines.indiaBorder} fill="none" stroke="#fff" strokeWidth={4.6} opacity={0.75} {...ns} />
-          <path d={sheet.lines.indiaBorder} fill="none" stroke="#111" strokeWidth={2.2} strokeDasharray="9 3 2.5 3" {...ns} />
+          <path d={sheet.lines.indiaBorder} fill="none" stroke={tone.halo} strokeWidth={4.6} opacity={0.75} {...ns} />
+          <path d={sheet.lines.indiaBorder} fill="none" stroke={tone.indiaBorder} strokeWidth={2.2} strokeDasharray="9 3 2.5 3" {...ns} />
         </>
       )}
     </g>

@@ -7,6 +7,21 @@ import type { ChallengeClaim, Session, Task } from '@/data/types'
 import { addDaysKey, dayKey, startOfWeekKey, type DayKey, type WeekStart } from '@/lib/time'
 import { hashString, pick, seededRandom, shuffle } from '@/lib/random'
 
+/** Atlas activity within the challenge period (computed by the caller). */
+export interface AtlasActivity {
+  /** Recall questions answered. */
+  reviewed: number
+  correct: number
+  /** Focus minutes that moved an expedition on. */
+  expeditionMinutes: number
+  /** Places discovered. */
+  discovered: number
+  /** Mountain passes that reached Strong in this period. */
+  passesStrong: number
+}
+
+export const NO_ATLAS: AtlasActivity = { reviewed: 0, correct: 0, expeditionMinutes: 0, discovered: 0, passesStrong: 0 }
+
 export interface ChallengeContext {
   /** Sessions within the challenge period. */
   sessions: Session[]
@@ -16,6 +31,7 @@ export interface ChallengeContext {
   openTasks: Task[]
   today: DayKey
   dailyGoalMinutes: number
+  atlas: AtlasActivity
 }
 
 interface ChallengeDef {
@@ -104,6 +120,23 @@ const DAILY: ChallengeDef[] = [
     title: () => 'Reach your daily focus goal',
     measure: (c) => (minutes(c.sessions) >= c.dailyGoalMinutes ? 1 : 0),
   },
+  {
+    id: 'd-review',
+    period: 'day',
+    targets: [5, 8],
+    reward: (n) => n * 3,
+    title: (n) => `Review ${n} places in the Atlas`,
+    measure: (c) => c.atlas.reviewed,
+  },
+  {
+    id: 'd-expedition',
+    period: 'day',
+    targets: [45, 60, 90],
+    reward: (n) => Math.round(n / 3),
+    title: (n) => `Advance your expedition ${n} minutes`,
+    measure: (c) => Math.floor(c.atlas.expeditionMinutes),
+    unit: 'minutes',
+  },
 ]
 
 const WEEKLY: ChallengeDef[] = [
@@ -139,6 +172,30 @@ const WEEKLY: ChallengeDef[] = [
     reward: (n) => n * 4,
     title: (n) => `Complete ${n} tasks`,
     measure: (c) => c.tasksCompleted.length,
+  },
+  {
+    id: 'w-recall',
+    period: 'week',
+    targets: [20, 30, 45],
+    reward: (n) => n * 2,
+    title: (n) => `Answer ${n} Atlas questions correctly`,
+    measure: (c) => c.atlas.correct,
+  },
+  {
+    id: 'w-discover',
+    period: 'week',
+    targets: [8, 12, 16],
+    reward: (n) => n * 5,
+    title: (n) => `Discover ${n} new places`,
+    measure: (c) => c.atlas.discovered,
+  },
+  {
+    id: 'w-pass',
+    period: 'week',
+    targets: [1, 2],
+    reward: (n) => 40 + n * 20,
+    title: (n) => (n === 1 ? 'Make a mountain pass Strong' : `Make ${n} mountain passes Strong`),
+    measure: (c) => c.atlas.passesStrong,
   },
 ]
 
@@ -193,8 +250,10 @@ export function buildContext(
   end: DayKey,
   today: DayKey,
   dailyGoalMinutes: number,
+  atlas: AtlasActivity = NO_ATLAS,
 ): ChallengeContext {
   return {
+    atlas,
     sessions: sessions.filter((s) => s.date >= start && s.date <= end),
     tasksCompleted: tasks.filter((t) => t.completedAt && dayKey(t.completedAt) >= start && dayKey(t.completedAt) <= end),
     openTasks: tasks.filter((t) => !t.done),

@@ -83,7 +83,7 @@ export function SessionSheet({ session, onClose }: { session: Session | 'new' | 
 
   const del = async () => {
     if (!session || session === 'new') return
-    if (!(await confirmDialog({ title: 'Delete this session?', body: 'It will be removed from your statistics and sky.', confirmLabel: 'Delete', danger: true }))) return
+    if (!(await confirmDialog({ title: 'Delete this session?', body: 'It will be removed from your statistics, XP and Atlas progress.', confirmLabel: 'Delete', danger: true }))) return
     await remove('sessions', session.id)
     onClose()
   }

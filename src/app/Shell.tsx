@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { CalendarDays, ChartNoAxesColumn, ListTodo, Settings2, Sparkles, Timer } from 'lucide-react'
+import { CalendarDays, ChartNoAxesColumn, ListTodo, Map as MapIcon, Settings2, Timer } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 import { formatClock } from '@/lib/time'
@@ -13,9 +13,9 @@ import { navigate, type RouteName } from './router'
 const TABS: Array<{ name: RouteName; label: string; icon: typeof Timer }> = [
   { name: 'focus', label: 'Focus', icon: Timer },
   { name: 'tasks', label: 'Tasks', icon: ListTodo },
+  { name: 'atlas', label: 'Atlas', icon: MapIcon },
   { name: 'calendar', label: 'Calendar', icon: CalendarDays },
   { name: 'insights', label: 'Insights', icon: ChartNoAxesColumn },
-  { name: 'sky', label: 'Sky', icon: Sparkles },
 ]
 
 function go(name: RouteName) {

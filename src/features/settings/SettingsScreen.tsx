@@ -9,8 +9,12 @@ import { importSessionsCsv, importTasksCsv, sessionsCsv, tasksCsv } from '@/data
 import { generateDemoData, hasDemoData, removeDemoData } from '@/data/demo'
 import { db } from '@/data/db'
 import { updateSettings, useProfiles, useSettings } from '@/data/hooks'
+import { chooseBaseCamp } from '@/atlas/actions'
+import { useAtlas } from '@/atlas/data'
+import { useXp } from '@/atlas/useExploration'
+import { MAP_STYLES, RANKS } from '@/game/progression'
 import { ensureSeed } from '@/data/seed'
-import type { ThemePreference } from '@/data/types'
+import type { AtlasStyle, ThemePreference } from '@/data/types'
 import { isNative, isStandalonePwa, platform } from '@/lib/platform'
 import { pickTextFile, saveTextFile, stamp } from '@/services/files'
 import { promptInstall, useInstall } from '@/services/install'
@@ -22,6 +26,48 @@ import { Sheet } from '@/ui/Sheet'
 import { toast } from '@/ui/toast'
 import { profileSummary } from '@/features/focus/ProfileSheet'
 import { LabelsManager } from './LabelsManager'
+
+function AtlasSettings() {
+  const settings = useSettings()
+  const atlas = useAtlas()
+  const { level } = useXp()
+  return (
+    <Group title="Atlas">
+      <Line label="Map style" hint="More styles unlock as your rank rises.">
+        <Select compact value={settings.atlasStyle} onChange={(e) => void updateSettings({ atlasStyle: e.target.value as AtlasStyle })} aria-label="Map style">
+          {MAP_STYLES.map((s) => (
+            <option key={s.id} value={s.id} disabled={s.minRank > level.rankIndex}>
+              {s.name}
+              {s.minRank > level.rankIndex ? ` – ${RANKS[s.minRank].title}` : ''}
+            </option>
+          ))}
+        </Select>
+      </Line>
+      <Line label="Base camp" hint="Starts explored; free survey spreads out from here.">
+        <Select
+          compact
+          value={settings.baseCamp ?? ''}
+          onChange={(e) => atlas && e.target.value && void chooseBaseCamp(atlas, e.target.value)}
+          aria-label="Base camp"
+          disabled={!atlas}
+        >
+          <option value="">Choose…</option>
+          {atlas?.states
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+        </Select>
+      </Line>
+      <Line label="Questions during breaks" hint="Two quick recall questions on the break screen.">
+        <Toggle label="Questions during breaks" checked={settings.breakReview} onChange={(v) => void updateSettings({ breakReview: v })} />
+      </Line>
+    </Group>
+  )
+}
 
 export default function SettingsScreen() {
   const settings = useSettings()
@@ -112,6 +158,8 @@ export default function SettingsScreen() {
           <input type="range" min={0} max={1} step={0.05} value={settings.endVolume} onChange={(e) => void updateSettings({ endVolume: Number(e.target.value) })} aria-label="End sound volume" className="w-36" />
         </Line>
       </Group>
+
+      <AtlasSettings />
 
       <Group title="Notifications & feel">
         <Line label="Notifications" hint={perm === 'denied' ? 'Blocked in system settings – allow notifications for Lodestar there.' : perm === 'unsupported' ? 'Not supported in this browser.' : 'Session endings and reminders.'}>
@@ -281,11 +329,11 @@ function DataGroup() {
             <ActionRow
               icon={<Sparkles className="size-4.5" />}
               title="Preview with sample data"
-              body="Fill Insights and your sky with four months of example history. Removable any time."
+              body="Fill Insights and the Atlas with four months of example history. Removable any time."
               onClick={async () => {
                 await generateDemoData()
                 await refresh()
-                toast({ title: 'Sample history added', body: 'Explore Insights and Sky. Remove it here when you’re done.', tone: 'success' })
+                toast({ title: 'Sample history added', body: 'Explore Insights and the Atlas. Remove it here when you’re done.', tone: 'success' })
               }}
             />
           )

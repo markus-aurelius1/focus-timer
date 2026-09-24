@@ -110,8 +110,10 @@ export interface Place {
   /** India: state/UT ids (source → mouth for rivers). World: ISO3 country codes. */
   states?: string[]
   countries?: string[]
-  /** Physiographic region id (e.g. `eastern-himalaya`). */
+  /** NCERT physiographic division (e.g. `the-himalaya`). */
   region?: string
+  /** Fog unit the place lies in: a state id (India sheet) or ISO3 country code. */
+  unit?: string
   facts: string[]
   rel?: PlaceRelations
   tags?: string[]
@@ -177,11 +179,19 @@ export interface RegionInfo {
   name: string
 }
 
+export interface CountryInfo {
+  id: string
+  name: string
+  iso: string
+  continent: string
+  neighbours: string[]
+}
+
 export interface PlacesFile {
   version: number
   places: Place[]
   expeditions: Expedition[]
   states: StateInfo[]
   regions: RegionInfo[]
-  countries: Array<{ id: string; name: string; iso: string; continent: string; neighbours: string[] }>
+  countries: CountryInfo[]
 }

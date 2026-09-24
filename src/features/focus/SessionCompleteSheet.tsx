@@ -1,14 +1,21 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { motion } from 'motion/react'
-import { Check, Coffee, Star } from 'lucide-react'
+import { Check, Coffee, MapPin, Star } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { db } from '@/data/db'
-import { useLookups, useSettings } from '@/data/hooks'
+import { useLookups } from '@/data/hooks'
 import { patch } from '@/data/repo'
-import { constellationName } from '@/game/sky'
-import { stardustForSession } from '@/game/progression'
+import { navigate } from '@/app/router'
+import { discoveredBetween } from '@/atlas/explore'
+import { placeSubtitle } from '@/atlas/data'
+import { useExploration, type Exploration } from '@/atlas/useExploration'
+import type { Session } from '@/data/types'
+import { xpForSession } from '@/game/progression'
 import { cn } from '@/lib/cn'
-import { formatDuration, startOfWeekKey } from '@/lib/time'
+import { formatDuration } from '@/lib/time'
+import { expeditionStatus } from '@/features/atlas/AtlasPanel'
+import { KIND_NAME } from '@/features/atlas/symbols'
+import { PlaceIcon } from '@/features/atlas/util'
 import { completeTask } from '@/planner/tasks'
 import { haptics } from '@/services/haptics'
 import { PHASE_LABEL, useTimer } from '@/timer/store'
@@ -23,7 +30,7 @@ export function SessionCompleteSheet() {
   const dismiss = useTimer((s) => s.dismissLastSession)
   const timer = useTimer((s) => s.timer)
   const start = useTimer((s) => s.start)
-  const settings = useSettings()
+  const ex = useExploration()
   const session = useLiveQuery(() => (last ? db.sessions.get(last.id) : undefined), [last?.id])
   const task = useLiveQuery(() => (session?.taskId ? db.tasks.get(session.taskId) : undefined), [session?.taskId])
   const taskSessions = useLiveQuery(() => (session?.taskId ? db.sessions.where('taskId').equals(session.taskId).count() : 0), [session?.taskId])
@@ -43,7 +50,6 @@ export function SessionCompleteSheet() {
   if (!session) return <Sheet open={false} onClose={close}>{null}</Sheet>
 
   const l = label(session.labelId)
-  const week = startOfWeekKey(session.date, settings.weekStartsOn)
   const breakReady = timer.status === 'idle' && timer.phase !== 'focus'
   const breakRunning = timer.status === 'running' && timer.phase !== 'focus'
 
@@ -70,9 +76,8 @@ export function SessionCompleteSheet() {
           {l && <> · {l.name}</>}
           {task && <> · {task.title}</>}
         </p>
-        <p className="mt-3 text-[13px] text-ink-3">
-          A new star joins <span className="font-display text-ink-2 italic">{constellationName(week)}</span> · +{stardustForSession(session)} stardust
-        </p>
+        <p className="mt-3 text-[13px] font-semibold text-accent">+{xpForSession(session)} XP</p>
+        {ex && <Discoveries ex={ex} session={session} onOpen={close} />}
 
         <div className="mt-6">
           <p className="mb-2 text-xs font-bold tracking-[0.12em] text-ink-2 uppercase">How focused were you?</p>
@@ -120,5 +125,53 @@ export function SessionCompleteSheet() {
         </div>
       </div>
     </Sheet>
+  )
+}
+
+/** Places this session uncovered, and where the expedition goes next. */
+function Discoveries({ ex, session, onOpen }: { ex: Exploration; session: Session; onOpen: () => void }) {
+  const ids = discoveredBetween(ex.state, session.startedAt, session.endedAt + 1)
+  const status = expeditionStatus(ex)
+  const go = (hash: string) => {
+    onOpen()
+    navigate(hash)
+  }
+  return (
+    <div className="mt-4 text-left">
+      {ids.length > 0 && (
+        <>
+          <p className="mb-2 text-center text-xs font-bold tracking-[0.12em] text-ink-2 uppercase">{ids.length === 1 ? 'New discovery' : `${ids.length} new discoveries`}</p>
+          <ul className="space-y-2">
+            {ids.slice(0, 3).map((id, i) => {
+              const p = ex.atlas.byId.get(id)
+              if (!p) return null
+              return (
+                <motion.li key={id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.12 }}>
+                  <button type="button" onClick={() => go(`#/atlas?place=${encodeURIComponent(id)}`)} className="flex w-full items-start gap-3 rounded-2xl border border-line bg-surface-2/60 p-3 text-left hover:bg-surface-2">
+                    <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-surface">
+                      <PlaceIcon kind={p.kind} tags={p.tags} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-display text-[17px] leading-tight font-medium">{p.name}</span>
+                      <span className="block text-[12px] font-semibold text-ink-3">{placeSubtitle(p, ex.atlas, KIND_NAME[p.kind])}</span>
+                      <span className="mt-1 line-clamp-2 block text-[13px] leading-snug text-ink-2">{p.facts[0]}</span>
+                    </span>
+                  </button>
+                </motion.li>
+              )
+            })}
+          </ul>
+          {ids.length > 3 && <p className="mt-1.5 text-center text-[12px] text-ink-3">and {ids.length - 3} more on the map</p>}
+        </>
+      )}
+      {status && (
+        <button type="button" onClick={() => go('#/atlas')} className="mt-3 flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-2 hover:text-ink">
+          <MapPin className="size-3.5" style={{ color: status.color }} />
+          <span className="truncate">
+            <b className="text-ink">{status.title}</b> · {status.line}
+          </span>
+        </button>
+      )}
+    </div>
   )
 }

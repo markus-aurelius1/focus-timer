@@ -3,19 +3,20 @@ import type {
   AudioPreset,
   CalendarEvent,
   ChallengeClaim,
+  ExpeditionRun,
   Goal,
   Habit,
   HabitLog,
   Label,
   Playlist,
   Project,
+  RecallAttempt,
   ReminderLog,
   Session,
   Settings,
   Task,
   TimerProfile,
   Tombstone,
-  Unlock,
 } from './types'
 
 export class LodestarDB extends Dexie {
@@ -30,8 +31,9 @@ export class LodestarDB extends Dexie {
   events!: EntityTable<CalendarEvent, 'id'>
   audioPresets!: EntityTable<AudioPreset, 'id'>
   playlists!: EntityTable<Playlist, 'id'>
-  unlocks!: EntityTable<Unlock, 'id'>
   claims!: EntityTable<ChallengeClaim, 'id'>
+  recalls!: EntityTable<RecallAttempt, 'id'>
+  expeditions!: EntityTable<ExpeditionRun, 'id'>
   settings!: Table<Settings, 'settings'>
   tombstones!: EntityTable<Tombstone, 'id'>
   reminderLog!: EntityTable<ReminderLog, 'id'>
@@ -56,6 +58,26 @@ export class LodestarDB extends Dexie {
       tombstones: 'id, table, deletedAt',
       reminderLog: 'id, firedAt',
     })
+    // v2 – The Atlas replaces the sky: sky-theme purchases are dropped (challenge
+    // rewards are kept and now count as XP), recall answers and expedition runs
+    // are stored, and the sky theme setting gives way to the atlas settings.
+    this.version(2)
+      .stores({
+        unlocks: null,
+        recalls: 'id, placeId, date, at, updatedAt',
+        expeditions: 'id, expeditionId, startedAt, updatedAt',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((s: Record<string, unknown>) => {
+            delete s.skyTheme
+            s.atlasStyle ??= 'physical'
+            s.baseCamp ??= null
+            s.breakReview ??= true
+          })
+      })
   }
 }
 

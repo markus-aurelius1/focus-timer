@@ -151,6 +151,17 @@ export function compilePlaces(sheetData) {
       }
       if (co) co = co.map((c) => c.toUpperCase())
 
+      // The fog unit the place belongs to: a state on the India sheet, a country (ISO3) otherwise.
+      let unit
+      if (sheetId === 'india') {
+        const inState = states.find((s) => pointInPolygon([x, y], s.geometry))
+        if (inState) unit = inState.id
+        else if (!co && st?.length) unit = st[0]
+        else unit = countries.find((c) => pointInPolygon([x, y], c.geometry))?.iso ?? co?.[0]
+      } else {
+        unit = countries.find((c) => pointInPolygon([x, y], c.geometry))?.iso ?? co?.[0]
+      }
+
       const region =
         sheetId !== 'india'
           ? undefined
@@ -170,6 +181,7 @@ export function compilePlaces(sheetData) {
         ...(st?.length ? { states: st } : {}),
         ...(co?.length ? { countries: co } : {}),
         ...(region ? { region } : {}),
+        ...(unit ? { unit } : {}),
         facts: [].concat(raw.f ?? []),
         ...(raw.rel ? { rel: raw.rel } : {}),
         ...(raw.tags ? { tags: raw.tags } : {}),

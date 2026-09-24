@@ -1,7 +1,9 @@
 import { motion } from 'motion/react'
-import { Bell, CalendarCheck2, ChartNoAxesColumn, Sparkles, Timer } from 'lucide-react'
+import { ArrowRight, Bell, CalendarCheck2, ChartNoAxesColumn, Map as MapIcon, Timer } from 'lucide-react'
 import { useState } from 'react'
 import { updateSettings, useSettings } from '@/data/hooks'
+import { useAtlas } from '@/atlas/data'
+import { BaseCampPicker } from '@/features/atlas/BaseCamp'
 import type { ThemePreference } from '@/data/types'
 import { requestNotificationPermission } from '@/services/notifications'
 import { Button, Segmented } from '@/ui/controls'
@@ -12,14 +14,33 @@ const LOOP = [
   { icon: CalendarCheck2, title: 'Plan', body: 'Capture tasks, estimate sessions, time-block your day.' },
   { icon: Timer, title: 'Focus', body: 'A timer that survives sleep, reloads and app switches.' },
   { icon: ChartNoAxesColumn, title: 'Track & review', body: 'Every session is logged against a subject or task.' },
-  { icon: Sparkles, title: 'Improve', body: 'Each session adds a star to your sky. Watch it fill.' },
+  { icon: MapIcon, title: 'Explore', body: 'Focus time carries you across a real atlas of India and the world; recall makes each place yours.' },
 ]
 
 export function Onboarding() {
   const settings = useSettings()
   const [notif, setNotif] = useState<'idle' | 'granted' | 'denied'>('idle')
+  const [step, setStep] = useState<0 | 1>(0)
+  const atlas = useAtlas()
   const open = settings.updatedAt > 0 && !settings.onboarded
   const finish = () => void updateSettings({ onboarded: true })
+
+  if (open && step === 1) {
+    return (
+      <Sheet open={open} onClose={finish} size="md" bare>
+        <div className="px-6 pt-6 pb-6 sm:px-8 sm:pt-10">
+          <h2 className="font-display text-[28px] leading-tight font-medium tracking-tight">Choose your base camp</h2>
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-2">Your home state starts explored on the Atlas. Your first expedition sets out from here, and you can move it any time.</p>
+          <div className="mt-5">
+            {atlas ? <BaseCampPicker atlas={atlas} current={settings.baseCamp} onDone={finish} /> : <p className="py-8 text-center text-sm text-ink-2">Loading the atlas…</p>}
+          </div>
+          <Button block variant="ghost" className="mt-2" onClick={finish}>
+            Skip for now
+          </Button>
+        </div>
+      </Sheet>
+    )
+  }
 
   return (
     <Sheet open={open} onClose={finish} size="md" bare>
@@ -74,8 +95,8 @@ export function Onboarding() {
           </div>
         </div>
 
-        <Button block size="lg" variant="primary" className="mt-6" onClick={finish}>
-          Begin
+        <Button block size="lg" variant="primary" className="mt-6" icon={<ArrowRight className="size-4" />} onClick={() => setStep(1)}>
+          Continue
         </Button>
       </div>
     </Sheet>

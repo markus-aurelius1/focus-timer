@@ -24,6 +24,7 @@ import { TaskItem } from '@/features/tasks/TaskItem'
 import { profileSummary } from './ProfileSheet'
 import { phaseColor } from './phase'
 import { TimeDigits, TimerDial } from './TimerDial'
+import { ExpeditionStrip } from './ExpeditionStrip'
 
 export function FocusScreen() {
   const desktop = useIsDesktop()
@@ -229,6 +230,7 @@ function TimerPanel() {
           </button>
         )}
       </div>
+      <ExpeditionStrip />
 
       <Sheet open={stopOpen} onClose={() => setStopOpen(false)} title="End this session?" size="sm">
         <p className="text-[15px] text-ink-2">You’ve focused for {formatDuration(el / 1000)}. Save it to your history, or discard it.</p>

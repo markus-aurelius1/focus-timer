@@ -1,11 +1,12 @@
 import type { Table } from 'dexie'
 import { db } from './db'
-import { DEFAULT_SETTINGS } from './seed'
+import { normalizeSettings } from './seed'
 import { applyChanges, type MergeReport } from './sync'
 import { SYNC_TABLES, type Entity, type Settings, type SyncTable, type Tombstone } from './types'
 
 export const BACKUP_APP = 'lodestar'
-export const BACKUP_VERSION = 1
+/** v2: Atlas (recalls, expeditions); v1 backups still import – their sky-theme unlocks are ignored. */
+export const BACKUP_VERSION = 2
 
 export interface BackupFile {
   app: typeof BACKUP_APP
@@ -80,14 +81,14 @@ export async function restoreBackup(b: BackupFile, mode: 'merge' | 'replace'): P
       }
       await db.tombstones.clear()
       await db.tombstones.bulkPut(b.tombstones ?? [])
-      if (b.settings) await db.settings.put({ ...DEFAULT_SETTINGS, ...b.settings, id: 'settings' })
+      if (b.settings) await db.settings.put(normalizeSettings(b.settings))
     })
     return { inserted, updated: 0, skipped: 0, deleted: 0 }
   }
   const report = await applyChanges({ records: b.tables, tombstones: b.tombstones ?? [] })
   if (b.settings) {
     const local = await db.settings.get('settings')
-    if (!local || b.settings.updatedAt > local.updatedAt) await db.settings.put({ ...DEFAULT_SETTINGS, ...b.settings, id: 'settings' })
+    if (!local || b.settings.updatedAt > local.updatedAt) await db.settings.put(normalizeSettings(b.settings))
   }
   return report
 }

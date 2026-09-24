@@ -50,6 +50,7 @@ import { flattenLabels, labelPath } from '@/features/shared/labels'
 import { expandEvents, toMinutes } from '@/features/calendar/calendarModel'
 import { BarList, ChartCard, ColumnChart, fmtSeconds, Heatmap, StatTile, TrendLine, type BarRow, type Datum } from './charts'
 import { GoalsSection } from './GoalsSection'
+import { AtlasInsights } from './AtlasInsights'
 import { SessionSheet } from './SessionSheet'
 
 const minKey = (a: DayKey, b: DayKey) => (a < b ? a : b)
@@ -330,6 +331,8 @@ export default function InsightsScreen() {
           <ChartCard title="12-week trend" subtitle="Weekly focus time" table={trend.map((w) => [`Week of ${shortDate(w.week)}`, formatDuration(w.seconds)])}>
             <TrendLine data={trend.map((w) => ({ key: w.week, label: `Week of ${shortDate(w.week)}`, tick: shortDate(w.week), value: w.seconds }))} ariaLabel="Weekly focus over the last 12 weeks" />
           </ChartCard>
+
+          <AtlasInsights />
 
           <SessionLog sessions={inRange} onEdit={setEditing} />
         </div>

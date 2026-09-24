@@ -11,8 +11,7 @@ import {
   summarize,
   weeklyTrend,
 } from './aggregate'
-import { levelInfo, stardustBalance } from '@/game/progression'
-import { layoutWeek, minimumSpanningTree } from '@/game/sky'
+import { levelInfo, xpBreakdown } from '@/game/progression'
 import { buildContext, dailyChallenges } from '@/game/challenges'
 
 const at = (day: string, h: number, m = 0) => new Date(`${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`).getTime()
@@ -107,30 +106,18 @@ describe('stats', () => {
 describe('progression', () => {
   it('levels up on a square-root curve', () => {
     expect(levelInfo(0).level).toBe(1)
-    expect(levelInfo(3600 * 2).level).toBe(3)
-    expect(levelInfo(3600 * 100).rank.title).toBe('Astronomer')
+    expect(levelInfo(120).level).toBe(3)
+    expect(levelInfo(6000).rank.title).toBe('Navigator')
   })
 
-  it('computes stardust from sessions, claims and unlocks', () => {
-    const b = stardustBalance(
+  it('computes XP from sessions and claims – old stardust rewards count as XP', () => {
+    const b = xpBreakdown(
       [session('2026-09-24', 9, 25), session('2026-09-24', 10, 12, { completed: false })],
       [{ id: 'c', challengeId: 'x', period: 'p', reward: 20, createdAt: 0, updatedAt: 0 }],
-      [{ id: 'u', item: 'theme:aurora', cost: 10, createdAt: 0, updatedAt: 0 }],
+      [],
     )
-    expect(b.earned).toBe(5 + 3 + 2 + 20)
-    expect(b.balance).toBe(20)
-  })
-
-  it('lays out a stable constellation connected by a spanning tree', () => {
-    const sessions = [session('2026-09-21', 9, 25), session('2026-09-22', 14, 50), session('2026-09-24', 20, 25)]
-    const a = layoutWeek('2026-09-21', sessions, [])
-    const b = layoutWeek('2026-09-21', sessions, [])
-    expect(a.stars.map((s) => [s.x, s.y])).toEqual(b.stars.map((s) => [s.x, s.y]))
-    expect(a.edges).toHaveLength(2)
-    expect(a.name).toMatch(/^The \w+ \w+$/)
-    // Monday's star sits left of Thursday's.
-    expect(a.stars[0].x).toBeLessThan(a.stars[2].x)
-    expect(minimumSpanningTree([{ x: 0, y: 0 }])).toEqual([])
+    expect(b.focus).toBe(25 + 3 + 12)
+    expect(b.total).toBe(25 + 3 + 12 + 20)
   })
 
   it('selects deterministic challenges and measures progress', () => {

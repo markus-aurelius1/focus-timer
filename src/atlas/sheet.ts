@@ -123,9 +123,10 @@ export function decodeSheet(file: SheetFile, base: string): Sheet {
     stateBorders = linePath((mesh(topo, obj, (a, b) => a !== b) as MultiLineString).coordinates)
   }
 
+  // India: the states. World: Africa to the western Pacific, with India near the middle.
   const focus: [number, number, number, number] = states.length
     ? states.reduce<[number, number, number, number]>((a, s) => [Math.min(a[0], s.bbox[0]), Math.min(a[1], s.bbox[1]), Math.max(a[2], s.bbox[2]), Math.max(a[3], s.bbox[3])], [Infinity, Infinity, -Infinity, -Infinity])
-    : [0, 0, file.width, file.height]
+    : [file.width * 0.38, file.height * 0.06, file.width * 0.98, file.height * 0.94]
 
   return {
     id: file.sheet,

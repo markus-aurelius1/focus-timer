@@ -8,17 +8,18 @@ import type {
   AudioPreset,
   CalendarEvent,
   ChallengeClaim,
+  ExpeditionRun,
   Goal,
   Habit,
   HabitLog,
   Label,
   Playlist,
   Project,
+  RecallAttempt,
   Session,
   Settings,
   Task,
   TimerProfile,
-  Unlock,
 } from './types'
 
 const EMPTY: never[] = []
@@ -137,12 +138,22 @@ export function usePlaylists(): Playlist[] {
   return useLiveQuery(() => db.playlists.orderBy('order').toArray(), []) ?? EMPTY
 }
 
-export function useUnlocks(): Unlock[] {
-  return useLiveQuery(() => db.unlocks.toArray(), []) ?? EMPTY
-}
+const useAllClaims = sharedLiveQuery<ChallengeClaim[]>(() => db.claims.toArray(), EMPTY)
+const useAllRecalls = sharedLiveQuery<RecallAttempt[]>(() => db.recalls.orderBy('at').toArray(), EMPTY)
+const useAllRuns = sharedLiveQuery<ExpeditionRun[]>(() => db.expeditions.orderBy('startedAt').toArray(), EMPTY)
 
 export function useClaims(): ChallengeClaim[] {
-  return useLiveQuery(() => db.claims.toArray(), []) ?? EMPTY
+  return useAllClaims()
+}
+
+/** Every recall answer, oldest first. */
+export function useRecalls(): RecallAttempt[] {
+  return useAllRecalls()
+}
+
+/** Expedition runs, oldest first. */
+export function useExpeditionRuns(): ExpeditionRun[] {
+  return useAllRuns()
 }
 
 /** Lookup maps for labels/projects by id. */

@@ -8,9 +8,9 @@ const R = 168
 const CIRC = 2 * Math.PI * R
 
 /**
- * The dial: a fine clockwork ring whose progress head is a small star. During
- * focus a soft glow gathers in the centre as the session progresses – a star
- * forming – and it becomes a real star in your sky when the session completes.
+ * The dial: a fine clockwork ring whose progress head is a small star – the
+ * lodestar you navigate by. During focus a soft glow gathers in the centre as
+ * the session progresses.
  */
 export function TimerDial({ progress, phase, running, phaseKey, children, idle }: { progress: number; phase: Phase; running: boolean; phaseKey: string; children: ReactNode; idle: boolean }) {
   const color = phaseColor(phase)

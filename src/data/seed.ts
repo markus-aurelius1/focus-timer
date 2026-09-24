@@ -34,8 +34,17 @@ export const DEFAULT_SETTINGS: Settings = {
   endVolume: 0.7,
   minSessionSeconds: 60,
   ambientFollowsTimer: true,
-  skyTheme: 'midnight',
+  atlasStyle: 'physical',
+  baseCamp: null,
+  breakReview: true,
   onboarded: false,
+}
+
+/** Settings from any version (e.g. an old backup) with legacy keys dropped and new ones defaulted. */
+export function normalizeSettings(raw: object): Settings {
+  const { skyTheme: _legacy, ...rest } = raw as Record<string, unknown>
+  const out = { ...DEFAULT_SETTINGS, ...rest, id: 'settings' } as Settings
+  return Object.fromEntries(Object.entries(out).filter(([k]) => k in DEFAULT_SETTINGS)) as unknown as Settings
 }
 
 type ProfileSeed = Omit<TimerProfile, 'id' | 'createdAt' | 'updatedAt' | 'order'>
@@ -194,7 +203,7 @@ export async function ensureSeed(): Promise<void> {
             { id: uid(), title: 'Reading', done: false },
           ],
         }),
-        task('Look up at your sky after a session', 2, { estimatedPomodoros: 0, plannedFor: null }),
+        task('Open the Atlas and pick your first expedition', 2, { estimatedPomodoros: 0, plannedFor: null }),
       ])
 
       await db.settings.put({ ...DEFAULT_SETTINGS, activeProfileId: profiles[0].id, updatedAt: now })

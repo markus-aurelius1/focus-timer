@@ -281,3 +281,31 @@
     transform: scale(1.6);
   }
 }
+
+/* The Atlas, filling in: flowing rivers and ships at sea. */
+.atlas-flow {
+  animation: atlas-flow 2.6s linear infinite;
+}
+@keyframes atlas-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+.atlas-ship {
+  animation: atlas-ship 9s ease-in-out infinite alternate;
+}
+@keyframes atlas-ship {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--sx), var(--sy));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-flow,
+  .atlas-ship,
+  .atlas-pulse {
+    animation: none;
+  }
+}

@@ -1,5 +1,5 @@
 /**
- * Optional sample history so a new user can preview Insights and the Sky
+ * Optional sample history so a new user can preview Insights and the Atlas
  * before they have data of their own. Every record id starts with `demo-`, so
  * the sample can be removed cleanly without touching real data.
  */

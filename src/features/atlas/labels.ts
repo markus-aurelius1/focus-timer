@@ -102,6 +102,18 @@ export interface LayoutInput {
   foggedStates: Set<string>
   selectedId?: string
   sheetId: 'india' | 'world'
+  /** Sheet label keys to leave out (e.g. answers during a question). */
+  hidden?: Set<string>
+}
+
+const WATER_KEY_KINDS = new Set(['ocean', 'sea', 'bay', 'gulf', 'strait'])
+/** The key a sheet label is known by (`river:ganga`, `marine:palk-strait`, `region:thar-desert`…). */
+export function labelKeyOf(l: MapLabel): string {
+  if (l.kind === 'river') return `river:${l.id}`
+  if (l.kind === 'lake') return `lake:${l.id}`
+  if (WATER_KEY_KINDS.has(l.kind)) return `marine:${l.id}`
+  if (l.kind === 'state' || l.kind === 'country') return `${l.kind}:${l.id}`
+  return `region:${l.id}`
 }
 
 interface Candidate {
@@ -180,6 +192,7 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
 
   // ── sheet labels ────────────────────────────────────────────────────────
   for (const l of input.labels) {
+    if (input.hidden?.size && input.hidden.has(labelKeyOf(l))) continue
     if (l.kind === 'river') {
       if (!l.path || l.path.length < 2) continue
       const rank = l.rank ?? 4
@@ -245,7 +258,7 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
   for (const s of input.places) {
     const p = s.place
     if (!inView(s.x, s.y, 10)) continue
-    const minZoom = s.selected || s.isNew ? 0 : p.level === 1 ? 1 : p.level === 2 ? 1.5 : 2.3
+    const minZoom = s.selected || s.isNew ? 0 : p.kind === 'capital' ? 0 : p.level === 1 ? 1.5 : p.level === 2 ? 2.2 : 3.1
     // The symbol itself reserves space so names don't cover it.
     cands.push({ label: { key: `sym:${p.id}`, text: '', style: 'place', x: s.x, y: s.y, anchor: 'middle', size: 0 }, box: { x0: s.x - 8, y0: s.y - 8, x1: s.x + 8, y1: s.y + 8 }, priority: 150 + (s.selected ? 100 : 0) })
     if (z < minZoom) continue
