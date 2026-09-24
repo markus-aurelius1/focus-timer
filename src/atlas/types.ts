@@ -1,0 +1,187 @@
+/**
+ * Atlas types. Geographic data (sheets, places, expeditions) is static and
+ * versioned under public/atlas; user progress lives in IndexedDB and refers to
+ * places only by their stable ids.
+ */
+import type { Topology } from 'topojson-specification'
+
+export type SheetId = 'india' | 'world'
+
+export type LabelKind =
+  | 'state'
+  | 'country'
+  | 'river'
+  | 'lake'
+  | 'range'
+  | 'plateau'
+  | 'desert'
+  | 'delta'
+  | 'coast'
+  | 'plain'
+  | 'basin'
+  | 'valley'
+  | 'peninsula'
+  | 'isthmus'
+  | 'island'
+  | 'gorge'
+  | 'region'
+  | 'ocean'
+  | 'sea'
+  | 'bay'
+  | 'gulf'
+  | 'strait'
+
+export interface MapLabel {
+  id: string
+  kind: LabelKind
+  name: string
+  x?: number
+  y?: number
+  /** River labels follow this polyline. */
+  path?: Array<[number, number]>
+  size: number
+  rank?: number
+  radius?: number
+  /** Short form used when the full name does not fit (states). */
+  abbr?: string
+}
+
+export interface SheetFile {
+  version: number
+  sheet: SheetId
+  title: string
+  width: number
+  height: number
+  bbox: [number, number, number, number]
+  topology: Topology
+  shapes: Topology
+  lines: Topology
+  labels: MapLabel[]
+}
+
+export type PlaceKind =
+  | 'state'
+  | 'country'
+  | 'capital'
+  | 'city'
+  | 'peak'
+  | 'pass'
+  | 'range'
+  | 'glacier'
+  | 'river'
+  | 'confluence'
+  | 'lake'
+  | 'wetland'
+  | 'park'
+  | 'plateau'
+  | 'desert'
+  | 'plain'
+  | 'valley'
+  | 'coast'
+  | 'delta'
+  | 'island'
+  | 'port'
+  | 'dam'
+  | 'waterfall'
+  | 'cape'
+  | 'strait'
+  | 'gulf'
+  | 'sea'
+  | 'canal'
+  | 'monument'
+  | 'grassland'
+  | 'volcano'
+  | 'region'
+
+/** A place in the gazetteer, as compiled by tools/atlas-build. */
+export interface Place {
+  id: string
+  name: string
+  aka?: string[]
+  kind: PlaceKind
+  sheet: SheetId
+  /** Position on its sheet (pre-projected pixels). */
+  x: number
+  y: number
+  lon: number
+  lat: number
+  /** Linked vector feature on the sheet, e.g. `rivers:ganges`, `states:sikkim`. */
+  geom?: string
+  /** India: state/UT ids (source → mouth for rivers). World: ISO3 country codes. */
+  states?: string[]
+  countries?: string[]
+  /** Physiographic region id (e.g. `eastern-himalaya`). */
+  region?: string
+  facts: string[]
+  rel?: PlaceRelations
+  tags?: string[]
+  /** 1 = core, 2 = standard, 3 = advanced. */
+  level: 1 | 2 | 3
+  elevation?: number
+  /** Short descriptor shown under the name, e.g. "Mountain pass · 4,310 m". */
+  subtitle?: string
+}
+
+export interface PlaceRelations {
+  tributaryOf?: string
+  bank?: 'left' | 'right'
+  distributaryOf?: string
+  flowsInto?: string
+  onRiver?: string[]
+  range?: string
+  border?: string[]
+  connects?: [string, string]
+  source?: string
+  within?: string
+  near?: string[]
+  famousFor?: string[]
+}
+
+export interface ExpeditionStop {
+  place: string
+  /** Focus minutes needed to travel from the previous stop. */
+  minutes: number
+}
+
+export interface ExpeditionChapter {
+  id: string
+  title: string
+  stops: ExpeditionStop[]
+}
+
+export interface Expedition {
+  id: string
+  title: string
+  subtitle: string
+  sheet: SheetId
+  color: string
+  chapters: ExpeditionChapter[]
+  /** Collectible awarded on completion. */
+  reward: { title: string; body: string; icon: string }
+}
+
+export interface StateInfo {
+  id: string
+  name: string
+  type: 'state' | 'ut'
+  capital: string
+  region: string
+  fact: string
+  neighbours: string[]
+  borderCountries: string[]
+  coastal: boolean
+}
+
+export interface RegionInfo {
+  id: string
+  name: string
+}
+
+export interface PlacesFile {
+  version: number
+  places: Place[]
+  expeditions: Expedition[]
+  states: StateInfo[]
+  regions: RegionInfo[]
+  countries: Array<{ id: string; name: string; iso: string; continent: string; neighbours: string[] }>
+}

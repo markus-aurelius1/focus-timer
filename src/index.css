@@ -264,3 +264,20 @@
     opacity: 0;
   }
 }
+
+/* Atlas: a slow pulse for the next waypoint and new discoveries. */
+.atlas-pulse {
+  animation: atlas-pulse 2.2s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes atlas-pulse {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}

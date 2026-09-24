@@ -1,8 +1,8 @@
 /** Tiny hash router – deep links work in the PWA, in Capacitor and from notification taps. */
 import { useSyncExternalStore } from 'react'
 
-export type RouteName = 'focus' | 'tasks' | 'calendar' | 'insights' | 'sky' | 'settings'
-const ROUTES: RouteName[] = ['focus', 'tasks', 'calendar', 'insights', 'sky', 'settings']
+export type RouteName = 'focus' | 'tasks' | 'calendar' | 'insights' | 'sky' | 'atlas' | 'settings'
+const ROUTES: RouteName[] = ['focus', 'tasks', 'calendar', 'insights', 'sky', 'atlas', 'settings']
 
 export interface Route {
   name: RouteName

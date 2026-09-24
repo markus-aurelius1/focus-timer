@@ -36,6 +36,7 @@ import { useUi } from './ui-store'
 const CalendarScreen = lazy(() => import('@/features/calendar/CalendarScreen'))
 const InsightsScreen = lazy(() => import('@/features/insights/InsightsScreen'))
 const SkyScreen = lazy(() => import('@/features/sky/SkyScreen'))
+const AtlasPreview = lazy(() => import('@/features/atlas/AtlasPreview'))
 const SettingsScreen = lazy(() => import('@/features/settings/SettingsScreen'))
 
 type BootState = 'loading' | 'ready' | 'error'
@@ -141,6 +142,8 @@ function Screen({ name }: { name: RouteName }) {
       return <InsightsScreen />
     case 'sky':
       return <SkyScreen />
+    case 'atlas':
+      return <AtlasPreview />
     case 'settings':
       return <SettingsScreen />
   }
