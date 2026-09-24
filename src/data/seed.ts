@@ -37,6 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   atlasStyle: 'physical',
   baseCamp: null,
   breakReview: true,
+  immersiveChart: false,
   onboarded: false,
 }
 

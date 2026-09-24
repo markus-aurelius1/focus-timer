@@ -281,6 +281,8 @@ export interface Settings {
   baseCamp: string | null
   /** Offer two quick recall questions during breaks. */
   breakReview: boolean
+  /** Draw the active expedition's chart behind immersive mode (off: a plain, calm background). */
+  immersiveChart?: boolean
   onboarded: boolean
 }
 

@@ -175,6 +175,14 @@
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+  /* Timer and stopwatch digits: Manrope semibold, tabular, tight – legible at a glance. */
+  .timer-digits {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    letter-spacing: -0.035em;
+  }
   .font-display {
     font-optical-sizing: auto;
   }

@@ -210,7 +210,11 @@ Environment: no environment variables or secrets are required. Optional: `BASE=/
 - [ ] M5 High-yield score (build time, reasons stored) + tests
 - [ ] M4 PYQ ledger + alias resolution pipeline (tools/atlas-build) — data needs the user's sources
 - [ ] M3 Global polish (typography for numbers, spacing/hierarchy audit from screenshots)
-- [ ] M2 Focus screen (no Atlas map in the default immersive background; Manrope tabular digits; no blur glow)
+- [x] M2 Focus screen: `.timer-digits` (Manrope 600, tabular, -0.035em) on the focus screen and immersive clock;
+      dial blur-glow filter removed and centre light toned down; immersive mode has a plain dark background by
+      default — the expedition chart is opt-in (`settings.immersiveChart`, Settings › Atlas, default off, no DB
+      migration needed); immersive status line shows "Until 3:17pm" / "Paused" / "Open focus" instead of repeating
+      the phase; no backdrop blur on immersive buttons.
 - [x] M1 Map/app chrome: `.glass` utility removed; Atlas controls, bottom nav, timer pill and toasts use solid
       `bg-surface`; Insights sticky header no longer blurs; `--shadow-lift-value` softened (light + dark).
       Added `tools/perf/screens.mjs` (phone/desktop × light/dark screenshots of every screen).

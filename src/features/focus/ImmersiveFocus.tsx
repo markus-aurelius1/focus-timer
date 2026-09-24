@@ -16,7 +16,11 @@ import { TimeDigits } from './TimerDial'
 
 const GOLD = '#f2c46d'
 
-/** Full-screen, distraction-free focus over your expedition's map, the route inking forward as you work. */
+/**
+ * Full-screen, distraction-free focus: the clock on a plain dark background.
+ * Optionally (Settings › Atlas) the active expedition's chart sits behind it,
+ * the route inking forward as you work.
+ */
 export function ImmersiveFocus() {
   const timer = useTimer((s) => s.timer)
   const { start, pause, skip, stop } = useTimer.getState()
@@ -37,6 +41,8 @@ export function ImmersiveFocus() {
   const clock = rem === null ? formatClock(elapsedMs(timer, now) / 1000) : formatClock(Math.ceil(rem / 1000))
   const l = label(timer.context.labelId)
   const p = timer.status === 'idle' ? 0 : progress(timer, now)
+  const chart = !!settings.immersiveChart && !!ex
+  const status = timer.status === 'paused' ? 'Paused' : rem !== null && running ? `Until ${formatTimeOfDay(now + rem, settings.use24h)}` : timer.phase === 'focus' && rem === null ? 'Open focus' : PHASE_LABEL[timer.phase]
 
   const poke = () => {
     setControls(true)
@@ -67,8 +73,7 @@ export function ImmersiveFocus() {
 
   return (
     <motion.div
-      className="fixed inset-0 z-40 flex flex-col overflow-hidden text-white select-none"
-      style={{ background: 'linear-gradient(180deg, #070b16 0%, #0c1426 60%, #111c33 100%)' }}
+      className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-[#0a0c14] text-white select-none"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -78,12 +83,16 @@ export function ImmersiveFocus() {
       role="dialog"
       aria-label="Immersive focus"
     >
-      {ex && <ExpeditionBackdrop ex={ex} extraMinutes={focusMinutes} />}
-      <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(7,11,22,0.25) 0%, rgba(7,11,22,0.78) 70%, rgba(7,11,22,0.92) 100%)' }} />
+      {chart && ex && (
+        <>
+          <ExpeditionBackdrop ex={ex} extraMinutes={focusMinutes} />
+          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(7,11,22,0.25) 0%, rgba(7,11,22,0.78) 70%, rgba(7,11,22,0.92) 100%)' }} />
+        </>
+      )}
 
       <div className={cn('pt-safe relative flex items-center justify-between px-5 pt-4 transition-opacity duration-500', controls ? 'opacity-100' : 'opacity-0')}>
         <span className="tabular text-sm font-semibold text-white/60">{formatTimeOfDay(now, settings.use24h)}</span>
-        <button type="button" onClick={close} className="flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-2 text-sm font-semibold backdrop-blur hover:bg-white/15" aria-label="Exit immersive mode">
+        <button type="button" onClick={close} className="flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-2 text-sm font-semibold hover:bg-white/15" aria-label="Exit immersive mode">
           <Minimize2 className="size-4" /> Exit
         </button>
       </div>
@@ -93,13 +102,13 @@ export function ImmersiveFocus() {
           {l && <span className="size-2 rounded-full" style={{ background: l.color }} />}
           {[l?.name, task?.title].filter(Boolean).join(' · ') || PHASE_LABEL[timer.phase]}
         </p>
-        <span role="timer" className="tabular font-display text-[clamp(84px,24vw,200px)] leading-none font-extralight tracking-tight">
+        <span role="timer" className="timer-digits text-[clamp(76px,22vw,184px)] leading-none">
           <TimeDigits text={clock} />
         </span>
         <div className="mt-8 h-[2px] w-[min(280px,60vw)] overflow-hidden rounded-full bg-white/15">
           <div className="h-full rounded-full" style={{ width: `${p * 100}%`, background: GOLD, transition: running ? 'width 1s linear' : 'width 300ms' }} />
         </div>
-        <p className="mt-4 text-sm font-semibold tracking-wide text-white/55">{timer.status === 'paused' ? 'Paused' : PHASE_LABEL[timer.phase]}</p>
+        <p className="tabular mt-4 text-sm font-semibold tracking-wide text-white/60">{status}</p>
         {timer.context.note && <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/60 italic">“{timer.context.note}”</p>}
       </div>
 
@@ -219,7 +228,7 @@ function ExpeditionBackdrop({ ex, extraMinutes }: { ex: Exploration; extraMinute
 
 function RoundButton({ label, onClick, children, active }: { label: string; onClick: () => void; children: ReactNode; active?: boolean }) {
   return (
-    <button type="button" aria-label={label} title={label} onClick={onClick} className={cn('flex size-12 items-center justify-center rounded-full backdrop-blur transition-colors', active ? 'bg-white/25' : 'bg-white/10 hover:bg-white/15')}>
+    <button type="button" aria-label={label} title={label} onClick={onClick} className={cn('flex size-12 items-center justify-center rounded-full transition-colors', active ? 'bg-white/25' : 'bg-white/10 hover:bg-white/15')}>
       {children}
     </button>
   )

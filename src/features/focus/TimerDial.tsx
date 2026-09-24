@@ -9,8 +9,8 @@ const CIRC = 2 * Math.PI * R
 
 /**
  * The dial: a fine clockwork ring whose progress head is a small star – the
- * lodestar you navigate by. During focus a soft glow gathers in the centre as
- * the session progresses.
+ * lodestar you navigate by. During focus a faint light gathers in the centre as
+ * the session progresses (kept subtle so the digits stay the focus).
  */
 export function TimerDial({ progress, phase, running, phaseKey, children, idle }: { progress: number; phase: Phase; running: boolean; phaseKey: string; children: ReactNode; idle: boolean }) {
   const color = phaseColor(phase)
@@ -29,13 +29,6 @@ export function TimerDial({ progress, phase, running, phaseKey, children, idle }
             <stop offset="45%" stopColor={color} stopOpacity="0.12" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </radialGradient>
-          <filter id="dial-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="4" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
 
         {/* The gathering light at the centre. */}
@@ -44,7 +37,7 @@ export function TimerDial({ progress, phase, running, phaseKey, children, idle }
           cy={C}
           r={R - 12}
           fill="url(#dial-core)"
-          style={{ opacity: phase === 'focus' ? 0.12 + p * 0.5 : 0.18, transition: 'opacity 1s linear' }}
+          style={{ opacity: phase === 'focus' ? 0.06 + p * 0.24 : 0.1, transition: 'opacity 1s linear' }}
         />
 
         {/* Minute ticks */}
@@ -90,8 +83,8 @@ export function TimerDial({ progress, phase, running, phaseKey, children, idle }
           />
           {/* Progress head: a small four-point star */}
           <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: `${C}px ${C}px`, transition }}>
-            <g transform={`translate(${C} ${C - R})`} filter="url(#dial-glow)">
-              <circle r={9} fill={color} opacity={0.18} />
+            <g transform={`translate(${C} ${C - R})`}>
+              <circle r={10} fill={color} opacity={0.16} />
               <path d="M0 -9 L1.8 -1.8 L9 0 L1.8 1.8 L0 9 L-1.8 1.8 L-9 0 L-1.8 -1.8 Z" fill={color} />
               <circle r={2.2} fill="var(--surface)" opacity={0.9} />
             </g>

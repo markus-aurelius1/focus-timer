@@ -65,6 +65,9 @@ function AtlasSettings() {
       <Line label="Questions during breaks" hint="Two quick recall questions on the break screen.">
         <Toggle label="Questions during breaks" checked={settings.breakReview} onChange={(v) => void updateSettings({ breakReview: v })} />
       </Line>
+      <Line label="Expedition chart in immersive mode" hint="Show your route behind the clock instead of a plain background.">
+        <Toggle label="Expedition chart in immersive mode" checked={!!settings.immersiveChart} onChange={(v) => void updateSettings({ immersiveChart: v })} />
+      </Line>
     </Group>
   )
 }

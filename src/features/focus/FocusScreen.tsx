@@ -167,7 +167,7 @@ function TimerPanel() {
               <span className="text-ink-3">{timer.phase === 'focus' ? 'No subject' : PHASE_LABEL[timer.phase]}</span>
             )}
           </button>
-          <span role="timer" aria-live="off" aria-label={`${clock} ${rem === null ? 'elapsed' : 'remaining'}`} className="tabular font-display text-[clamp(56px,17vw,96px)] leading-none font-light tracking-tight">
+          <span role="timer" aria-live="off" aria-label={`${clock} ${rem === null ? 'elapsed' : 'remaining'}`} className="timer-digits text-[clamp(56px,16.5vw,92px)] leading-none">
             <TimeDigits text={clock} />
           </span>
           <div className="mt-3 flex h-5 items-center gap-2 text-[13px] font-semibold" style={{ color }}>
