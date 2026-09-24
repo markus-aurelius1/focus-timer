@@ -3,6 +3,7 @@
  * real font, and placed greedily without overlap – the classic atlas rule of
  * "fewer, legible names" at every zoom level.
  */
+import { boundsOf, GridIndex, viewRect } from '@/atlas/spatial'
 import type { LabelKind, MapLabel, Place } from '@/atlas/types'
 import type { MasteryLevel } from './style'
 
@@ -68,6 +69,39 @@ function measure(text: string, size: number, weight: number, italic: boolean, se
 
 export function resetMeasureCache() {
   widthCache.clear()
+  metricsCache.clear()
+}
+
+const metricsCache = new Map<string, { ascent: number; descent: number }>()
+
+/**
+ * Ascent and descent of a label font (per 1 px of font size), as CSS inline
+ * layout uses them, so HTML names can sit on exactly the baseline an SVG
+ * `<text y>` would.
+ */
+export function fontMetrics(serif: boolean, weight: number, italic: boolean): { ascent: number; descent: number } {
+  const key = `${serif}|${weight}|${italic}`
+  const hit = metricsCache.get(key)
+  if (hit) return hit
+  let out = { ascent: serif ? 0.98 : 1.09, descent: serif ? 0.26 : 0.31 }
+  if (!ctx && typeof document !== 'undefined') ctx = document.createElement('canvas').getContext('2d')
+  if (ctx) {
+    ctx.font = `${italic ? 'italic ' : ''}${weight} 100px ${serif ? FONT_SERIF : FONT_SANS}`
+    const m = ctx.measureText('Hg')
+    if (m.fontBoundingBoxAscent) out = { ascent: m.fontBoundingBoxAscent / 100, descent: m.fontBoundingBoxDescent / 100 }
+  }
+  metricsCache.set(key, out)
+  return out
+}
+
+/** Line height used for HTML map names (em). */
+export const NAME_LINE_HEIGHT = 1.25
+
+/** Distance from the top of an HTML name box to its baseline (px). */
+export function baselineFromTop(style: LabelStyle, size: number): number {
+  const spec = STYLE_SPEC[style]
+  const { ascent, descent } = fontMetrics(spec.serif, spec.weight, spec.italic)
+  return ((NAME_LINE_HEIGHT - (ascent + descent)) / 2 + ascent) * size
 }
 
 export const STYLE_SPEC: Record<LabelStyle, { weight: number; italic: boolean; serif: boolean; upper: boolean; spacing: number }> = {
@@ -104,6 +138,20 @@ export interface LayoutInput {
   sheetId: 'india' | 'world'
   /** Sheet label keys to leave out (e.g. answers during a question). */
   hidden?: Set<string>
+  /** Spatial index over `labels`; when given, only labels near the view are considered. */
+  index?: GridIndex<MapLabel>
+}
+
+const labelIndexes = new WeakMap<readonly MapLabel[], GridIndex<MapLabel>>()
+
+/** A spatial index over a sheet's labels (river labels by the bounds of their course), built once per sheet. */
+export function labelIndexFor(labels: readonly MapLabel[], width: number, height: number): GridIndex<MapLabel> {
+  let idx = labelIndexes.get(labels)
+  if (!idx) {
+    idx = new GridIndex(labels, (l) => (l.path ? boundsOf(l.path) : l.x === undefined || l.y === undefined ? null : [l.x, l.y, l.x, l.y]), width, height)
+    labelIndexes.set(labels, idx)
+  }
+  return idx
 }
 
 const WATER_KEY_KINDS = new Set(['ocean', 'sea', 'bay', 'gulf', 'strait'])
@@ -182,6 +230,8 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
   const toScreen = (x: number, y: number): [number, number] => [x * t.k + t.x, y * t.k + t.y]
   const inView = (sx: number, sy: number, m = 40) => sx > -m && sx < width + m && sy > -m && sy < height + m
   const cands: Candidate[] = []
+  // Names are anchored inside the view (+40 px); river names need their course to cross it.
+  const labels = input.index ? input.index.query(viewRect(t, width, height, 40)) : input.labels
 
   const add = (label: PlacedLabel, priority: number) => {
     const spec = STYLE_SPEC[label.style]
@@ -191,7 +241,7 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
   }
 
   // ── sheet labels ────────────────────────────────────────────────────────
-  for (const l of input.labels) {
+  for (const l of labels) {
     if (input.hidden?.size && input.hidden.has(labelKeyOf(l))) continue
     if (l.kind === 'river') {
       if (!l.path || l.path.length < 2) continue

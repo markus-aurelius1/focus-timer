@@ -36,6 +36,10 @@ export function Sheet({ open, onClose, title, subtitle, children, footer, size =
   const wide = useIsWide()
   const panelRef = useRef<HTMLDivElement>(null)
   const drag = useDragControls()
+  // Only a press that starts on the backdrop closes the sheet. The trailing
+  // click of the tap that opened it (e.g. a place on the map) lands on the new
+  // backdrop too, and must not close it again.
+  const backdropPress = useRef(false)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
@@ -69,12 +73,16 @@ export function Sheet({ open, onClose, title, subtitle, children, footer, size =
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="presentation">
           <motion.div
-            className="absolute inset-0 bg-black/40 backdrop-blur-[2px] dark:bg-black/60"
+            className="absolute inset-0 bg-black/45 dark:bg-black/60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={onClose}
+            onPointerDown={() => (backdropPress.current = true)}
+            onClick={() => {
+              if (backdropPress.current) onClose()
+              backdropPress.current = false
+            }}
           />
           <motion.div
             ref={panelRef}

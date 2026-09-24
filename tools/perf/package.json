@@ -1,0 +1,13 @@
+{
+  "name": "lodestar-perf",
+  "private": true,
+  "type": "module",
+  "description": "Atlas interaction profiling and smoke tests (headless Chromium). Not part of the app build.",
+  "scripts": {
+    "profile": "node profile.mjs",
+    "smoke": "node smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.56.0"
+  }
+}
