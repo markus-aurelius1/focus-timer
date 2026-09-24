@@ -200,7 +200,7 @@ export default function InsightsScreen() {
       </header>
 
       {/* One filter row scopes everything below it. */}
-      <div className="sticky top-0 z-20 -mx-4 mb-4 flex flex-wrap items-center gap-2 bg-bg/90 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
+      <div className="sticky top-0 z-20 -mx-4 mb-4 flex flex-wrap items-center gap-2 bg-bg px-4 py-2 sm:-mx-6 sm:px-6">
         <Segmented<RangeKind>
           size="sm"
           value={kind}

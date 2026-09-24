@@ -239,7 +239,7 @@ function Atlas({ ex }: { ex: Exploration }) {
                 { value: 'india', label: 'India' },
                 { value: 'world', label: 'World' },
               ]}
-              className="glass border border-line shadow-soft"
+              className="border border-line bg-surface shadow-soft"
             />
           </div>
           <div className="pointer-events-auto flex gap-1.5">
@@ -270,7 +270,7 @@ function Atlas({ ex }: { ex: Exploration }) {
         {/* Mobile HUD */}
         {!desktop && (
           <div data-map-ui className={cn('absolute inset-x-3 transition-[bottom] duration-300', timerActive ? 'bottom-[64px]' : 'bottom-3')}>
-            <div className="glass rounded-[22px] border border-line p-3.5 shadow-lift">
+            <div className="rounded-[22px] border border-line bg-surface p-3.5 shadow-soft">
               <ExplorerCard ex={ex} compact />
               {status && (
                 <button type="button" onClick={() => setPanel('expeditions')} className="mt-2.5 flex w-full items-center gap-2 text-left">
@@ -362,7 +362,7 @@ function Atlas({ ex }: { ex: Exploration }) {
 
 function MapButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" aria-label={label} title={label} onClick={onClick} className="glass flex size-10 items-center justify-center rounded-full border border-line text-ink shadow-soft transition-transform active:scale-95">
+    <button type="button" aria-label={label} title={label} onClick={onClick} className="flex size-10 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-soft transition-transform active:scale-95">
       {children}
     </button>
   )

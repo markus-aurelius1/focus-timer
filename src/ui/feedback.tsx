@@ -20,7 +20,7 @@ export function Toaster() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 500, damping: 36 }}
-            className="glass pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-line px-4 py-3 shadow-lift"
+            className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-line bg-surface px-4 py-3 shadow-lift"
             role="status"
           >
             <span className={cn('mt-0.5 shrink-0', t.tone === 'success' && 'text-success', t.tone === 'warning' && 'text-danger', t.tone === 'celebrate' && 'text-accent', t.tone === 'default' && 'text-ink-2')}>

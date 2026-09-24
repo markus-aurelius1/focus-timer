@@ -25,7 +25,7 @@ function go(name: RouteName) {
 
 export function BottomNav({ route }: { route: RouteName }) {
   return (
-    <nav className="glass pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line lg:hidden" aria-label="Main">
+    <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface lg:hidden" aria-label="Main">
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-2">
         {TABS.map(({ name, label, icon: Icon }) => {
           const active = route === name
@@ -120,7 +120,7 @@ export function TimerPill({ route }: { route: RouteName }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={() => go('focus')}
-      className="glass fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-30 flex items-center gap-2.5 rounded-full border border-line py-2 pr-4 pl-3 shadow-lift lg:hidden"
+      className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-30 flex items-center gap-2.5 rounded-full border border-line bg-surface py-2 pr-4 pl-3 shadow-soft lg:hidden"
       aria-label="Return to timer"
     >
       <span className={cn('size-2.5 rounded-full', timer.phase === 'focus' ? 'bg-focus' : timer.phase === 'longBreak' ? 'bg-long' : 'bg-break', timer.status === 'running' && 'animate-pulse')} />

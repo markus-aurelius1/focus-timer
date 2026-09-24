@@ -94,7 +94,7 @@
   /* Chart marks – validated for lightness band, chroma and ≥3:1 contrast on the surface. */
   --chart: #b8781b;
   --shadow-soft-value: 0 1px 2px rgba(40, 32, 16, 0.04), 0 8px 24px -12px rgba(40, 32, 16, 0.12);
-  --shadow-lift-value: 0 2px 6px rgba(40, 32, 16, 0.06), 0 24px 48px -20px rgba(40, 32, 16, 0.28);
+  --shadow-lift-value: 0 1px 3px rgba(40, 32, 16, 0.06), 0 16px 36px -18px rgba(40, 32, 16, 0.24);
 }
 
 /* Night – deep ink sky with starlight gold. */
@@ -121,7 +121,7 @@
   --success: #73d19a;
   --chart: #b88a3a;
   --shadow-soft-value: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
-  --shadow-lift-value: 0 2px 8px rgba(0, 0, 0, 0.4), 0 30px 60px -24px rgba(0, 0, 0, 0.8);
+  --shadow-lift-value: 0 1px 4px rgba(0, 0, 0, 0.35), 0 20px 44px -22px rgba(0, 0, 0, 0.7);
 }
 
 @layer base {
@@ -202,11 +202,6 @@
   }
   .hairline {
     border-color: var(--line);
-  }
-  .glass {
-    background: color-mix(in oklab, var(--surface) 92%, transparent);
-    backdrop-filter: blur(18px) saturate(1.2);
-    -webkit-backdrop-filter: blur(18px) saturate(1.2);
   }
 }
 

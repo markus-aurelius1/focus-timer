@@ -130,6 +130,8 @@ offline reload, no page errors).
 
 ### Not started / remaining
 
+(See the **progress log** in §8 for what has been done since this list was written.)
+
 1. **Atlas chrome** (small, was next): replace `.glass` (backdrop blur) on map controls with solid surfaces —
    `AtlasScreen.tsx` lines ~242 (Segmented), ~273 (mobile HUD card, also has heavy `shadow-lift`), ~365 (`MapButton`).
 2. **Focus screen** (task 2): see §4.2. Files: `src/features/focus/FocusScreen.tsx` (timer `span role="timer"` uses
@@ -201,3 +203,44 @@ Environment: no environment variables or secrets are required. Optional: `BASE=/
 - Inventing PYQ years/appearances or facts; every PYQ record needs a source.
 - Profiling the dev server (React dev overhead dominates).
 - Force-pushing / rebasing shared branches.
+
+## 8. Progress log (newest first) — continue from the first unchecked item
+
+- [ ] M6 Surface PYQ data + priority in the app (PlaceDetails, Gazetteer, review order)
+- [ ] M5 High-yield score (build time, reasons stored) + tests
+- [ ] M4 PYQ ledger + alias resolution pipeline (tools/atlas-build) — data needs the user's sources
+- [ ] M3 Global polish (typography for numbers, spacing/hierarchy audit from screenshots)
+- [ ] M2 Focus screen (no Atlas map in the default immersive background; Manrope tabular digits; no blur glow)
+- [x] M1 Map/app chrome: `.glass` utility removed; Atlas controls, bottom nav, timer pill and toasts use solid
+      `bg-surface`; Insights sticky header no longer blurs; `--shadow-lift-value` softened (light + dark).
+      Added `tools/perf/screens.mjs` (phone/desktop × light/dark screenshots of every screen).
+- [x] M0 Atlas performance + Sheet ghost-click fix + tools/perf + this handoff (commit 5105dca)
+
+## 9. Ready-to-paste prompt for a new local Claude Code session
+
+Run `claude` inside a clone of the repo on branch `claude/jolly-clarke-qk4fys`, then paste:
+
+```text
+Continue the Lodestar upgrade in this repo (markus-aurelius1/study-timer), branch
+claude/jolly-clarke-qk4fys. You have no access to earlier sessions.
+
+1. Verify first: `git status`, `git log --oneline -5`; read docs/HANDOFF.md completely (it holds the
+   user's requirements, architecture, status, measurements and the milestone plan). Do not assume
+   anything in it is implemented without checking the code.
+2. `npm ci && npm run typecheck && npm test && npm run build`, then `npm run preview` and, in
+   tools/perf, `npm install` (+ `npx playwright-core install chromium` or set CHROMIUM_PATH) and
+   `node smoke.mjs http://localhost:4173/` (all PASS expected). Report branch, HEAD, results and any
+   mismatch with the handoff before editing.
+3. Continue from the first unchecked milestone in §8 of docs/HANDOFF.md. Follow §4 (requirements,
+   especially: don't redesign, don't break timer/planner/calendar/sessions/stats/Atlas
+   progression/offline, no unnecessary UI, never invent PYQ facts, keep the score interpretable with
+   reasons stored in the data) and §7 (things to avoid).
+4. PYQ sources (use directly; plus any PDFs the user points you to):
+   https://www.pmfias.com/category/prelims/protected-area-network/
+   https://www.pmfias.com/category/upsc-cse-prelims-pyqs/prelims-pyqs-geography/prelims-pyqs-mapping/ (+ /page/N/)
+   https://thedistrictminds.com/UPPSC_PYQs_Analysis_District_Minds.html
+   https://superkalam.com/upsc-preparation/resources/upsc-map-based-pyqs-2015-2025-practice-map-questions
+5. Work in small steps; after each milestone run typecheck, tests, build and the smoke test, tick it
+   in §8 of docs/HANDOFF.md, commit with a clear message and push to claude/jolly-clarke-qk4fys.
+   No rebases or force-pushes; no rewrites of working code.
+```
