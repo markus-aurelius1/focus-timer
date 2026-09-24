@@ -5,7 +5,7 @@
  *   {india,world}-shade.webp    hillshade for the political plate
  *   places.json                 the gazetteer + expeditions (see content/)
  *
- * Usage: node build.mjs [--no-relief] [--only=india|world]
+ * Usage: node build.mjs [--no-relief] [--only=india|world] [--places-only]
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -24,8 +24,9 @@ const only = [...args].find((a) => a.startsWith('--only='))?.split('=')[1]
 const skipRelief = args.has('--no-relief')
 
 const sheets = {}
+const placesOnly = args.has('--places-only')
 for (const id of ['india', 'world']) {
-  if (only && only !== id) continue
+  if (placesOnly || (only && only !== id)) continue
   const built = await buildSheet(id, { skipRelief })
   sheets[id] = built
   const json = JSON.stringify(built.data)

@@ -136,6 +136,7 @@ function ExpeditionBackdrop({ ex, extraMinutes }: { ex: Exploration; extraMinute
   const a = ex.state.active
   const sheetId = a?.expedition.sheet ?? 'india'
   const { sheet } = useSheet(sheetId)
+  const sheetSize = sheet ? ([sheet.width, sheet.height] as const) : null
   const leg = useMemo(() => {
     if (!a || !a.stops.length) return null
     const nextIdx = a.next ? a.stops.indexOf(a.next.stop) : a.stops.length - 1
@@ -144,23 +145,29 @@ function ExpeditionBackdrop({ ex, extraMinutes }: { ex: Exploration; extraMinute
     const shown = a.stops.slice(from, to + 1)
     const xs = shown.map((s) => s.place.x)
     const ys = shown.map((s) => s.place.y)
-    const pad = 90
+    const pad = 110
     let [x0, y0, x1, y1] = [Math.min(...xs) - pad, Math.min(...ys) - pad, Math.max(...xs) + pad, Math.max(...ys) + pad]
-    // Keep a sensible minimum extent so a short leg isn't blown up.
-    const minW = 420
-    if (x1 - x0 < minW) {
-      const cx = (x0 + x1) / 2
-      x0 = cx - minW / 2
-      x1 = cx + minW / 2
-    }
-    if (y1 - y0 < minW * 0.7) {
-      const cy = (y0 + y1) / 2
-      y0 = cy - minW * 0.35
-      y1 = cy + minW * 0.35
-    }
+    // Match the screen's shape, and never zoom in past the relief plate's detail.
+    const aspect = typeof window === 'undefined' ? 1 : window.innerWidth / Math.max(1, window.innerHeight)
+    const minW = Math.max(560, 560 * aspect)
+    let w = Math.max(x1 - x0, minW)
+    let h = Math.max(y1 - y0, w / aspect)
+    w = Math.max(w, h * aspect)
+    const cx = (x0 + x1) / 2
+    const cy = (y0 + y1) / 2
+    // The route sits in the lower third, clear of the clock.
+    ;[x0, x1, y0, y1] = [cx - w / 2, cx + w / 2, cy - h * 0.72, cy + h * 0.28]
+    // Stay on the sheet.
+    const W = sheetSize?.[0] ?? Infinity
+    const H = sheetSize?.[1] ?? Infinity
+    // Vertically the route keeps its place; the sheet's edge is feathered instead.
+    if (y1 > H) [y0, y1] = [y0 - (y1 - H), H]
+    if (x0 < 0) [x0, x1] = [0, x1 - x0]
+    else if (x1 > W) [x0, x1] = [x0 - (x1 - W), W]
     return { shown, nextIdx, box: [x0, y0, x1 - x0, y1 - y0] as const }
-  }, [a])
+  }, [a, sheetSize?.[0], sheetSize?.[1]]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!a || !sheet || !leg) return null
+  const dot = leg.box[2] / 110
   const prev = a.stops[leg.nextIdx - 1]
   const next = a.next?.stop
   const prevT = prev?.threshold ?? 0
@@ -169,7 +176,14 @@ function ExpeditionBackdrop({ ex, extraMinutes }: { ex: Exploration; extraMinute
   const start = prev ?? (next ? { place: next.place } : null)
   return (
     <svg viewBox={leg.box.join(' ')} preserveAspectRatio="xMidYMid slice" className="absolute inset-0 size-full" aria-hidden="true">
+      <defs>
+        <linearGradient id="imm-top-fade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#070b16" stopOpacity={1} />
+          <stop offset="100%" stopColor="#070b16" stopOpacity={0} />
+        </linearGradient>
+      </defs>
       <image href={sheet.reliefUrl} width={sheet.width} height={sheet.height} preserveAspectRatio="none" style={{ filter: 'grayscale(0.35) brightness(0.5) contrast(1.1)' }} />
+      <rect x={0} y={0} width={sheet.width} height={leg.box[3] * 0.18} fill="url(#imm-top-fade)" />
       <path d={sheet.lines.stateBorders} fill="none" stroke="#9fb3d9" strokeOpacity={0.25} strokeWidth={0.8} vectorEffect="non-scaling-stroke" strokeDasharray="4 3" />
       {reached.length > 1 && <polyline points={reached.map((s) => `${s.place.x},${s.place.y}`).join(' ')} fill="none" stroke={GOLD} strokeWidth={2.2} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />}
       {start && next && (
@@ -189,12 +203,12 @@ function ExpeditionBackdrop({ ex, extraMinutes }: { ex: Exploration; extraMinute
         </>
       )}
       {leg.shown.map((s) => (
-        <circle key={s.place.id} cx={s.place.x} cy={s.place.y} r={s.reached ? 4 : 3} fill={s.reached ? GOLD : '#0c1426'} stroke={GOLD} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+        <circle key={s.place.id} cx={s.place.x} cy={s.place.y} r={s.reached ? dot : dot * 0.75} fill={s.reached ? GOLD : '#0c1426'} stroke={GOLD} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
       ))}
       {next && (
         <g>
-          <circle cx={next.place.x} cy={next.place.y} r={9} fill="none" stroke={GOLD} strokeWidth={1.5} vectorEffect="non-scaling-stroke" className="atlas-pulse" style={{ transformOrigin: `${next.place.x}px ${next.place.y}px`, transformBox: 'view-box' }} />
-          <text x={next.place.x + 12} y={next.place.y + 4} fill={GOLD} fontFamily="Fraunces, Georgia, serif" fontStyle="italic" fontSize={Math.max(12, leg.box[2] / 38)} opacity={0.9}>
+          <circle cx={next.place.x} cy={next.place.y} r={dot * 2.4} fill="none" stroke={GOLD} strokeWidth={1.5} vectorEffect="non-scaling-stroke" className="atlas-pulse" style={{ transformOrigin: `${next.place.x}px ${next.place.y}px`, transformBox: 'view-box' }} />
+          <text x={next.place.x + dot * 3} y={next.place.y + dot} fill={GOLD} fontFamily="Fraunces, Georgia, serif" fontStyle="italic" fontSize={leg.box[2] / 22} opacity={0.9}>
             {next.place.name}
           </text>
         </g>

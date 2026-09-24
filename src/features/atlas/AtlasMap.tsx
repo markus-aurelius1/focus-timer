@@ -42,7 +42,7 @@ interface TonePalette {
 }
 
 const DAY: TonePalette = {
-  paper: '#efeadf',
+  paper: 'var(--bg)',
   neatline: '#5f584c',
   sea: SEA_FLAT,
   neighbour: NEIGHBOUR_FILL,

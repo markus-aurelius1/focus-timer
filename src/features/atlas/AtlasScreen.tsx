@@ -111,7 +111,7 @@ function Atlas({ ex }: { ex: Exploration }) {
 
   const routeOverlay = useMemo<RouteOverlay | null>(() => {
     const a = ex.state.active
-    if (!a || a.expedition.sheet !== sheetId) return null
+    if (!a || a.complete || a.expedition.sheet !== sheetId) return null
     // The current chapter only: the way travelled, and the leg ahead.
     const chapter = a.next?.stop.chapter ?? a.stops[a.stops.length - 1]?.chapter ?? 0
     const shown = a.stops.filter((s) => s.chapter === chapter && (s.reached || s === a.next?.stop))

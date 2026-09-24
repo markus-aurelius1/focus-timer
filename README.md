@@ -4,13 +4,15 @@ A calm, premium, local‑first study app that connects the whole loop:
 
 **PLAN → FOCUS → TRACK → REVIEW → IMPROVE**
 
-The timer is the heart of it, but Lodestar is also a proper daily planner, an automatic session tracker, an analytics tool and a quiet game: every focus session becomes a star in your own night sky.
+The timer is the heart of it, but Lodestar is also a proper daily planner, an automatic session tracker, an analytics tool and **The Atlas**: a real atlas of India and the world that you explore with focus time and make your own through recall — built around the geography asked in UPSC and UPPCS exams.
 
 It runs as an installable **PWA** (offline, no account) and ships with **Capacitor** projects for **Android** and **iOS**.
 
-| Focus (Night) | Plan (Paper) | Your sky | Immersive |
+| Focus (Night) | Plan (Paper) | The Atlas | Field review |
 | --- | --- | --- | --- |
-| ![Focus](docs/screenshots/focus-night.png) | ![Plan](docs/screenshots/plan-paper.png) | ![Sky](docs/screenshots/sky-night.png) | ![Immersive](docs/screenshots/immersive.png) |
+| ![Focus](docs/screenshots/focus-night.png) | ![Plan](docs/screenshots/plan-paper.png) | ![Atlas](docs/screenshots/atlas-mobile.png) | ![Field review](docs/screenshots/atlas-review.png) |
+
+![The Atlas on desktop](docs/screenshots/atlas-desktop.png)
 
 ![Insights](docs/screenshots/insights-desktop.png)
 
@@ -23,7 +25,7 @@ It runs as an installable **PWA** (offline, no account) and ships with **Capacit
 - **Timer profiles** (Classic 25/5, Deep work 50/10, Ultradian 90/20, Sprint, Exam block, Open focus) plus one‑tap 25/5 · 50/10 · 90/20 presets and fully custom cycles. Auto‑start breaks/focus per profile.
 - Link a session to a **subject/label**, a **task** and a **project**; write an **intention** before and **notes + a 1–5 focus rating** after.
 - ±5 min adjustments, skip, stop‑and‑save or discard, “finish early and take a break”.
-- **Immersive mode**: full screen under your sky theme, controls fade away, screen stays awake.
+- **Immersive mode**: full screen over a night chart of your expedition — the route inks forward toward the next stop as the session runs; controls fade away, screen stays awake.
 - Chimes (synthesised), notifications and haptics at phase ends. Keyboard: <kbd>Space</kbd> start/pause, <kbd>F</kbd> immersive, <kbd>S</kbd> sounds.
 - Open focus suggests a proportional break (⅕ of the focus time) and auto‑closes forgotten sessions after 4 h.
 
@@ -52,11 +54,17 @@ Day / week / month / year with navigation and a subject filter that scopes every
 
 Every chart has a hover/focus tooltip and a table view. Colours were validated for contrast and colour‑vision deficiency.
 
-### Your sky (progression)
-- Each week’s sessions form a **constellation**: left→right is the day, height is the time of day, brightness is duration, colour is the subject; stars are joined by a minimum spanning tree and every week gets a name (“The Quiet Heron”).
-- **Ranks and levels** from total focus time; **celestial collection** of 15 milestones (crescent moon at 5 h, aurora at 25 h, ringed planet at 100 h, pole star for a 7‑day streak, …) that appear in your sky.
-- **Daily and weekly challenges** (deterministic per date) that reward **stardust**; spend it on **sky themes** that also colour immersive mode.
-- **Atlas** of past weeks. Nothing is a counter — it is all computed from your sessions.
+### The Atlas (progression)
+A real atlas — hypsometric relief, bathymetry, bold dash‑dot international boundaries, dashed state lines, blue italic water names, brown physical names — that fills in as you study. **FOCUS → XP → EXPLORE → DISCOVER → MASTER.**
+
+- **Two sheets**: India (Lambert conformal conic, all 36 states and UTs) and the World (Robinson). India follows the official Government of India depiction.
+- **XP and ranks**: 1 XP per focused minute, +3 for finishing a planned session, challenge rewards and a little recall XP (capped at 30 a day). Wayfarer → Trailblazer → Surveyor → Cartographer → Navigator → Explorer → Geographer → Keeper of the Atlas. Map styles (Night chart, Antique) unlock with rank.
+- **Expeditions** — Himalayan, Indian River Journey, Peninsular India, Northeast India, Coastal India, Indian Islands, World Physical Geography. Focus minutes carry the active expedition from stop to stop (20–60 min each). At each chapter end a **checkpoint** needs 60% of its places Familiar; minutes wait there, banked. Without an expedition, **free survey** uncovers places outward from your **base camp** state.
+- **~800 places** (≈585 India, ≈215 world) chosen for UPSC/UPPCS: passes, peaks and ranges, rivers with tributaries, banks, sources and mouths, confluences, lakes and Ramsar sites, parks and tiger/biosphere reserves, plateaus, deserts, coasts and deltas, islands and channels, ports, dams, waterfalls, heritage sites, capitals — with Uttar Pradesh in extra depth. Place cards show facts, a breadcrumb (World › Asia › India › The Himalaya › Sikkim › Nathu La) and tappable connections.
+- **Recall decides mastery, not time**: Discovered → Familiar (1 correct) → Strong (3 correct, 2 question types, 2 days) → Mastered (5 correct over a week incl. a map or ordering question, 85% recent accuracy). Questions are generated from the gazetteer's structure — locate on the map, identify, state/country, river, connections, borders, ordering (states along a river, peaks by height, west to east) and masked facts — with plausible distractors. Spaced review on 1/3/7/16/35‑day boxes; well‑overdue places fade one level on the map (never un‑discovered). Field review daily, "Test me" on any place, two optional questions during breaks.
+- **The world fills in**: states develop from Charted → Settled → Developed → Flourishing with mastery; routes appear when their places are known (Golden Quadrilateral, North–South and East–West corridors, Konkan Railway, Kaladan, the Silk Route), ships sail off developed ports, wildlife returns to mastered parks (tiger at Corbett, rhino at Kaziranga, lion at Gir…), rivers flow once the River Journey is done.
+- **Daily and weekly challenges** (deterministic per date) now include Atlas goals — review places, advance your expedition, discover, make a pass Strong.
+- Existing history is **replayed** through your first expedition, so long‑time users start with part of the map explored. Everything is derived from sessions, recall answers and expedition runs — nothing is a counter that can drift.
 
 ### Sound
 - 14 **procedurally generated soundscapes** — rain, thunder, ocean, wind, stream, fireplace, birdsong, night crickets, café murmur, study clock, white/pink/brown noise, alpha drone. Zero audio files: each is rendered once into a seamless loop, so they are offline, tiny and keep playing in the background.
@@ -66,7 +74,7 @@ Every chart has a hover/focus tooltip and a table view. Colours were validated f
 ### Data
 - Local‑first IndexedDB; no account. Browser storage is marked persistent.
 - **JSON backup / restore** (merge — newest wins — or replace), **CSV export/import** for sessions and tasks (handles quoting, BOM, formula‑injection).
-- Sample history you can add and remove cleanly, to preview Insights and the sky.
+- Sample history you can add and remove cleanly, to preview Insights and the Atlas.
 
 ---
 
@@ -86,7 +94,7 @@ This is covered by unit tests (`src/timer/engine.test.ts`) and was verified in C
 
 ## Architecture
 
-**React 19 + TypeScript + Vite 8 + Tailwind CSS 4 + Dexie (IndexedDB) + Zustand + Motion + vite‑plugin‑pwa + Capacitor 8.** No chart, date or UI kit dependencies — charts, the sky and the audio are hand‑built.
+**React 19 + TypeScript + Vite 8 + Tailwind CSS 4 + Dexie (IndexedDB) + Zustand + Motion + vite‑plugin‑pwa + Capacitor 8.** No chart, map, date or UI kit dependencies — charts, the map renderer and the audio are hand‑built (the only map dependency at runtime is `topojson-client`).
 
 ```
 src/
@@ -96,15 +104,18 @@ src/
   timer/        Pure timer engine (+ tests), persistent store, useNow
   planner/      Recurrence rules, natural-language quick add, task selectors/commands, habits
   stats/        Derived analytics: ranges, series, breakdowns, streaks, goals, planned vs actual
-  game/         Sky layout (constellations), progression (levels, milestones, stardust, themes), challenges
+  game/         Progression (XP, levels, ranks, map styles) and challenges
+  atlas/        Atlas engine: sheet decoding, gazetteer index, exploration (expeditions,
+                gates, survey), mastery + spaced review, question generators, living world
   audio/        Shared AudioContext, synthesised chimes, procedural soundscapes, mixer, YouTube helpers
   services/     Notifications, reminders, haptics, wake lock, lifecycle, fullscreen, files, install
   ui/           Design-system primitives (Sheet, controls, toasts, rings, menus…)
-  features/     Screens: focus, tasks, calendar, insights, sky, settings, audio, onboarding
+  features/     Screens: focus, tasks, atlas, calendar, insights, settings, audio, onboarding
+tools/atlas-build/   Offline data pipeline that produces public/atlas/v1 (see below)
 ```
 
 ### Data model
-`Label` (hierarchical), `Project`, `Task` (+ subtasks, recurrence, series), `Session`, `TimerProfile`, `Goal`, `Habit` + `HabitLog`, `CalendarEvent` (events, exams, deadlines, focus blocks; recurring), `AudioPreset`, `Playlist`, `Unlock`, `ChallengeClaim`, `Settings`. Reminders are **derived** from tasks, events and habits (so they can’t drift) with a small delivery log.
+`Label` (hierarchical), `Project`, `Task` (+ subtasks, recurrence, series), `Session`, `TimerProfile`, `Goal`, `Habit` + `HabitLog`, `CalendarEvent` (events, exams, deadlines, focus blocks; recurring), `AudioPreset`, `Playlist`, `ChallengeClaim`, `RecallAttempt`, `ExpeditionRun`, `Settings`. Geographic data is static and versioned under `public/atlas/v1`; user progress refers to places only by stable ids such as `in.pass.nathu-la`. Schema v2 migrates the Sky version (sky‑theme purchases dropped, challenge rewards kept as XP), and v1 backups still import. Reminders are **derived** from tasks, events and habits (so they can’t drift) with a small delivery log.
 
 ### Sync‑ready
 Every record has a UUID, `createdAt` and `updatedAt`; deletes write **tombstones**. `src/data/sync.ts` provides `changesSince(cursor)`, a last‑write‑wins `applyChanges`, and a `SyncAdapter` interface — the JSON import already uses the same merge. A cloud backend only needs to implement `pull`/`push`.
@@ -140,6 +151,26 @@ npm run cap:ios
 ```
 The project is generated (Swift Package Manager) with icon, splash and the `lodestar://` URL scheme.
 
+### Atlas data
+`public/atlas/v1` is generated by `tools/atlas-build` (its own package) and committed, so the app never needs the network for maps:
+
+| File | Contents |
+| --- | --- |
+| `india.json`, `world.json` | Pre‑projected TopoJSON: countries, states, rivers, lakes, boundaries (classified), graticule, label positions |
+| `india-relief.webp`, `world-relief.webp` | Physical plate: hypsometric tints, bathymetry and hillshade |
+| `india-shade.webp`, `world-shade.webp` | Hillshade for the political plate |
+| `places.json` | The gazetteer, expeditions, states and countries |
+
+```bash
+cd tools/atlas-build && npm install
+node build.mjs                # everything (downloads sources on first run, then caches them)
+node build.mjs --no-relief    # vectors + places only
+node build.mjs --places-only  # recompile content/*.mjs into places.json
+```
+The build checks every place against the state it claims, links rivers, lakes, seas and regions to their shapes, resolves every relation and traces rivers that Natural Earth lacks (Luni, Sabarmati, Gomti, Damodar…) on the terrain model.
+
+**Sources and licences** (see `public/atlas/v1/ATTRIBUTION.txt`): Natural Earth (public domain; India drawn from its India point‑of‑view boundaries), DataMeet state boundaries (CC BY 4.0), relief and traced rivers from AWS Terrain Tiles (SRTM, GMTED2010, ETOPO1). The Atlas is a study aid, not an authoritative map.
+
 ### Icons
 `assets/icon.svg` is the source. Regenerate every PNG (PWA, Android, iOS) with:
 ```bash
@@ -153,3 +184,4 @@ npm i -D playwright-core && node scripts/generate-icons.mjs
 - **iOS PWA audio** pauses when the screen locks (a Safari restriction); the native iOS build does not have this limitation for the timer alerts.
 - **YouTube**: only the official embedded player and links are used. Background or ad‑free playback remains a YouTube Premium feature of YouTube’s own apps.
 - **Widgets**: Android/iOS home‑screen widgets need native code and are not included yet; launcher shortcuts and deep links are in place for them to build on.
+- **Place coordinates** were curated by hand and checked by the build against state boundaries; GeoNames/Wikidata were not reachable from the build environment, so a few positions (especially small wetlands) may be approximate.
