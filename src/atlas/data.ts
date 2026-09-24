@@ -21,6 +21,8 @@ export interface AtlasData {
   bySheet: Record<SheetId, Place[]>
   /** Places that name this place in a relation (reverse links for place cards). */
   referencedBy: Map<string, Array<{ place: Place; key: string }>>
+  /** How study priorities were computed; undefined until the PYQ ledger has data. */
+  yieldModel?: PlacesFile['yieldModel']
 }
 
 export function indexAtlas(file: PlacesFile): AtlasData {
@@ -58,6 +60,7 @@ export function indexAtlas(file: PlacesFile): AtlasData {
     inUnit,
     bySheet,
     referencedBy,
+    yieldModel: file.yieldModel,
   }
 }
 

@@ -39,7 +39,7 @@ export function computeExploration(atlas: AtlasData, sessions: Session[], runs: 
     familiarAt,
     xp,
     level: levelInfo(xp.total),
-    due: dueForReview(state.discovered, mastery, today),
+    due: dueForReview(state.discovered, mastery, today, (id) => atlas.byId.get(id)?.yield?.score ?? 0),
     today,
   }
   cache = { key, value }

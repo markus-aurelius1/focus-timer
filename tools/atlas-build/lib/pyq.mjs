@@ -69,7 +69,8 @@ export function buildAliasIndex(places) {
  * Resolve a ledger reference to one place id.
  * `ref` is a place id (`in.lake.chilika`), a name/alias, or
  * `{ name, kind?, sheet?, state? }` to settle ambiguous names.
- * Returns `{ id }`, `{ ambiguous: ids }` or `{ missing: true }`.
+ * Returns `{ id }` (plus `also` for the same place drawn on the other sheet,
+ * e.g. New Delhi on both India and World), `{ ambiguous: ids }` or `{ missing: true }`.
  */
 export function resolveRef(index, ref) {
   const r = typeof ref === 'string' ? { name: ref } : ref
@@ -88,7 +89,12 @@ export function resolveRef(index, ref) {
   ]) {
     const ids = key ? narrow(map.get(key) ?? []) : []
     if (ids.length === 1) return { id: ids[0] }
-    if (ids.length > 1) return { ambiguous: ids }
+    if (ids.length > 1) {
+      // One real place drawn on both sheets: same name and kind, one per sheet.
+      const ps = ids.map((id) => index.byId.get(id))
+      const twins = new Set(ps.map((p) => p.sheet)).size === ps.length && ps.every((p) => p.kind === ps[0].kind && normalizeName(p.name) === normalizeName(ps[0].name))
+      return twins ? { id: ids[0], also: ids.slice(1) } : { ambiguous: ids }
+    }
   }
   return { missing: true }
 }
@@ -136,13 +142,15 @@ export function attachPyq(places, ledger) {
         ambiguous.push({ ref, candidates: r.ambiguous, exam: e.exam, year: e.year })
         continue
       }
-      let h = hist.get(r.id)
-      if (!h) hist.set(r.id, (h = { keys: new Set(), years: new Set(), exams: new Set(), topics: new Set(), sources: new Map() }))
-      h.keys.add(key)
-      h.years.add(e.year)
-      h.exams.add(e.exam)
-      for (const t of [].concat(e.topic ?? [])) h.topics.add(t)
-      if (!h.sources.has(e.source.url)) h.sources.set(e.source.url, { title: e.source.title ?? e.source.url, url: e.source.url })
+      for (const id of [r.id, ...(r.also ?? [])]) {
+        let h = hist.get(id)
+        if (!h) hist.set(id, (h = { keys: new Set(), years: new Set(), exams: new Set(), topics: new Set(), sources: new Map() }))
+        h.keys.add(key)
+        h.years.add(e.year)
+        h.exams.add(e.exam)
+        for (const t of [].concat(e.topic ?? [])) h.topics.add(t)
+        if (!h.sources.has(e.source.url)) h.sources.set(e.source.url, { title: e.source.title ?? e.source.url, url: e.source.url })
+      }
     }
   }
   for (const p of places) {

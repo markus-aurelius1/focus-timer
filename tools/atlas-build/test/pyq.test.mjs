@@ -28,6 +28,8 @@ test('references resolve by id, name, alias and core name against the real gazet
   assert.equal(resolveRef(idx, 'Port Blair').id, REAL.find((p) => p.name === 'Sri Vijaya Puram').id)
   const chilika = REAL.find((p) => /chilika/i.test(p.name))
   assert.equal(resolveRef(idx, 'Chilika').id, chilika.id)
+  // The same place on both sheets resolves to both, not "ambiguous".
+  assert.deepEqual(resolveRef(idx, 'New Delhi'), { id: 'in.capital.new-delhi', also: ['w.capital.new-delhi'] })
   assert.ok(resolveRef(idx, 'Nowhere-at-all Lake').missing)
   assert.ok(resolveRef(idx, { id: 'in.nope.nope' }).missing)
 })

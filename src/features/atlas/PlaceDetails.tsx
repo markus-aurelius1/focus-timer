@@ -9,6 +9,7 @@ import { todayKey, relativeDayLabel } from '@/lib/time'
 import { cn } from '@/lib/cn'
 import { Button } from '@/ui/controls'
 import { toast } from '@/ui/toast'
+import { PastPapers } from './PastPapers'
 import { MASTERY_COLOUR } from './style'
 import { KIND_NAME } from './symbols'
 import { breadcrumb, masteryFn, PlaceIcon } from './util'
@@ -129,6 +130,7 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow }: { ex: E
               ))}
             </div>
           )}
+          <PastPapers place={p} />
           <div className="mt-6 grid grid-cols-2 gap-2">
             <Button variant="primary" icon={<GraduationCap className="size-4" />} onClick={() => onTest(p.id)}>
               Test me

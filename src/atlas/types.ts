@@ -122,6 +122,39 @@ export interface Place {
   elevation?: number
   /** Short descriptor shown under the name, e.g. "Mountain pass · 4,310 m". */
   subtitle?: string
+  /** Where the place and its facts come from (set for places added from PYQ sources). */
+  sources?: SourceRef[]
+  /** Previous-year question history, from the PYQ ledger (tools/atlas-build/content/pyq). */
+  pyq?: PyqHistory
+  /** Study priority built from past papers and the syllabus: a heuristic, not a prediction. */
+  yield?: StudyPriority
+}
+
+export interface SourceRef {
+  title: string
+  /** A web link, or `pdf:<file>#p<page>` for a question paper. */
+  url: string
+}
+
+export interface PyqHistory {
+  /** Distinct questions that name this place. */
+  count: number
+  years: number[]
+  exams: string[]
+  topics: string[]
+  sources: SourceRef[]
+}
+
+export type PriorityBand = 'core' | 'high' | 'medium' | 'low'
+
+export interface StudyPriority {
+  /** 0–100. */
+  score: number
+  band: PriorityBand
+  /** Each part is 0–1; the score is their weighted sum (weights in `PlacesFile.yieldModel`). */
+  parts: Record<'frequency' | 'recurrence' | 'recency' | 'importance' | 'density' | 'gap', number>
+  /** Plain-language reasons, most important first. */
+  reasons: string[]
 }
 
 export interface PlaceRelations {
@@ -194,4 +227,6 @@ export interface PlacesFile {
   states: StateInfo[]
   regions: RegionInfo[]
   countries: CountryInfo[]
+  /** How study priorities were computed (present once the PYQ ledger has entries). */
+  yieldModel?: { weights: Record<string, number>; note: string; refYear: number; recencyHalfLifeYears: number }
 }

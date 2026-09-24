@@ -130,6 +130,13 @@ describe('mastery', () => {
     const due = dueForReview(new Map([['p', { at: 1 }], ['q', { at: 2 }]]), mastery, '2026-09-10')
     expect(due.map((d) => d.id)).toEqual(['p', 'q'])
   })
+  it('introduces new places by study priority when scores exist, else most recent first', () => {
+    const found = new Map([['a', { at: 1 }], ['b', { at: 2 }], ['c', { at: 3 }]])
+    const none = computeMastery([], '2026-09-10')
+    expect(dueForReview(found, none, '2026-09-10').map((d) => d.id)).toEqual(['c', 'b', 'a'])
+    const score: Record<string, number> = { a: 80, b: 20 }
+    expect(dueForReview(found, none, '2026-09-10', (id) => score[id] ?? 0).map((d) => d.id)).toEqual(['a', 'b', 'c'])
+  })
 })
 
 describe('exploration', () => {

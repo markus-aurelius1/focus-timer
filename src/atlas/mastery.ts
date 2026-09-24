@@ -144,8 +144,10 @@ export const NEW_PER_DAY = 12
 /**
  * Places due for review today: overdue reviews first (most overdue first), then
  * up to NEW_PER_DAY discovered places that have never been tested (most recent first).
+ * With a `priority` (the study-priority score), equally overdue reviews and new
+ * places are taken highest-priority first.
  */
-export function dueForReview(discovered: Map<string, { at: number }>, mastery: MasteryMap, today: DayKey): DueItem[] {
+export function dueForReview(discovered: Map<string, { at: number }>, mastery: MasteryMap, today: DayKey, priority?: (id: string) => number): DueItem[] {
   const overdue: DueItem[] = []
   const fresh: DueItem[] = []
   let newToday = 0
@@ -155,7 +157,8 @@ export function dueForReview(discovered: Map<string, { at: number }>, mastery: M
     if (!m) fresh.push({ id, overdue: -1 + d.at / 1e15 })
     else if (m.due && m.due <= today) overdue.push({ id, overdue: daysBetween(m.due, today) })
   }
-  overdue.sort((a, b) => b.overdue - a.overdue)
-  fresh.sort((a, b) => b.overdue - a.overdue)
+  const prio = priority ?? (() => 0)
+  overdue.sort((a, b) => b.overdue - a.overdue || prio(b.id) - prio(a.id))
+  fresh.sort((a, b) => prio(b.id) - prio(a.id) || b.overdue - a.overdue)
   return [...overdue, ...fresh.slice(0, Math.max(0, NEW_PER_DAY - newToday))]
 }

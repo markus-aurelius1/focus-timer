@@ -206,7 +206,17 @@ Environment: no environment variables or secrets are required. Optional: `BASE=/
 
 ## 8. Progress log (newest first) — continue from the first unchecked item
 
-- [ ] M6 Surface PYQ data + priority in the app (PlaceDetails, Gazetteer, review order)
+- [x] M6 App side (renders only once places.json carries PYQ data — verified with a throwaway fixture injected
+      into dist/, never committed): `Place.pyq/yield/sources` + `PlacesFile.yieldModel` types; "Past papers" panel on
+      the place card (`src/features/atlas/PastPapers.tsx`: asked N× in <exams>, year chips, reasons, source links,
+      "heuristic, not a prediction"); Gazetteer "Order: A–Z | Study priority" with score badges (hidden without
+      data); review queue takes new places and equally-overdue reviews highest-priority first
+      (`dueForReview(..., priority)`; unchanged without data; test added). Same place on both sheets (New Delhi)
+      resolves to both instead of "ambiguous".
+- [ ] M7 **Remaining:** transcribe the PYQ sources into `tools/atlas-build/content/pyq/` (needs network access to the
+      four sites and/or the user's PDFs), add missing places with `src` provenance, rebuild (`npm run places` in
+      tools/atlas-build), review `reports/pyq-review.json`, spot-check scores in the app; real-device check of the
+      Atlas (iOS Safari + Android WebView: map-name halos use `paint-order` on HTML text).
 - [x] M5 Study-priority score in `tools/atlas-build/lib/pyq.mjs` (`scorePlaces`): parts frequency 0.30,
       recurrence 0.15, recency 0.15 (half-life 6 y, anchored to the latest ledger year), importance 0.20 (level +
       key tags), density 0.10 (linked places, asked links count double), gap 0.10 (important but asked ≤ 1×).
