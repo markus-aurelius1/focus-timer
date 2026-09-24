@@ -408,7 +408,7 @@ export function StatTile({ label, value, delta, deltaGood = true, sub }: { label
   return (
     <div className="rounded-card border border-line bg-surface px-4 py-3.5 shadow-soft">
       <p className="text-xs font-semibold text-ink-2">{label}</p>
-      <p className="mt-1 text-[26px] leading-tight font-semibold tracking-tight">{value}</p>
+      <p className="tabular mt-1 text-[26px] leading-tight font-semibold tracking-tight">{value}</p>
       <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-ink-3">
         {showDelta && (
           <span className={cn('font-bold', Math.abs(delta!) < 0.005 ? 'text-ink-3' : good ? 'text-success' : 'text-danger')}>

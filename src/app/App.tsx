@@ -105,7 +105,8 @@ function Main() {
       <SideNav route={route.name} />
       <div className="lg:pl-60">
         <main className={cn('mx-auto min-h-dvh w-full', route.name === 'atlas' ? 'min-h-0' : 'pb-[calc(84px+env(safe-area-inset-bottom))] lg:pb-10')}>
-          <AnimatePresence mode="wait" initial={false}>
+          {/* A new screen starts at the top, not at the previous screen's scroll position. */}
+          <AnimatePresence mode="wait" initial={false} onExitComplete={() => window.scrollTo(0, 0)}>
             <motion.div key={route.name} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
               <Suspense fallback={<div className="h-[60dvh]" />}>
                 <Screen name={route.name} />

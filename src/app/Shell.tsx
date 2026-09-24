@@ -105,7 +105,7 @@ function SideTimer() {
         {PHASE_LABEL[timer.phase]}
         {timer.status === 'paused' && ' · paused'}
       </span>
-      <span className="tabular mt-1 block font-display text-3xl font-light">{text}</span>
+      <span className="timer-digits mt-1 block text-3xl">{text}</span>
     </button>
   )
 }

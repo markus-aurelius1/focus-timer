@@ -209,7 +209,11 @@ Environment: no environment variables or secrets are required. Optional: `BASE=/
 - [ ] M6 Surface PYQ data + priority in the app (PlaceDetails, Gazetteer, review order)
 - [ ] M5 High-yield score (build time, reasons stored) + tests
 - [ ] M4 PYQ ledger + alias resolution pipeline (tools/atlas-build) — data needs the user's sources
-- [ ] M3 Global polish (typography for numbers, spacing/hierarchy audit from screenshots)
+- [x] M3 Global polish: numbers (focus stat cards, project stats, desktop sidebar clock, Insights tiles) in Manrope
+      semibold tabular — Fraunces kept for headings; switching tabs now starts the new screen at the top
+      (`onExitComplete` scroll reset in `App.tsx`); unused Sky CSS removed (twinkle, shooting star). Reviewed every
+      screen (phone + desktop, light + dark) with `tools/perf/screens.mjs`; no layout breakage found.
+      Not done (optional): per-screen spacing tweaks — nothing stood out as broken.
 - [x] M2 Focus screen: `.timer-digits` (Manrope 600, tabular, -0.035em) on the focus screen and immersive clock;
       dial blur-glow filter removed and centre light toned down; immersive mode has a plain dark background by
       default — the expedition chart is opt-in (`settings.immersiveChart`, Settings › Atlas, default off, no DB

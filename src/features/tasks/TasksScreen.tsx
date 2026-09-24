@@ -461,7 +461,7 @@ function ProjectDetail({ id, tasks }: { id: string; tasks: Task[] }) {
         ].map(([k, v]) => (
           <div key={k} className="rounded-2xl bg-surface-2/70 px-2 py-2.5">
             <p className="text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">{k}</p>
-            <p className="tabular mt-0.5 font-display text-lg font-medium">{v}</p>
+            <p className="tabular mt-0.5 text-lg font-semibold tracking-tight">{v}</p>
           </div>
         ))}
       </div>

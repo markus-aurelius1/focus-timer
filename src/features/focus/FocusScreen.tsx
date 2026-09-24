@@ -294,7 +294,7 @@ function Stat({ label, value, sub, icon, children }: { label: string; value: str
         {icon}
         {label}
       </p>
-      <p className="tabular mt-1 font-display text-xl leading-tight font-medium">{value}</p>
+      <p className="tabular mt-1 text-xl leading-tight font-semibold tracking-tight">{value}</p>
       {sub && <p className="mt-0.5 truncate text-[11px] font-medium text-ink-3">{sub}</p>}
       {children}
     </Card>
