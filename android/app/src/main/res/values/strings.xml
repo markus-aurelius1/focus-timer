@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lodestar</string>
+    <string name="title_activity_main">Lodestar</string>
+    <string name="package_name">app.lodestar.study</string>
+    <string name="custom_url_scheme">lodestar</string>
+    <string name="shortcut_focus_short">Focus</string>
+    <string name="shortcut_focus_long">Start a focus session</string>
+    <string name="shortcut_today_short">Today</string>
+    <string name="shortcut_today_long">Today’s tasks</string>
+    <string name="shortcut_add_short">Add task</string>
+    <string name="shortcut_add_long">Add a task</string>
+</resources>

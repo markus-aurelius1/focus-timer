@@ -1,0 +1,21 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+coverage
+*.tsbuildinfo
+# Capacitor native build outputs
+android/app/build
+android/build
+android/.gradle
+android/local.properties
+android/capacitor-cordova-android-plugins
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/src/main/res/xml/config.xml
+ios/App/App/public
+ios/App/Pods
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static launcher shortcuts. They open lodestar:// deep links handled in src/app/App.tsx. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="start_focus"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_focus"
+        android:shortcutShortLabel="@string/shortcut_focus_short"
+        android:shortcutLongLabel="@string/shortcut_focus_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="lodestar://focus?start=1"
+            android:targetPackage="app.lodestar.study"
+            android:targetClass="app.lodestar.study.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="today"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_today"
+        android:shortcutShortLabel="@string/shortcut_today_short"
+        android:shortcutLongLabel="@string/shortcut_today_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="lodestar://tasks?view=today"
+            android:targetPackage="app.lodestar.study"
+            android:targetClass="app.lodestar.study.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="add_task"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_add"
+        android:shortcutShortLabel="@string/shortcut_add_short"
+        android:shortcutLongLabel="@string/shortcut_add_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="lodestar://tasks?add=1"
+            android:targetPackage="app.lodestar.study"
+            android:targetClass="app.lodestar.study.MainActivity" />
+    </shortcut>
+</shortcuts>
