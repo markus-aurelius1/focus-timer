@@ -3,7 +3,8 @@
  *   {india,world}.json          vector layers + labels, pre-projected to sheet pixels
  *   {india,world}-relief.webp   physical plate (hypsometric tints + hillshade)
  *   {india,world}-shade.webp    hillshade for the political plate
- *   places.json                 the gazetteer + expeditions (see content/)
+ *   places.json                 the gazetteer + expeditions (see content/), with exam history and
+ *                               study-priority scores from the PYQ ledger (content/pyq/) when it has entries
  *
  * Usage: node build.mjs [--no-relief] [--only=india|world] [--places-only]
  */
@@ -12,6 +13,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildSheet } from './lib/sheetBuild.mjs'
 import { compilePlaces } from './lib/places.mjs'
+import { applyPyq } from './lib/pyq.mjs'
+import PYQ_LEDGER from './content/pyq/index.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const OUT = join(root, 'public/atlas/v1')
@@ -45,6 +48,16 @@ const sheetData = {}
 for (const id of ['india', 'world']) sheetData[id] = sheets[id]?.data ?? JSON.parse(readFileSync(join(OUT, `${id}.json`), 'utf8'))
 const { data: places, warnings } = compilePlaces(sheetData)
 for (const w of warnings) console.warn('  ⚠ ' + w)
+
+// ── previous-year questions → exam history + study priority ───────────────
+const pyq = applyPyq(places.places, PYQ_LEDGER)
+if (pyq.applied) {
+  places.yieldModel = pyq.model
+  const REPORTS = join(dirname(fileURLToPath(import.meta.url)), 'reports')
+  mkdirSync(REPORTS, { recursive: true })
+  writeFileSync(join(REPORTS, 'pyq-review.json'), JSON.stringify({ unmatched: pyq.unmatched, ambiguous: pyq.ambiguous, invalid: pyq.invalid }, null, 2))
+  console.log(`▸ PYQ: ${PYQ_LEDGER.length} ledger entries → ${pyq.matched} places; ${pyq.unmatched.length} unmatched, ${pyq.ambiguous.length} ambiguous, ${pyq.invalid.length} invalid (see reports/pyq-review.json)`)
+} else console.log('▸ PYQ ledger is empty: no exam history or priority scores attached')
 const placesJson = JSON.stringify(places)
 writeFileSync(join(OUT, 'places.json'), placesJson)
 const counts = places.places.reduce((a, p) => ((a[p.sheet] = (a[p.sheet] ?? 0) + 1), a), {})

@@ -4,7 +4,9 @@
   "type": "module",
   "description": "Builds the offline Atlas data (vector layers + relief rasters) into public/atlas. Not part of the app bundle.",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "places": "node build.mjs --places-only"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",

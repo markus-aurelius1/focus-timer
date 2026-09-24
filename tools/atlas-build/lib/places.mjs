@@ -188,6 +188,7 @@ export function compilePlaces(sheetData) {
         level: raw.lvl ?? 2,
         ...(raw.el ? { elevation: raw.el } : {}),
         ...(raw.sub ? { subtitle: raw.sub } : {}),
+        ...(raw.src ? { sources: [].concat(raw.src) } : {}),
       }
       if (!place.facts.length) warn(`${id}: no facts`)
       places.push(place)

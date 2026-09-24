@@ -207,8 +207,22 @@ Environment: no environment variables or secrets are required. Optional: `BASE=/
 ## 8. Progress log (newest first) — continue from the first unchecked item
 
 - [ ] M6 Surface PYQ data + priority in the app (PlaceDetails, Gazetteer, review order)
-- [ ] M5 High-yield score (build time, reasons stored) + tests
-- [ ] M4 PYQ ledger + alias resolution pipeline (tools/atlas-build) — data needs the user's sources
+- [x] M5 Study-priority score in `tools/atlas-build/lib/pyq.mjs` (`scorePlaces`): parts frequency 0.30,
+      recurrence 0.15, recency 0.15 (half-life 6 y, anchored to the latest ledger year), importance 0.20 (level +
+      key tags), density 0.10 (linked places, asked links count double), gap 0.10 (important but asked ≤ 1×).
+      Each place gets `yield: { score, band (core ≥65 / high ≥45 / medium ≥25 / low), parts, reasons[] }`;
+      `places.json.yieldModel` holds weights + the "heuristic, not a prediction" note. Only runs when the ledger
+      has entries (no claims without data).
+- [x] M4 PYQ pipeline (infrastructure; **ledger still empty** — sources unreachable from the cloud):
+      ledger `tools/atlas-build/content/pyq/{index,upsc-prelims,uppsc}.mjs` with `Q(exam, year, q, places, { topic,
+      source })` from `content/dsl.mjs`; `attachPyq` resolves ids/names/aliases (normalised + descriptor-free core
+      names, `{ name, kind, state }` hints), validates entries (exam, year, question text and a source link or
+      `pdf:<file>#p<n>` are required), and sets `pyq: { count, years, exams, topics, sources }`; unmatched /
+      ambiguous / invalid refs go to `tools/atlas-build/reports/pyq-review.json`. Places accept `src` provenance
+      (→ `sources`). Tests: `cd tools/atlas-build && npm test` (8, node:test, no deps; also in CI).
+      `node build.mjs --places-only` output is byte-identical while the ledger is empty.
+      **Next for data:** transcribe the four sources + the user's PDFs into the ledger, rebuild, work through
+      reports/pyq-review.json (add missing places via `P(..., { src })` or `aka`), rebuild.
 - [x] M3 Global polish: numbers (focus stat cards, project stats, desktop sidebar clock, Insights tiles) in Manrope
       semibold tabular — Fraunces kept for headings; switching tabs now starts the new screen at the top
       (`onExitComplete` scroll reset in `App.tsx`); unused Sky CSS removed (twinkle, shooting star). Reviewed every
