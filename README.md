@@ -25,7 +25,7 @@ It runs as an installable **PWA** (offline, no account) and ships with **Capacit
 - **Timer profiles** (Classic 25/5, Deep work 50/10, Ultradian 90/20, Sprint, Exam block, Open focus) plus one‑tap 25/5 · 50/10 · 90/20 presets and fully custom cycles. Auto‑start breaks/focus per profile.
 - Link a session to a **subject/label**, a **task** and a **project**; write an **intention** before and **notes + a 1–5 focus rating** after.
 - ±5 min adjustments, skip, stop‑and‑save or discard, “finish early and take a break”.
-- **Immersive mode**: full screen over a night chart of your expedition — the route inks forward toward the next stop as the session runs; controls fade away, screen stays awake.
+- **Immersive mode**: a full-screen clock on a plain dark background (bold tabular digits, end time underneath); controls fade away, screen stays awake. Optionally (Settings › Atlas) your expedition's night chart sits behind it, the route inking forward as the session runs.
 - Chimes (synthesised), notifications and haptics at phase ends. Keyboard: <kbd>Space</kbd> start/pause, <kbd>F</kbd> immersive, <kbd>S</kbd> sounds.
 - Open focus suggests a proportional break (⅕ of the focus time) and auto‑closes forgotten sessions after 4 h.
 
@@ -168,6 +168,16 @@ node build.mjs --no-relief    # vectors + places only
 node build.mjs --places-only  # recompile content/*.mjs into places.json
 ```
 The build checks every place against the state it claims, links rivers, lakes, seas and regions to their shapes, resolves every relation and traces rivers that Natural Earth lacks (Luni, Sabarmati, Gomti, Damodar…) on the terrain model.
+
+**Previous-year questions (PYQs).** `tools/atlas-build/content/pyq/` is a ledger with one `Q(exam, year, question, places, { topic, source })` entry per question that names a place. Every entry needs a source (a link, or `pdf:<file>#p<page>`). The build matches places by id, name or alias and writes names it cannot match to `tools/atlas-build/reports/pyq-review.json`. It then gives each place its exam history (`pyq: count, years, exams, topics, sources`) and a **study priority** (`yield: score, band, parts, reasons`). The priority is weighted from frequency, recurrence across years, recency, syllabus importance, links to other asked places, and "important but under-tested". It is a heuristic for ordering study, not a prediction, and the app shows the reasons with it: a "Past papers" panel on place cards, a study-priority order in the gazetteer, and priority-first introduction of new places in review. The ledger is empty until the sources are transcribed; with no entries, `places.json` is unchanged. Run `npm test` in `tools/atlas-build` for the pipeline tests.
+
+### Performance tooling
+`tools/perf` (its own package) drives headless Chromium on a phone-sized viewport. Run it against a production build: `npm run build && npm run preview`, then in `tools/perf` run `npm install`.
+- `node profile.mjs <label>` measures the Atlas: pans and wheel zooms at 4× CPU throttle, reporting frame times and long tasks.
+- `node smoke.mjs` runs a touch smoke test: timer, sheets, every screen, Atlas tap/pan/pinch, and offline reload.
+- `node screens.mjs` screenshots every screen on phone and desktop, in light and dark.
+
+The Atlas only moves already-painted layers while you drag or pinch. It repaints and re-lays out names once the view settles. See `docs/HANDOFF.md` for the measurements and the design.
 
 **Sources and licences** (see `public/atlas/v1/ATTRIBUTION.txt`): Natural Earth (public domain; India drawn from its India point‑of‑view boundaries), DataMeet state boundaries (CC BY 4.0), relief and traced rivers from AWS Terrain Tiles (SRTM, GMTED2010, ETOPO1). The Atlas is a study aid, not an authoritative map.
 
