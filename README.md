@@ -176,6 +176,7 @@ The build checks every place against the state it claims, links rivers, lakes, s
 - `node profile.mjs <label>` measures the Atlas: pans and wheel zooms at 4× CPU throttle, reporting frame times and long tasks.
 - `node smoke.mjs` runs a touch smoke test: timer, sheets, every screen, Atlas tap/pan/pinch, and offline reload.
 - `node screens.mjs` screenshots every screen on phone and desktop, in light and dark.
+- `node pyqcheck.mjs` prints the gazetteer's study-priority order and the "Past papers" panel of the places you name.
 
 The Atlas only moves already-painted layers while you drag or pinch. It repaints and re-lays out names once the view settles. See `docs/HANDOFF.md` for the measurements and the design.
 

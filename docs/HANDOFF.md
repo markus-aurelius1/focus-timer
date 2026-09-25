@@ -232,6 +232,15 @@ Environment: no environment variables or secrets are required. Optional: `BASE=/
         `explained` in `reports/pyq-review.json` (`explainUnmatched` in `lib/pyq.mjs`, tested). Result:
         **0 unmatched, 0 ambiguous, 0 invalid**, 305 explained references; 885 places carry PYQ history.
       - Tests: `tools/atlas-build` 10 (page grouping, not-mapped split, committed ledger fully resolved or explained).
+      - App check (`tools/perf/pyqcheck.mjs`, phone viewport, sample history): Gazetteer › Order › Study priority lists
+        India as Arabian Sea 86, Chenab 86, Tungabhadra 85, Beas/Ganga/Narmada/Sutlej/Yamuna 84 and World as
+        Mediterranean 85, Red Sea 80, Atlantic 78, Suez Canal 78; discovered place cards show "Past papers" (e.g.
+        Kolleru: Top priority 70, asked 8× in 5 exams, 2010–2023, Ramsar site, both sources, the heuristic note);
+        undiscovered places keep the existing "Not yet discovered" card. Bands: 135 core, 193 high, 420 medium,
+        433 low; score rises with PYQ count (0 asked: median 15, 1: 25, 2–4: 45, 5+: 70).
+      - Caveat: the PDFs are geography papers, so national parks and other protected areas (asked in environment
+        sections) are under-represented — Kaziranga, Corbett, Harike show "important but not yet seen". The PMF IAS
+        protected-area source in §4 would fill this.
 - [x] M6 App side (renders only once places.json carries PYQ data — verified with a throwaway fixture injected
       into dist/, never committed): `Place.pyq/yield/sources` + `PlacesFile.yieldModel` types; "Past papers" panel on
       the place card (`src/features/atlas/PastPapers.tsx`: asked N× in <exams>, year chips, reasons, source links,
