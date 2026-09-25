@@ -1,0 +1,2196 @@
+{
+  "unmatched": [],
+  "ambiguous": [],
+  "invalid": [],
+  "explained": [
+    {
+      "ref": "Naupada Swamp",
+      "exam": "UPSC CSE Prelims",
+      "year": 2023,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p152",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": {
+        "name": "Nokrek",
+        "kind": "peak"
+      },
+      "exam": "UPSC CSE Prelims",
+      "year": 2022,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p152",
+      "reason": "The atlas has Nokrek National Park, which surrounds the peak; the peak itself has no reliable coordinates"
+    },
+    {
+      "ref": "Kumaon Himalaya",
+      "exam": "UPSC CSE Prelims",
+      "year": 2022,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p152",
+      "reason": "Regional division of the Himalaya with no reliable point location or source page"
+    },
+    {
+      "ref": "Sikkim Himalaya",
+      "exam": "UPSC CSE Prelims",
+      "year": 2022,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p152",
+      "reason": "Regional division of the Himalaya with no reliable point location or source page"
+    },
+    {
+      "ref": "Didwana",
+      "exam": "UPSC CSE Prelims",
+      "year": 2021,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p153",
+      "reason": "Salt lake of Rajasthan; Wikipedia has coordinates only for the town, not the lake"
+    },
+    {
+      "ref": "Kuchaman",
+      "exam": "UPSC CSE Prelims",
+      "year": 2021,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p153",
+      "reason": "Salt lake of Rajasthan without reliable lake coordinates"
+    },
+    {
+      "ref": "Sargol",
+      "exam": "UPSC CSE Prelims",
+      "year": 2021,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p153",
+      "reason": "Salt lake of Rajasthan without reliable lake coordinates"
+    },
+    {
+      "ref": "Khatu",
+      "exam": "UPSC CSE Prelims",
+      "year": 2021,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p153",
+      "reason": "Salt lake of Rajasthan without reliable lake coordinates"
+    },
+    {
+      "ref": "Nagavali",
+      "exam": "UPSC CSE Prelims",
+      "year": 2021,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p153",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Vamsadhara",
+      "exam": "UPSC CSE Prelims",
+      "year": 2021,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p153",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Kangsabati",
+      "exam": "UPSC CSE Prelims",
+      "year": 2019,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p153",
+      "reason": "Kangsabati river and reservoir: the river has no course on the India sheet (see HANDOFF)"
+    },
+    {
+      "ref": "Mandakini",
+      "exam": "UPSC CSE Prelims",
+      "year": 2019,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p153",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Rangeet",
+      "exam": "UPSC CSE Prelims",
+      "year": 2017,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p154",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Vamsadhara",
+      "exam": "UPSC CSE Prelims",
+      "year": 2015,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p155",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Pranhita",
+      "exam": "UPSC CSE Prelims",
+      "year": 2015,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p155",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": {
+        "name": "Kalinadi",
+        "kind": "river"
+      },
+      "exam": "UPSC CSE Prelims",
+      "year": 2007,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p158",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Kshipra",
+      "exam": "UPSC CSE Prelims",
+      "year": 2007,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p159",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": {
+        "name": "Spiti",
+        "kind": "river"
+      },
+      "exam": "UPSC CSE Prelims",
+      "year": 2006,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p159",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Kunthi",
+      "exam": "UPSC CSE Prelims",
+      "year": 2005,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p160",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Nepal Himalaya",
+      "exam": "UPSC CSE Prelims",
+      "year": 2003,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p160",
+      "reason": "Regional division of the Himalaya with no reliable point location or source page"
+    },
+    {
+      "ref": "Punjab Himalaya",
+      "exam": "UPSC CSE Prelims",
+      "year": 2003,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p160",
+      "reason": "Regional division of the Himalaya with no reliable point location or source page"
+    },
+    {
+      "ref": {
+        "name": "Periyar Lake",
+        "kind": "lake"
+      },
+      "exam": "UPSC CSE Prelims",
+      "year": 2002,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p160",
+      "reason": "Reservoir inside Periyar Tiger Reserve (an atlas place); not a separate place"
+    },
+    {
+      "ref": "Achra",
+      "exam": "UPSC CSE Prelims",
+      "year": 2002,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p160",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Chhattisgarh Plain",
+      "exam": "UPSC CSE Prelims",
+      "year": 1997,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p161",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Penganga",
+      "exam": "UPSC CSE Prelims",
+      "year": 1996,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p162",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Kinnaur",
+      "exam": "UPSC CSE Prelims",
+      "year": 2014,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p255",
+      "reason": "District or province; the atlas maps states and countries, not smaller administrative areas"
+    },
+    {
+      "ref": "Mewat",
+      "exam": "UPSC CSE Prelims",
+      "year": 2014,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p255",
+      "reason": "Cultural region spread over three states; no fixed extent"
+    },
+    {
+      "ref": "Huangpu River",
+      "exam": "UPSC CSE Prelims",
+      "year": 2006,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p316",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Florida",
+      "exam": "UPSC CSE Prelims",
+      "year": 2006,
+      "source": "pdf:ToolkitGeoOCRed.pdf#p316",
+      "reason": "District or province; the atlas maps states and countries, not smaller administrative areas"
+    },
+    {
+      "ref": "Walong",
+      "exam": "UPPCS Prelims",
+      "year": 1992,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p2",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Tirap",
+      "exam": "UPPCS Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p2",
+      "reason": "District or province; the atlas maps states and countries, not smaller administrative areas"
+    },
+    {
+      "ref": "Kumaon Himalaya",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2016,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p5",
+      "reason": "Regional division of the Himalaya with no reliable point location or source page"
+    },
+    {
+      "ref": {
+        "name": "Ladakh Plateau",
+        "kind": "plateau"
+      },
+      "exam": "UPPCS Prelims",
+      "year": 1995,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p6",
+      "reason": "Not a distinct mapped feature; the atlas has the Ladakh Range and Changthang"
+    },
+    {
+      "ref": "Mandav Hills",
+      "exam": "UPPCS Prelims",
+      "year": 2011,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p7",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Mandav Hills",
+      "exam": "UPPCS Mains",
+      "year": 2011,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p7",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Miri Hills",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p8",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Mount Abu",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p9",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Bateshwar Hill",
+      "exam": "UPPCS Prelims",
+      "year": 2022,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p9",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Bilari Range",
+      "exam": "UPPCS Prelims",
+      "year": 2022,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p9",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Dhosi Hill",
+      "exam": "UPPCS Prelims",
+      "year": 2022,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p9",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": {
+        "name": "Aghil",
+        "kind": "pass"
+      },
+      "exam": "UPPCS Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p10",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Muling La",
+      "exam": "UPPCS Mains",
+      "year": 2006,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p11",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Sin La",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p12",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Rundun Glacier",
+      "exam": "UPPCS Prelims",
+      "year": 1995,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p12",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Sasaini Glacier",
+      "exam": "UPPCS Prelims",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p12",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Kannur",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2001,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p13",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Nagercoil",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2001,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p13",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Sindhudurg",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2001,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p13",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Udupi",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2002,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p14",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Digha",
+      "exam": "UPPCS Mains",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p14",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Calangute",
+      "exam": "UPPCS Mains",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p14",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Marina Beach",
+      "exam": "UPPCS Mains",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p14",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Mount Thuillier",
+      "exam": "UPPCS Prelims",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p14",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Mandapam",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p15",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "New Moore",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p15",
+      "reason": "Island in the Hariabhanga estuary that had disappeared under the sea by 2010"
+    },
+    {
+      "ref": "Bhatkal",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p15",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Arnala",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p15",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Henry Island",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p15",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Palanpur",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2004,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p15",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Hubli",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2004,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p15",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Guntur",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2004,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p15",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Chhattisgarh Plain",
+      "exam": "UPPCS Prelims",
+      "year": 2000,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p15",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Ambala",
+      "exam": "UPPCS Prelims",
+      "year": 2011,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p16",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Rohtak",
+      "exam": "UPPCS Prelims",
+      "year": 2011,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p16",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Mandakini",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2002,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p22",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Mandakini",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p23",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Pindar",
+      "exam": "UPPCS Prelims",
+      "year": 2024,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p23",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Bhilangna",
+      "exam": "UPPCS Prelims",
+      "year": 2024,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p23",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Mandakini",
+      "exam": "UPPCS Prelims",
+      "year": 2024,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p23",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": {
+        "name": "Sindh",
+        "kind": "river"
+      },
+      "exam": "UPPCS Prelims",
+      "year": 2020,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p23",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Mahananda",
+      "exam": "UP RO/ARO Mains",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p23",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Punpun",
+      "exam": "UPPCS Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p24",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Ajoy",
+      "exam": "UPPCS Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p24",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Jalangi",
+      "exam": "UPPCS Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p24",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Jonk",
+      "exam": "UPPCS Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p24",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Sihawa",
+      "exam": "UPPCS Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p26",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Brahmagiri Hills",
+      "exam": "UPPCS Mains",
+      "year": 2011,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p26",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Gawilgarh Hills",
+      "exam": "UPPCS Mains",
+      "year": 2011,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p26",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Brahmagiri Hills",
+      "exam": "UP RO/ARO Mains",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p26",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Gawilgarh Hills",
+      "exam": "UP RO/ARO Mains",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p26",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Doodh Ganga",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p27",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Pranhita",
+      "exam": "UPPCS Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p27",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Hemavathi",
+      "exam": "UPPCS Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p27",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Doni",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p27",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": {
+        "name": "Tel",
+        "kind": "river"
+      },
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p27",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Hagari",
+      "exam": "UPPCS Mains",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p27",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Barakar",
+      "exam": "UP BEO Prelims",
+      "year": 2019,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p27",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Jamunia",
+      "exam": "UP BEO Prelims",
+      "year": 2019,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p27",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Barki",
+      "exam": "UP BEO Prelims",
+      "year": 2019,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p27",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Sankosh",
+      "exam": "UPPCS Mains",
+      "year": 2007,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p29",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Mithi River",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p29",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Powai Lake",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p29",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Vihar Lake",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p29",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Tulsi Lake",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p29",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Cuttack",
+      "exam": "UPPCS Prelims",
+      "year": 1992,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p30",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Kshipra",
+      "exam": "UPPCS Prelims",
+      "year": 1992,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p30",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Machkund",
+      "exam": "UPPCS Prelims",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p30",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Barkana Falls",
+      "exam": "UPPCS Prelims",
+      "year": 2022,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p30",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": {
+        "name": "Palani",
+        "kind": "waterfall"
+      },
+      "exam": "UPPCS Prelims",
+      "year": 2022,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p30",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Rakim Kund Falls",
+      "exam": "UPPCS Prelims",
+      "year": 2018,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p30",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Kevti Falls",
+      "exam": "UPPCS Prelims",
+      "year": 2018,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p30",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Chulia Falls",
+      "exam": "UPPCS Mains",
+      "year": 2005,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p31",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Mandakini",
+      "exam": "UP RO/ARO Mains",
+      "year": 2016,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p31",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Landshing Falls",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p31",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": {
+        "name": "Sela Lake",
+        "kind": "lake"
+      },
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Chapanala Lake",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Jor Pokhri",
+      "exam": "UPPCS Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Dodital",
+      "exam": "UPPCS Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": {
+        "name": "Red Hills Lake",
+        "kind": "lake"
+      },
+      "exam": "UPPCS Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Anchar Lake",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Surajkund",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Ghepan Lake",
+      "exam": "UPPCS Mains",
+      "year": 2016,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": {
+        "name": "Sela Lake",
+        "kind": "lake"
+      },
+      "exam": "UPPCS Prelims",
+      "year": 2020,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Badkhal Lake",
+      "exam": "UPPCS Prelims",
+      "year": 2020,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p32",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Tezpur",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p34",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Bikaner",
+      "exam": "UPPCS Mains",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p35",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Bikaner",
+      "exam": "UPPCS Prelims",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p35",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Bikaner",
+      "exam": "UPPCS Prelims",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p35",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Chhattisgarh Plain",
+      "exam": "UPPCS Prelims",
+      "year": 1998,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p40",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Trans-Saryu Plain",
+      "exam": "UPPCS Prelims",
+      "year": 1998,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p40",
+      "reason": "Regional name for part of the Ganga plain with no fixed extent or point"
+    },
+    {
+      "ref": "Honnavar",
+      "exam": "UP RO/ARO Mains",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p44",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Malpe",
+      "exam": "UP RO/ARO Mains",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p44",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Ganga-Ghaghara Doab",
+      "exam": "UPPCS Prelims",
+      "year": 1995,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p45",
+      "reason": "Regional name for part of the Ganga plain with no fixed extent or point"
+    },
+    {
+      "ref": "Saryupar Plain",
+      "exam": "UPPCS Prelims",
+      "year": 1995,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p45",
+      "reason": "Regional name for part of the Ganga plain with no fixed extent or point"
+    },
+    {
+      "ref": "Harsud",
+      "exam": "UPPCS Mains",
+      "year": 2003,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p47",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Bhilangna",
+      "exam": "UPPCS Prelims",
+      "year": 2002,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p48",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Kangsabati",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p49",
+      "reason": "Kangsabati river and reservoir: the river has no course on the India sheet (see HANDOFF)"
+    },
+    {
+      "ref": "Tawa",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p49",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Mayurakshi",
+      "exam": "UPPCS Prelims",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p49",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Barakar",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2016,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p49",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Kakrapar",
+      "exam": "UPPCS Prelims",
+      "year": 2003,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p50",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Tulbul",
+      "exam": "UPPCS Prelims",
+      "year": 2000,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p50",
+      "reason": "Tulbul navigation project on the Jhelum at the outlet of Wular Lake (an atlas place); not a separate place"
+    },
+    {
+      "ref": "Tulbul",
+      "exam": "UPPCS Mains",
+      "year": 2007,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p50",
+      "reason": "Tulbul navigation project on the Jhelum at the outlet of Wular Lake (an atlas place); not a separate place"
+    },
+    {
+      "ref": "Tulbul",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2016,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p50",
+      "reason": "Tulbul navigation project on the Jhelum at the outlet of Wular Lake (an atlas place); not a separate place"
+    },
+    {
+      "ref": "Konar",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p52",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Kakrapar",
+      "exam": "UPPSC RI",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p52",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Barakar",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p52",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Korapuzha",
+      "exam": "UP RO/ARO Mains",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p53",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Pamba",
+      "exam": "UP RO/ARO Mains",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p53",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Kol Dam",
+      "exam": "UPPCS Mains",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p53",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Bokaro",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p99",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Asansol",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p99",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Bhadravati",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p99",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Virudhunagar",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p100",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Channapatna",
+      "exam": "UP UDA/LDA Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p100",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Virudhunagar",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p100",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Channapatna",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p100",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Gwalior",
+      "exam": "UPPCS Prelims",
+      "year": 1999,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p109",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Sagar",
+      "exam": "UPPCS Prelims",
+      "year": 1999,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p109",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Hazira",
+      "exam": "UPPCS Prelims",
+      "year": 2005,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p113",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Alappuzha",
+      "exam": "UPPCS Prelims",
+      "year": 2025,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p113",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Krishnapatnam",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p114",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Jamnagar",
+      "exam": "UPPCS Prelims",
+      "year": 2011,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p114",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Ratnagiri",
+      "exam": "UPPCS Mains",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Alang",
+      "exam": "UPPCS Mains",
+      "year": 2006,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Alang",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Chakrata",
+      "exam": "UPPCS Mains",
+      "year": 2003,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Haflong",
+      "exam": "UPPCS Mains",
+      "year": 2003,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Kalimpong",
+      "exam": "UPPCS Mains",
+      "year": 2003,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Kufri",
+      "exam": "UPPCS Mains",
+      "year": 2003,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Chakrata",
+      "exam": "UP UDA/LDA Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Haflong",
+      "exam": "UP UDA/LDA Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Kalimpong",
+      "exam": "UP UDA/LDA Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Kufri",
+      "exam": "UP UDA/LDA Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Udvada",
+      "exam": "UPPCS Prelims",
+      "year": 1997,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Gulmarg",
+      "exam": "UPPCS Prelims",
+      "year": 1997,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Kasauli",
+      "exam": "UPPCS Prelims",
+      "year": 1997,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p115",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Auli",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2002,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Keylong",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2002,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Chikmagalur",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2002,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Tirumala Hills",
+      "exam": "UPPCS Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Chamundi Hills",
+      "exam": "UPPCS Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Kuldhara",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Lakhpat",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Charkhari",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Bugyal",
+      "exam": "UPPCS Mains",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Generic term for Himalayan alpine meadows, not one place"
+    },
+    {
+      "ref": "Khajjiar",
+      "exam": "UPPCS Mains",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Pahalgam",
+      "exam": "UPPCS Mains",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p116",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Pokhran",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2004,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p117",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Mount Erebus",
+      "exam": "UPPCS Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p129",
+      "reason": "In Antarctica, outside the world sheet"
+    },
+    {
+      "ref": "Black Mountain",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p132",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Coconino Plateau",
+      "exam": "UPPCS Prelims",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p134",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Aquarius Plateau",
+      "exam": "UPPCS Prelims",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p134",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Panjshir Valley",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2002,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p134",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Taylor Valley",
+      "exam": "UPPCS Prelims",
+      "year": 1998,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p134",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Valley of the Kings",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 1998,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p135",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Martinique",
+      "exam": "UPPCS Prelims",
+      "year": 2000,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p141",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Christmas Island",
+      "exam": "UPPCS Prelims",
+      "year": 2000,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p141",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Bear Island",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p141",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Franz Josef Land",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p141",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Zurich",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p143",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Ghazni",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p143",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Fergana",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p143",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Kandahar",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p143",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Samarkand",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2023,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p143",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Pisa",
+      "exam": "UPPCS Prelims",
+      "year": 1993,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p144",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Bujumbura",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p145",
+      "reason": "Former capital of Burundi (Gitega since 2019); asked in only one question"
+    },
+    {
+      "ref": "Christchurch",
+      "exam": "UPPCS Mains",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p145",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Ramallah",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p147",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Ramadi",
+      "exam": "UPPCS Prelims",
+      "year": 2022,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p147",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Tikrit",
+      "exam": "UPPCS Prelims",
+      "year": 2022,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p147",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Gartok",
+      "exam": "UPPCS Prelims",
+      "year": 1993,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p147",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Baikonur",
+      "exam": "UPPCS Prelims",
+      "year": 1992,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p147",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Bandung",
+      "exam": "UPPCS Prelims",
+      "year": 1992,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p147",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Batticaloa",
+      "exam": "UPPCS Prelims",
+      "year": 1992,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p147",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Durban",
+      "exam": "UPPCS Prelims",
+      "year": 1990,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Brisbane",
+      "exam": "UP RO/ARO Mains",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Melbourne",
+      "exam": "UP RO/ARO Mains",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Davos",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Barcelona",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Auckland",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Kandy",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Adana",
+      "exam": "UPPSC GIC",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Istanbul",
+      "exam": "UPPSC GIC",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Izmir",
+      "exam": "UPPSC GIC",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Adana",
+      "exam": "UPPCS Mains",
+      "year": 2005,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Istanbul",
+      "exam": "UPPCS Mains",
+      "year": 2005,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Izmir",
+      "exam": "UPPCS Mains",
+      "year": 2005,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p148",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "San Francisco",
+      "exam": "UPPCS Mains",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p149",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Nagoya",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p149",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Sendai",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p149",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Osaka",
+      "exam": "UPPCS Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p149",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Belfast",
+      "exam": "UPPCS Prelims",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p149",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Aberdeen",
+      "exam": "UPPCS Prelims",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p149",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Leeds",
+      "exam": "UPPCS Prelims",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p149",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Liverpool",
+      "exam": "UPPCS Prelims",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p149",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Lake Itasca",
+      "exam": "UPPCS Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p155",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": {
+        "name": "Red River",
+        "kind": "river"
+      },
+      "exam": "UPPCS Mains",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p155",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Cologne",
+      "exam": "UPPCS Prelims",
+      "year": 2025,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p155",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "New Orleans",
+      "exam": "UPPCS Prelims",
+      "year": 2025,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p155",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Paleru",
+      "exam": "UPPCS Prelims",
+      "year": 2025,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p155",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Antwerp",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p157",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Scheldt",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p157",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Chisapani Gorge",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p157",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Nuuk",
+      "exam": "UPPCS Mains",
+      "year": 2012,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p158",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Solomon Islands",
+      "exam": "UPPCS Mains",
+      "year": 2012,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p158",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Gilbert Islands",
+      "exam": "UPPCS Mains",
+      "year": 2012,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p158",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Society Islands",
+      "exam": "UPPCS Mains",
+      "year": 2012,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p158",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Marshall Islands",
+      "exam": "UPPCS Mains",
+      "year": 2012,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p158",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Isle of Man",
+      "exam": "UPPSC GIC",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Saint Martin",
+      "exam": "UPPSC GIC",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Norfolk Island",
+      "exam": "UPPSC GIC",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Paracel Islands",
+      "exam": "UPPSC GIC",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Grenada",
+      "exam": "UPPCS Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Montserrat",
+      "exam": "UPPCS Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Anguilla",
+      "exam": "UPPCS Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Tonga",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Tuvalu",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Tahiti",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Tinian",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2021,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p159",
+      "reason": "Small island or island group below the atlas’s level of detail"
+    },
+    {
+      "ref": "Boiling Lake",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p160",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Five Flower Lake",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p160",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Laguna Colorada",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p160",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Buffalo",
+      "exam": "UP RO/ARO Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p160",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Gary",
+      "exam": "UPPCS Prelims",
+      "year": 2011,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p160",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Hamilton",
+      "exam": "UPPCS Prelims",
+      "year": 2011,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p160",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Laguna Colorada",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p161",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Boiling Lake",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p161",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Five Flower Lake",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p161",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Plitvice Lakes",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p161",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Soo Canal",
+      "exam": "UPPCS Prelims",
+      "year": 1991,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p163",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Lake Timsah",
+      "exam": "UPPCS Prelims",
+      "year": 2019,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p163",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Great Bitter Lake",
+      "exam": "UPPCS Prelims",
+      "year": 2019,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p163",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Little Bitter Lake",
+      "exam": "UPPCS Prelims",
+      "year": 2019,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p163",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Lake Manzala",
+      "exam": "UPPCS Prelims",
+      "year": 2019,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p163",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Jiaozhou Bay",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p163",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Kafue",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2016,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p163",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Zangmu",
+      "exam": "UPPCS Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p163",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Tennessee River",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p164",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Vakhsh",
+      "exam": "UPPCS Prelims",
+      "year": 2015,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p164",
+      "reason": "Minor feature asked once in the collected papers; not added"
+    },
+    {
+      "ref": "Halifax",
+      "exam": "UPPCS Prelims",
+      "year": 1999,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p173",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Verkhoyansk",
+      "exam": "UPPCS Prelims",
+      "year": 1999,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p173",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Halifax",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2004,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p173",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Verkhoyansk",
+      "exam": "UP Lower Sub. Prelims",
+      "year": 2004,
+      "source": "pdf:UPPSC 1990-2026 Papers - Geography.pdf#p173",
+      "reason": "World city (not a national capital) asked in only one question of the collected papers"
+    },
+    {
+      "ref": "Kamadgiri",
+      "exam": "UPPCS Mains",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p3",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": "Kamadgiri",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p3",
+      "reason": "No reliable coordinates found on Wikipedia or Wikidata; left out rather than guessed"
+    },
+    {
+      "ref": {
+        "name": "Rihand",
+        "kind": "river"
+      },
+      "exam": "UPPCS Mains",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p32",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Rohini",
+      "exam": "UPPCS Mains",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p32",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": {
+        "name": "Rihand",
+        "kind": "river"
+      },
+      "exam": "UPPCS Mains",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p33",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Tons",
+      "exam": "UPPCS Mains",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p33",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": {
+        "name": "Rihand",
+        "kind": "river"
+      },
+      "exam": "UPPCS Mains",
+      "year": 2012,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p33",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Tons",
+      "exam": "UPPCS Mains",
+      "year": 2012,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p33",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": "Dhanraul Dam",
+      "exam": "UP BEO Prelims",
+      "year": 2019,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p33",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Bithoor",
+      "exam": "UPPCS Mains",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p33",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Jaunpur",
+      "exam": "UPPCS Mains",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p33",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Sai",
+      "exam": "UPPCS Mains",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p33",
+      "reason": "Indian river with no drawn course on the India sheet; adding it needs a full sheet build with a traced course (see HANDOFF)"
+    },
+    {
+      "ref": {
+        "name": "Sultanpur",
+        "kind": "city"
+      },
+      "exam": "UP RO/ARO Mains",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p33",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Kapilvastu",
+      "exam": "UPPCS Mains",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p35",
+      "reason": "Site of ancient Kapilavastu is disputed (Piprahwa in India, Tilaurakot in Nepal)"
+    },
+    {
+      "ref": "Devipatan",
+      "exam": "UPPCS Mains",
+      "year": 2003,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p41",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Devipatan",
+      "exam": "UPPCS Mains",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p41",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Devipatan",
+      "exam": "UPPCS Prelims",
+      "year": 2009,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p41",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Devipatan",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p41",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Maghar",
+      "exam": "UPPCS Mains",
+      "year": 2012,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p43",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Deva Sharif",
+      "exam": "UPPCS Mains",
+      "year": 2012,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p43",
+      "reason": "Local site (beach, small lake, waterfall, shrine or small dam) below the atlas’s level of detail"
+    },
+    {
+      "ref": "Nizamabad",
+      "exam": "UP RO/ARO Mains",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p47",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Lakhimpur Kheri",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2016,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p47",
+      "reason": "District or province; the atlas maps states and countries, not smaller administrative areas"
+    },
+    {
+      "ref": "Jalesar",
+      "exam": "UP RO/ARO Prelims",
+      "year": 2016,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p47",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Renukoot",
+      "exam": "UPPCS Mains",
+      "year": 2003,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p47",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Rishikesh",
+      "exam": "UPPCS Mains",
+      "year": 2003,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p47",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Sitapur",
+      "exam": "UP RO/ARO Mains",
+      "year": 2014,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p49",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Sitapur",
+      "exam": "UP RO/ARO Mains",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p49",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Shahjahanpur",
+      "exam": "UPPCS Mains",
+      "year": 2017,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p49",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Churk",
+      "exam": "UPPCS Prelims",
+      "year": 2013,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p49",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": "Chinhat",
+      "exam": "UPPCS Mains",
+      "year": 2008,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p50",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    },
+    {
+      "ref": {
+        "name": "Pilibhit",
+        "kind": "city"
+      },
+      "exam": "UPPCS Mains",
+      "year": 2010,
+      "source": "pdf:UPPSC 1990-2026 Papers - Uttar Pradesh Special.pdf#p50",
+      "reason": "Town asked in only one question of the collected papers; the atlas adds towns asked in two or more questions or in UPSC Prelims"
+    }
+  ]
+}

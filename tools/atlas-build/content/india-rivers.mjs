@@ -39,7 +39,7 @@ export default [
     f: ['Rises at Beas Kund near the Rohtang pass and flows through the Kullu valley.', 'Pong dam (Maharana Pratap Sagar) is on the Beas; it joins the Sutlej at Harike.', 'The only Indus tributary that flows wholly within India.'],
   }),
   P('river', 'Sutlej', 31.45, 77.65, {
-    lvl: 1, st: ['himachal-pradesh', 'punjab'], aka: ['Satadru', 'Langqen Zangbo'], rel: { tributaryOf: 'river.chenab', source: 'lake.rakshastal' },
+    lvl: 1, st: ['himachal-pradesh', 'punjab'], aka: ['Satluj', 'Satadru', 'Langqen Zangbo'], rel: { tributaryOf: 'river.chenab', source: 'lake.rakshastal' },
     f: ['Rises near Rakshastal in Tibet and enters India at the Shipki La.', 'Bhakra Nangal dam (Gobind Sagar) and Nathpa Jhakri are on the Sutlej.', 'Joins the Beas at Harike and forms part of the India–Pakistan border.'],
   }),
   P('river', 'Ghaggar', 29.75, 75.0, {
@@ -309,7 +309,7 @@ export default [
     f: ['Rises at Laisang peak in Nagaland and flows past Golaghat.'],
   }),
   P('river', 'Teesta', 27.2, 88.5, {
-    lvl: 1, st: ['sikkim', 'west-bengal'], rel: { tributaryOf: 'river.brahmaputra', bank: 'right' },
+    lvl: 1, st: ['sikkim', 'west-bengal'], aka: ['Tista'], rel: { tributaryOf: 'river.brahmaputra', bank: 'right' },
     f: ['Rises at the Tso Lhamo (Cholamu) lake in north Sikkim.', 'The lifeline of Sikkim; flows past Jalpaiguri into Bangladesh.', 'Sharing its water is a long-running India–Bangladesh issue.'],
   }),
   P('river', 'Barak', 24.83, 92.8, {

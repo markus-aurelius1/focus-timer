@@ -13,6 +13,13 @@ Relief, hillshade and traced river courses:
 
 Places, facts and expeditions:
   Compiled for Lodestar from public reference sources.
+  Places added from previous-year papers take their position and facts from
+  Wikipedia (CC BY-SA 4.0) and, where noted, coordinates from Wikidata (CC0);
+  each such place lists its pages under "sources".
+
+Previous-year question history:
+  Transcribed from UPPSC question papers and the UPSC CSE sections of a PYQ
+  workbook; every ledger entry cites its paper and page (tools/atlas-build/content/pyq).
 
 The Atlas is a learning aid and not an authoritative map. External boundaries
 of India follow the Government of India's depiction as closely as the source

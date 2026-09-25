@@ -2,8 +2,9 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { applyPyq, attachPyq, bandOf, buildAliasIndex, coreName, normalizeName, resolveRef, scorePlaces, validateEntry, YIELD_WEIGHTS } from '../lib/pyq.mjs'
+import { applyPyq, attachPyq, bandOf, buildAliasIndex, coreName, explainUnmatched, normalizeName, resolveRef, scorePlaces, validateEntry, YIELD_WEIGHTS } from '../lib/pyq.mjs'
 import LEDGER from '../content/pyq/index.mjs'
+import NOT_MAPPED from '../content/pyq/not-mapped.mjs'
 
 const REAL = JSON.parse(readFileSync(new URL('../../../public/atlas/v1/places.json', import.meta.url), 'utf8')).places
 const clone = (x) => JSON.parse(JSON.stringify(x))
@@ -67,12 +68,28 @@ test('history counts distinct questions, years, exams, topics and sources', () =
     years: [2014, 2019],
     exams: ['UPSC CSE Prelims'],
     topics: ['ramsar', 'wetlands'],
-    sources: [src, { title: 'Paper', url: 'pdf:2019.pdf#p4' }],
+    sources: [src, { title: 'Paper', url: 'pdf:2019.pdf', pages: [4] }],
   })
   assert.equal(places[1].pyq.count, 1)
   assert.equal(res.matched, 2)
   assert.equal(res.unmatched[0].ref, 'Gamma')
   assert.equal(res.invalid.length, 1)
+})
+
+test('pages of one PDF are grouped into one source', () => {
+  const places = [{ id: 'p.a', name: 'Alpha', level: 2 }]
+  const e = (year, q, url) => ({ exam: 'UPPCS Prelims', year, q, places: ['Alpha'], source: { title: 'Papers', url } })
+  attachPyq(places, [e(2001, 'Q1', 'pdf:papers.pdf#p12'), e(2002, 'Q2', 'pdf:papers.pdf#p3'), e(2003, 'Q3', 'pdf:papers.pdf#p12'), e(2004, 'Q4', 'pdf:other.pdf#p1')])
+  assert.deepEqual(places[0].pyq.sources, [
+    { title: 'Papers', url: 'pdf:papers.pdf', pages: [3, 12] },
+    { title: 'Papers', url: 'pdf:other.pdf', pages: [1] },
+  ])
+})
+
+test('names listed as not mapped are explained, the rest stay open', () => {
+  const res = explainUnmatched([{ ref: 'Walong' }, { ref: { name: 'Sindh', kind: 'river' } }, { ref: 'Nowhere' }], { Walong: 'town', Sindh: 'river' })
+  assert.deepEqual(res.unmatched, [{ ref: 'Nowhere' }])
+  assert.deepEqual(res.explained.map((x) => x.reason), ['town', 'river'])
 })
 
 test('the score is bounded, explained, and rewards frequent, recurring, recent, central places', () => {
@@ -115,4 +132,8 @@ test('the committed ledger is valid and fully resolvable', () => {
   for (const e of LEDGER) assert.deepEqual(validateEntry(e), [], JSON.stringify(e))
   const res = attachPyq(clone(REAL), LEDGER)
   assert.deepEqual(res.invalid, [])
+  assert.deepEqual(res.ambiguous, [])
+  // Every name that does not resolve to a place is listed, with a reason, in not-mapped.mjs.
+  const open = explainUnmatched(res.unmatched, NOT_MAPPED).unmatched.map((u) => u.ref)
+  assert.deepEqual(open, [])
 })

@@ -132,8 +132,10 @@ export interface Place {
 
 export interface SourceRef {
   title: string
-  /** A web link, or `pdf:<file>#p<page>` for a question paper. */
+  /** A web link, or `pdf:<file>#p<page>` for a question paper (`pdf:<file>` with `pages` in PYQ history). */
   url: string
+  /** PDF pages cited, when one source groups several pages of the same file. */
+  pages?: number[]
 }
 
 export interface PyqHistory {

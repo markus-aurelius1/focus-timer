@@ -149,7 +149,12 @@ export function attachPyq(places, ledger) {
         h.years.add(e.year)
         h.exams.add(e.exam)
         for (const t of [].concat(e.topic ?? [])) h.topics.add(t)
-        if (!h.sources.has(e.source.url)) h.sources.set(e.source.url, { title: e.source.title ?? e.source.url, url: e.source.url })
+        // Pages of one PDF are grouped into a single source: `pdf:<file>` with its pages.
+        const pdf = /^(pdf:[^#]+)#p(\d+)$/.exec(e.source.url)
+        const srcKey = pdf ? pdf[1] : e.source.url
+        if (!h.sources.has(srcKey)) h.sources.set(srcKey, { title: e.source.title ?? srcKey, url: srcKey, ...(pdf ? { pages: [] } : {}) })
+        const s = h.sources.get(srcKey)
+        if (pdf && !s.pages.includes(Number(pdf[2]))) s.pages.push(Number(pdf[2]))
       }
     }
   }
@@ -161,7 +166,7 @@ export function attachPyq(places, ledger) {
       years: [...h.years].sort((a, b) => a - b),
       exams: [...h.exams].sort(),
       topics: [...h.topics].sort(),
-      sources: [...h.sources.values()],
+      sources: [...h.sources.values()].map((s) => (s.pages ? { ...s, pages: s.pages.sort((a, b) => a - b) } : s)),
     }
   }
   return { matched: hist.size, unmatched, ambiguous, invalid }
@@ -249,6 +254,21 @@ export function scorePlaces(places, { refYear } = {}) {
     p.yield = { score, band: bandOf(score), parts, reasons }
   }
   return { refYear: latest }
+}
+
+/**
+ * Split unmatched references into those deliberately left out of the atlas
+ * (listed in content/pyq/not-mapped.mjs with a reason) and those still open.
+ */
+export function explainUnmatched(unmatched, notMapped) {
+  const explained = []
+  const open = []
+  for (const u of unmatched) {
+    const name = typeof u.ref === 'string' ? u.ref : u.ref?.name
+    if (name && Object.hasOwn(notMapped, name)) explained.push({ ...u, reason: notMapped[name] })
+    else open.push(u)
+  }
+  return { unmatched: open, explained }
 }
 
 /**

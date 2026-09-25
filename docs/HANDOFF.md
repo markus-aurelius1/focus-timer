@@ -1,6 +1,6 @@
 # Development handoff — UI/UX + Atlas performance + PYQ data upgrade
 
-Last updated: 2026-09-24 (end of the cloud session that started this upgrade).
+Last updated: 2026-09-25 (local session: M7 PYQ data from the user’s PDFs).
 Read this before changing anything, then verify every claim against the code.
 
 ## 1. Where the work is
@@ -21,7 +21,7 @@ PLAN → FOCUS → TRACK → REVIEW → IMPROVE.
 - **Focus**: pomodoro / countdown / open-focus timer (timestamp-based engine, survives sleep/reload), immersive mode, sounds.
 - **Planner**: tasks, projects, habits, natural-language quick add, recurring tasks, calendar (events, exams, focus blocks).
 - **Insights**: analytics derived from sessions, goals, heatmaps.
-- **The Atlas**: an offline atlas of India + World (~800 places chosen for UPSC/UPPCS) that you explore with focus time (XP → expeditions → discoveries) and master through spaced-recall questions.
+- **The Atlas**: an offline atlas of India + World (~1,180 places chosen for UPSC/UPPCS) that you explore with focus time (XP → expeditions → discoveries) and master through spaced-recall questions.
 - PWA (offline, installable) + Capacitor Android/iOS projects. No account, IndexedDB only.
 
 The README has the full feature list and architecture; this file covers the upgrade in progress.
@@ -74,7 +74,7 @@ Focused upgrade of the **existing** app — **do not redesign from scratch**.
 6. **Do not break**: timer, planner, calendar, sessions, statistics, Atlas progression, offline functionality.
    Inspect first, profile bottlenecks, make targeted changes.
 
-**Sources the user supplied** (use directly; the user also said they would provide PYQ PDFs — none arrived yet):
+**Sources the user supplied** (use directly; the user's PYQ PDFs arrived in `pyq-sources/` and were transcribed in M7 — the web pages below are not yet):
 1. https://www.pmfias.com/category/prelims/protected-area-network/
 2. https://www.pmfias.com/category/upsc-cse-prelims-pyqs/prelims-pyqs-geography/prelims-pyqs-mapping/ (and its paginated pages, e.g. `/page/3/`)
 3. https://thedistrictminds.com/UPPSC_PYQs_Analysis_District_Minds.html
@@ -206,6 +206,32 @@ Environment: no environment variables or secrets are required. Optional: `BASE=/
 
 ## 8. Progress log (newest first) — continue from the first unchecked item
 
+- [ ] M8 **Remaining (optional follow-ups):** (1) transcribe the four web sources in §4 (reachable from a local
+      session; not done in M7, which used the user's PDFs); (2) Indian rivers that PYQs name but the India sheet
+      does not draw (Mandakini, Barakar, Tons, Pindar, Kshipra, …; listed as RIVER in
+      `content/pyq/not-mapped.mjs`) need a full `node build.mjs` with `line: trace(...)` courses — not possible
+      with `--places-only`; (3) real-device check of the Atlas (iOS Safari + Android WebView: map-name halos use
+      `paint-order` on HTML text).
+- [x] M7 PYQ data from the user's PDFs (`pyq-sources/`, git-ignored — copyrighted compilations):
+      - `content/pyq/uppsc.mjs`: 572 questions → 654 ledger entries (one per paper a question is tagged with) from
+        "UPPSC 1990-2026 Papers – Geography / Uttar Pradesh Special". Parsed with PyMuPDF (column-ordered text
+        blocks → question, options, exam tags, answer); every question read and its place references curated by
+        hand; exam tags normalised (UPPCS Prelims/Mains, UP RO/ARO, UP Lower Sub., UP UDA/LDA, UPPSC GIC/RI,
+        UP BEO). Not transcribed: questions about states/UTs, countries, tribes, crops, minerals/mines, energy
+        plants, institutions, culture — they name no atlas place.
+      - `content/pyq/upsc-prelims.mjs`: 129 UPSC CSE Prelims entries from the UPSC sections of the ForumIAS PYQ
+        Workbook (General Geography), read from page images (its OCR text layer is too jumbled); stems condensed.
+      - Every entry cites `pdf:<file>#p<page>`; in places.json the pages are grouped per PDF
+        (`{ title, url: 'pdf:<file>', pages }`, `SourceRef.pages`), which keeps places.json at ~1.0 MB / 161 KB gzip.
+      - 380 new places (121 India, 259 World) with `src`: position and first-sentence fact from Wikipedia (Wikidata
+        coordinates where Wikipedia had none), countries derived from the sheet; aliases (`aka`) added to 17
+        existing places (Palghat, Anaimudi, Tarai, Satluj, Tista, Gersoppa Falls, Gobind Sagar, Selvas, …).
+        Rule: physical features, protected areas, ports, dams and world capitals are added; towns only when asked
+        in ≥ 2 questions or in UPSC Prelims. Arctic Ocean's label position (80° N, 10° W) is chosen for the sheet.
+      - `content/pyq/not-mapped.mjs`: 259 names deliberately left out, each with a reason; the build moves them to
+        `explained` in `reports/pyq-review.json` (`explainUnmatched` in `lib/pyq.mjs`, tested). Result:
+        **0 unmatched, 0 ambiguous, 0 invalid**, 305 explained references; 885 places carry PYQ history.
+      - Tests: `tools/atlas-build` 10 (page grouping, not-mapped split, committed ledger fully resolved or explained).
 - [x] M6 App side (renders only once places.json carries PYQ data — verified with a throwaway fixture injected
       into dist/, never committed): `Place.pyq/yield/sources` + `PlacesFile.yieldModel` types; "Past papers" panel on
       the place card (`src/features/atlas/PastPapers.tsx`: asked N× in <exams>, year chips, reasons, source links,

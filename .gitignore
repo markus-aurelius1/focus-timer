@@ -19,3 +19,6 @@ ios/App/App/public
 ios/App/Pods
 ios/App/App/capacitor.config.json
 ios/App/App/config.xml
+
+# User-supplied PYQ source PDFs (copyrighted; transcribed into tools/atlas-build/content/pyq)
+pyq-sources/

@@ -13,8 +13,9 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildSheet } from './lib/sheetBuild.mjs'
 import { compilePlaces } from './lib/places.mjs'
-import { applyPyq } from './lib/pyq.mjs'
+import { applyPyq, explainUnmatched } from './lib/pyq.mjs'
 import PYQ_LEDGER from './content/pyq/index.mjs'
+import PYQ_NOT_MAPPED from './content/pyq/not-mapped.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const OUT = join(root, 'public/atlas/v1')
@@ -55,8 +56,11 @@ if (pyq.applied) {
   places.yieldModel = pyq.model
   const REPORTS = join(dirname(fileURLToPath(import.meta.url)), 'reports')
   mkdirSync(REPORTS, { recursive: true })
-  writeFileSync(join(REPORTS, 'pyq-review.json'), JSON.stringify({ unmatched: pyq.unmatched, ambiguous: pyq.ambiguous, invalid: pyq.invalid }, null, 2))
-  console.log(`▸ PYQ: ${PYQ_LEDGER.length} ledger entries → ${pyq.matched} places; ${pyq.unmatched.length} unmatched, ${pyq.ambiguous.length} ambiguous, ${pyq.invalid.length} invalid (see reports/pyq-review.json)`)
+  const { unmatched, explained } = explainUnmatched(pyq.unmatched, PYQ_NOT_MAPPED)
+  writeFileSync(join(REPORTS, 'pyq-review.json'), JSON.stringify({ unmatched, ambiguous: pyq.ambiguous, invalid: pyq.invalid, explained }, null, 2))
+  console.log(
+    `▸ PYQ: ${PYQ_LEDGER.length} ledger entries → ${pyq.matched} places; ${unmatched.length} unmatched, ${pyq.ambiguous.length} ambiguous, ${pyq.invalid.length} invalid, ${explained.length} explained as not mapped (see reports/pyq-review.json)`,
+  )
 } else console.log('▸ PYQ ledger is empty: no exam history or priority scores attached')
 const placesJson = JSON.stringify(places)
 writeFileSync(join(OUT, 'places.json'), placesJson)
@@ -80,6 +84,13 @@ Relief, hillshade and traced river courses:
 
 Places, facts and expeditions:
   Compiled for Lodestar from public reference sources.
+  Places added from previous-year papers take their position and facts from
+  Wikipedia (CC BY-SA 4.0) and, where noted, coordinates from Wikidata (CC0);
+  each such place lists its pages under "sources".
+
+Previous-year question history:
+  Transcribed from UPPSC question papers and the UPSC CSE sections of a PYQ
+  workbook; every ledger entry cites its paper and page (tools/atlas-build/content/pyq).
 
 The Atlas is a learning aid and not an authoritative map. External boundaries
 of India follow the Government of India's depiction as closely as the source
