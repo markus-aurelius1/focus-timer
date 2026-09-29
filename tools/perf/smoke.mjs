@@ -28,12 +28,12 @@ await page.waitForTimeout(1200)
 const t2 = await page.getByRole('timer').getAttribute('aria-label')
 await page.waitForTimeout(1200)
 ok('timer pauses', t2 === (await page.getByRole('timer').getAttribute('aria-label')))
-await page.getByRole('button', { name: /^stop$/i }).click()
+await page.getByRole('button', { name: /stop the timer/i }).click()
 await page.waitForTimeout(600)
-if (await page.getByRole('button', { name: /discard session/i }).isVisible().catch(() => false)) await page.getByRole('button', { name: /discard session/i }).click()
+if (await page.getByRole('button', { name: /discard and reset/i }).isVisible().catch(() => false)) await page.getByRole('button', { name: /discard and reset/i }).click()
 
 // Sheets close from the backdrop
-await page.locator('button', { hasText: /Classic|Timer/ }).first().click()
+await page.getByRole('button', { name: /timer profile/i }).first().click()
 await page.waitForTimeout(600)
 ok('profile sheet opens', await page.locator('[role=dialog]').isVisible())
 await page.touchscreen.tap(195, 30)
@@ -95,6 +95,10 @@ ok('moving state clears after settle', !(await page.evaluate(() => document.quer
 
 // Offline
 ok('service worker registered', await page.evaluate(async () => !!(await navigator.serviceWorker?.getRegistration())))
+// Wait until the worker is active (its precache complete) before going offline.
+await page.evaluate(async () => {
+  await navigator.serviceWorker.ready
+})
 await page.waitForTimeout(1500)
 await ctx.setOffline(true)
 await page.reload()

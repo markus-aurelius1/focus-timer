@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ExpeditionRun, RecallAttempt, Session } from '@/data/types'
 import { recallXp, xpForSession, levelInfo } from '@/game/progression'
 import { indexAtlas } from './data'
-import { explore, surveyOrder, SURVEY_MINUTES } from './explore'
+import { ATLAS_V2_AT, explore, surveyOrder, SURVEY_MINUTES } from './explore'
 import { computeMastery, dueForReview } from './mastery'
 import { isCorrect, makeQuestion } from './questions'
 import type { Place, PlacesFile } from './types'
@@ -181,6 +181,36 @@ describe('exploration', () => {
     const s = explore({ atlas, sessions: [session(10, 20), session(100, 20)], runs: [run(50, 150)], baseCamp: 'a', familiarAt: new Map() })
     expect(s.expeditions.get('x')!.minutes).toBe(20)
     expect(s.survey.minutes).toBe(20)
+  })
+})
+
+describe('data versions', () => {
+  // Version 2 adds places (marked `added`), including a core one in base camp that sorts first.
+  const V2: PlacesFile = {
+    ...FILE,
+    places: [...FILE.places, place('in.lake.new-core', 'lake', 12, 12, { level: 1, added: 2 }), place('in.peak.new', 'peak', 14, 14, { added: 2 })],
+  }
+  const v2 = indexAtlas(V2)
+  const cutoff = (ATLAS_V2_AT - T0) / MIN
+  const minutesBefore = (n: number) => session(cutoff - 60, n * SURVEY_MINUTES)
+
+  it('keeps every survey find made before the release exactly as it was', () => {
+    const sessions = [minutesBefore(3)]
+    const before = explore({ atlas, sessions, runs: [], baseCamp: 'a', familiarAt: new Map() })
+    const after = explore({ atlas: v2, sessions, runs: [], baseCamp: 'a', familiarAt: new Map() })
+    expect([...after.discovered.keys()]).toEqual([...before.discovered.keys()])
+    expect(after.discovered.has('in.lake.new-core')).toBe(false)
+  })
+
+  it('lets later focus reach the new places, nearest base camp first', () => {
+    const s = explore({ atlas: v2, sessions: [minutesBefore(2), session(cutoff + 120, SURVEY_MINUTES)], runs: [], baseCamp: 'a', familiarAt: new Map() })
+    expect(s.discovered.size).toBe(3)
+    expect(s.discovered.has('in.lake.new-core')).toBe(true)
+    expect(s.survey.next).not.toBeNull()
+  })
+
+  it('keeps the version 1 survey order among version 1 places', () => {
+    expect(surveyOrder(v2, 'a').filter((p) => !p.added).map((p) => p.id)).toEqual(surveyOrder(atlas, 'a').map((p) => p.id))
   })
 })
 

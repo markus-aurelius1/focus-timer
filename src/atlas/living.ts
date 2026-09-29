@@ -116,7 +116,7 @@ export function livingWorld(ex: Exploration, sheet: SheetId): LivingWorld {
   const developed = new Set<string>()
   const byUnit = new Map<string, { total: number; strong: number }>()
   for (const p of atlas.bySheet.india) {
-    if (!p.unit) continue
+    if (!p.unit || (p.added && !known(p.id))) continue
     const u = byUnit.get(p.unit) ?? { total: 0, strong: 0 }
     u.total++
     if (known(p.id) && atLeast(levelOf(p.id, true, mastery), 'strong')) u.strong++

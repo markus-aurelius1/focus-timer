@@ -92,6 +92,10 @@ export type PlaceKind =
   | 'grassland'
   | 'volcano'
   | 'region'
+  /** Borders, corridors, disputed and conflict areas. */
+  | 'strategic'
+  /** Defence, space and nuclear sites. */
+  | 'facility'
 
 /** A place in the gazetteer, as compiled by tools/atlas-build. */
 export interface Place {
@@ -105,8 +109,10 @@ export interface Place {
   y: number
   lon: number
   lat: number
-  /** Linked vector feature on the sheet, e.g. `rivers:ganges`, `states:sikkim`. */
+  /** Linked vector feature on the sheet, e.g. `river:ganga`, `region:thar-desert`, `area:kaziranga-national-park`. */
   geom?: string
+  /** How the feature is drawn: a symbol at a point, a course (rivers, canals, boundaries) or an outline (parks, lakes, regions). */
+  shape?: 'point' | 'line' | 'area'
   /** India: state/UT ids (source → mouth for rivers). World: ISO3 country codes. */
   states?: string[]
   countries?: string[]
@@ -122,8 +128,16 @@ export interface Place {
   elevation?: number
   /** Short descriptor shown under the name, e.g. "Mountain pass · 4,310 m". */
   subtitle?: string
-  /** Where the place and its facts come from (set for places added from PYQ sources). */
+  /** Where the place, its position and its facts come from. */
   sources?: SourceRef[]
+  /** Wikidata item, the place's stable identity across sources. */
+  wikidata?: string
+  /**
+   * Atlas data version that added the place (absent = version 1). Later places
+   * join the free survey from that version's release on and count towards a
+   * state's development only once discovered, so existing progress never shifts.
+   */
+  added?: number
   /** Previous-year question history, from the PYQ ledger (tools/atlas-build/content/pyq). */
   pyq?: PyqHistory
   /** Study priority built from past papers and the syllabus: a heuristic, not a prediction. */

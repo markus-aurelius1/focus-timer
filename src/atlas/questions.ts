@@ -91,6 +91,8 @@ const KIND_WORD: Partial<Record<PlaceKind, string>> = {
   capital: 'capital',
   city: 'city',
   region: 'region',
+  strategic: 'strategic location',
+  facility: 'facility',
 }
 export const kindWord = (k: PlaceKind) => KIND_WORD[k] ?? 'place'
 

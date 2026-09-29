@@ -64,8 +64,24 @@
   --radius-card: 1.25rem;
   --shadow-soft: var(--shadow-soft-value);
   --shadow-lift: var(--shadow-lift-value);
+  --shadow-dialog: var(--shadow-dialog-value);
+
+  /* Motion system (twin of src/ui/motion.ts) – `ease-out` etc. utilities use these curves. */
+  --ease-out: var(--motion-ease-out);
+  --ease-in-out: var(--motion-ease-in-out);
+  --ease-in: var(--motion-ease-in);
 
   --animate-breathe: breathe 6s ease-in-out infinite;
+}
+
+/* Motion tokens: micro 140ms (hover, press), base 220ms (dialogs, menus, lists), layout 320ms (sidebar, panels). */
+:root {
+  --motion-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --dur-micro: 140ms;
+  --dur-base: 220ms;
+  --dur-layout: 320ms;
 }
 
 /* Paper – warm, printed star-chart feel. */
@@ -94,6 +110,7 @@
   --chart: #b8781b;
   --shadow-soft-value: 0 1px 2px rgba(40, 32, 16, 0.04), 0 8px 24px -12px rgba(40, 32, 16, 0.12);
   --shadow-lift-value: 0 1px 3px rgba(40, 32, 16, 0.06), 0 16px 36px -18px rgba(40, 32, 16, 0.24);
+  --shadow-dialog-value: 0 2px 6px rgba(40, 32, 16, 0.06), 0 28px 64px -24px rgba(40, 32, 16, 0.32);
 }
 
 /* Night – deep ink sky with starlight gold. */
@@ -121,6 +138,7 @@
   --chart: #b88a3a;
   --shadow-soft-value: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
   --shadow-lift-value: 0 1px 4px rgba(0, 0, 0, 0.35), 0 20px 44px -22px rgba(0, 0, 0, 0.7);
+  --shadow-dialog-value: 0 2px 8px rgba(0, 0, 0, 0.4), 0 32px 72px -24px rgba(0, 0, 0, 0.8);
 }
 
 @layer base {
@@ -128,12 +146,38 @@
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
     background: var(--bg);
+    /* Nothing in the app is meant to scroll sideways at the page level. */
+    overflow-x: clip;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  /* A dialog or full-screen view is open: the page behind holds still (see ui/scrollLock.ts). */
+  html[data-scroll-locked] {
+    overflow: hidden;
+    padding-right: var(--scroll-lock-gap, 0px);
   }
   body {
     @apply bg-bg font-sans text-ink antialiased;
     font-feature-settings: 'ss01', 'cv11';
     min-height: 100dvh;
+    overflow-x: clip;
     overscroll-behavior-y: none;
+  }
+  /* Quiet, theme-aware scrollbars where the platform draws classic ones. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ink-3);
   }
   #root {
     min-height: 100dvh;
@@ -171,6 +215,13 @@
 }
 
 @layer utilities {
+  /* Sheet body padding: clear the home indicator unless a footer below already does. */
+  .sheet-pad {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  [role='dialog']:has(> [data-sheet-footer]:not(:empty)) > .sheet-pad {
+    padding-bottom: 20px;
+  }
   .tabular {
     font-variant-numeric: tabular-nums;
   }
@@ -209,6 +260,217 @@
   }
   .hairline {
     border-color: var(--line);
+  }
+}
+
+/* ── App shell ─────────────────────────────────────────────────────────────
+ * The desktop sidebar's width drives the content offset, so collapsing it (or
+ * hiding all chrome for the full-screen Atlas) animates both together. The
+ * attributes are set on <html> by ShellSync (App.tsx); index.html sets the
+ * collapsed state before first paint so nothing jumps on load.            */
+:root {
+  --sidebar-size: 15rem;
+  --sidebar-w: var(--sidebar-size);
+}
+:root[data-sidebar='collapsed'] {
+  --sidebar-size: 4.5rem;
+}
+:root[data-chrome='hidden'] {
+  --sidebar-w: 0px;
+}
+.shell-offset {
+  transition: padding-left var(--dur-layout) var(--motion-ease-in-out);
+}
+@media (min-width: 1024px) {
+  .shell-offset {
+    padding-left: var(--sidebar-w);
+  }
+}
+.sidebar {
+  width: var(--sidebar-size);
+  transition:
+    width var(--dur-layout) var(--motion-ease-in-out),
+    transform var(--dur-layout) var(--motion-ease-in-out),
+    opacity var(--dur-layout) var(--motion-ease-in-out);
+}
+:root[data-chrome='hidden'] .sidebar {
+  transform: translateX(-100%);
+  /* Once it has slid away it leaves the tab order too. */
+  visibility: hidden;
+  transition:
+    width var(--dur-layout) var(--motion-ease-in-out),
+    transform var(--dur-layout) var(--motion-ease-in-out),
+    visibility 0s linear var(--dur-layout);
+}
+.sidebar-label {
+  animation: fade-in var(--dur-base) var(--motion-ease-out) both;
+  animation-delay: 80ms;
+}
+.chrome-bottom {
+  transition:
+    transform var(--dur-layout) var(--motion-ease-in-out),
+    opacity var(--dur-layout) var(--motion-ease-in-out);
+}
+:root[data-chrome='hidden'] .chrome-bottom {
+  transform: translateY(100%);
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    transform var(--dur-layout) var(--motion-ease-in-out),
+    visibility 0s linear var(--dur-layout);
+}
+
+/* In session: while focus runs on the timer screen, the chrome around it recedes
+   (and comes back on hover, keyboard focus, pause or stop). */
+.chrome-dim {
+  transition: opacity 700ms var(--motion-ease-in-out);
+}
+:root[data-session='active'] .chrome-dim:not(:hover):not(:focus-within) {
+  opacity: 0.28;
+}
+:root[data-session='active'] .chrome-dim:hover,
+:root[data-session='active'] .chrome-dim:focus-within {
+  transition-duration: var(--dur-base);
+}
+
+/* Tactile press for custom controls (Button/IconButton have their own). */
+.press {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+  transition-duration: var(--dur-micro);
+  transition-timing-function: var(--motion-ease-out);
+}
+.press:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Keyboard key hint. */
+.kbd {
+  display: inline-flex;
+  min-width: 1.5em;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  padding: 0 5px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink-2);
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Skeleton shimmer for content that is still loading. */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 12px;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* ── Timer dial states (features/focus/TimerDial.tsx) ─────────────────────
+ * idle: track and ticks only · running: the arc moves and the head's halo
+ * breathes · paused: the arc greys, the halo stills and the time blinks slowly. */
+.dial-arc {
+  transition: opacity var(--dur-layout) var(--motion-ease-in-out), stroke var(--dur-layout);
+}
+.dial[data-state='idle'] .dial-arc {
+  opacity: 0;
+}
+.dial[data-state='paused'] .dial-arc {
+  opacity: 0.4;
+}
+.dial-head {
+  transition: opacity var(--dur-layout) var(--motion-ease-in-out);
+}
+.dial[data-state='idle'] .dial-head {
+  opacity: 0.55;
+}
+.dial-halo {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.dial[data-state='running'] .dial-halo {
+  animation: dial-halo 2.8s ease-in-out infinite;
+}
+@keyframes dial-halo {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 0.26;
+    transform: scale(1.35);
+  }
+}
+.dial[data-state='paused'] .dial-digits {
+  animation: dial-blink 2.4s ease-in-out infinite;
+}
+@keyframes dial-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}
+
+/* The primary timer button: a soft ripple from where it was pressed. */
+.ripple {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.35;
+  pointer-events: none;
+  animation: ripple 560ms var(--motion-ease-out) forwards;
+}
+@keyframes ripple {
+  to {
+    transform: scale(9);
+    opacity: 0;
+  }
+}
+/* Running: a slow ring breathes around the pause button. */
+.timer-main[data-state='running']::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 2px solid var(--timer-ring, var(--accent));
+  animation: main-breathe 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes main-breathe {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.04);
   }
 }
 
@@ -252,13 +514,82 @@
 .atlas-labels svg {
   pointer-events: none;
 }
+/* A name: a zero-size anchor at the label point (counter-scaled from script while the map zooms), holding the text. */
 .atlas-name {
   position: absolute;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+.atlas-name-text {
+  position: absolute;
+  left: 0;
+  top: 0;
   white-space: pre;
   line-height: 1.25;
   paint-order: stroke fill;
   stroke-linejoin: round;
   font-synthesis: none;
+  /* Ink in by colour (a repaint), never by opacity (a layer per name). */
+  animation: atlas-ink-in 220ms ease-out;
+}
+@keyframes atlas-ink-in {
+  from {
+    color: transparent;
+    -webkit-text-stroke-color: transparent;
+  }
+}
+.atlas:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Protected-area outlines appear once zoomed in (the class is set when the view comes to rest). */
+.atlas:not(.atlas-near) .atlas-parks {
+  display: none;
+}
+
+/* Symbols and names fade in as they first appear, never mid-gesture (layout happens at rest). */
+.atlas-sym {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 140ms ease-out, opacity 140ms ease-out;
+  animation: atlas-fade-in 220ms ease-out;
+}
+.atlas-sym.is-hover {
+  transform: scale(1.2);
+}
+/* Places not yet discovered: on the map, but quieter. */
+.atlas-sym-muted {
+  opacity: 0.5;
+}
+.atlas-sym-muted.is-hover {
+  opacity: 0.9;
+}
+@keyframes atlas-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+/* After a style change the previous style fades out on its own layer (compositor only). */
+.atlas-fade-out {
+  animation: atlas-fade-out 340ms ease-out forwards;
+}
+@keyframes atlas-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+/* The selection ring settles onto the symbol. */
+.atlas-selected {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atlas-select 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes atlas-select {
+  from {
+    opacity: 0;
+    transform: scale(1.8);
+  }
 }
 
 /* A slow pulse for the next waypoint and new discoveries (transform + opacity only). */
@@ -337,6 +668,12 @@ circle.atlas-pulse {
   opacity: 0.8;
 }
 @media (prefers-reduced-motion: reduce) {
+  .atlas-name-text,
+  .atlas-sym,
+  .atlas-selected {
+    animation: none;
+    transition: none;
+  }
   .atlas-flow,
   .atlas-ship,
   .atlas-ring,

@@ -9,6 +9,14 @@ import { readFileSync } from 'node:fs'
 // BASE lets the PWA be hosted from a sub-path (e.g. GitHub Pages). Capacitor uses '/'.
 const base = process.env.BASE ?? '/'
 
+// Absolute URL of the production site, for canonical / Open Graph / Twitter tags.
+// On Vercel it follows the project's production domain automatically (so renaming
+// the project needs no code change); SITE_URL overrides it anywhere else.
+const siteUrl = (
+  process.env.SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 'https://tars-study.vercel.app')
+).replace(/\/+$/, '')
+
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
 
 export default defineConfig({
@@ -20,14 +28,18 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    { name: 'site-url', transformIndexHtml: (html) => html.replaceAll('%SITE_URL%', siteUrl) },
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'sw-notifications.js'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'sw-notifications.js', 'og-image.png'],
       manifest: {
+        // The manifest id is the installed app's identity. It predates the rename to
+        // Tars and must stay, or browsers would treat Tars as a different app and
+        // existing installs would never pick up the new name and icons.
         id: 'lodestar-study',
-        name: 'Lodestar — Study & Focus',
-        short_name: 'Lodestar',
+        name: 'Tars — Study & Focus',
+        short_name: 'Tars',
         description: 'A calm study planner, focus timer and progress tracker that works offline.',
         lang: 'en',
         start_url: '.',

@@ -130,6 +130,20 @@ export function Symbol({ kind, tags, national }: { kind: PlaceKind; tags?: strin
     case 'state':
     case 'country':
       return <circle r={3.5} fill="#fff" stroke="#161616" strokeWidth={1.6} />
+    case 'strategic':
+      return (
+        <g>
+          <path d="M0,-7 L7,0 L0,7 L-7,0Z" fill="#8b1e3f" stroke="#fff" strokeWidth={1.6} strokeLinejoin="round" />
+          <circle r={1.9} fill="#fff" />
+        </g>
+      )
+    case 'facility':
+      return (
+        <g>
+          <rect x={-6} y={-6} width={12} height={12} rx={2} fill="#37474f" stroke="#fff" strokeWidth={1.6} />
+          <path d="M-3.2,0 H3.2 M0,-3.2 V3.2" stroke="#fff" strokeWidth={1.5} strokeLinecap="round" />
+        </g>
+      )
   }
 }
 
@@ -179,4 +193,6 @@ export const KIND_NAME: Record<PlaceKind, string> = {
   grassland: 'Grassland',
   volcano: 'Volcano',
   region: 'Region',
+  strategic: 'Strategic location',
+  facility: 'Facility',
 }

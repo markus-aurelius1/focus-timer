@@ -1,6 +1,6 @@
 /** The gazetteer – a searchable index of every place, and the accessible alternative to the map. */
 import { Lock, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { placeSubtitle } from '@/atlas/data'
 import { MASTERY_LABEL } from '@/atlas/mastery'
 import type { Place, PlaceKind, SheetId } from '@/atlas/types'
@@ -8,25 +8,33 @@ import type { Exploration } from '@/atlas/useExploration'
 import { cn } from '@/lib/cn'
 import { Chip, Segmented, TextInput, Toggle } from '@/ui/controls'
 import { Sheet } from '@/ui/Sheet'
+import { PLACE_GROUPS } from './groups'
 import { BAND_CLASS, BAND_LABEL } from './PastPapers'
 import { MASTERY_COLOUR } from './style'
 import { KIND_NAME } from './symbols'
-import { masteryFn, PlaceIcon } from './util'
+import { masteryFn, PlaceIcon, TAG_LABEL } from './util'
 
-const GROUPS: Array<{ id: string; label: string; kinds: PlaceKind[] }> = [
-  { id: 'all', label: 'All', kinds: [] },
-  { id: 'mountains', label: 'Mountains', kinds: ['range', 'peak', 'pass', 'glacier', 'volcano'] },
-  { id: 'water', label: 'Water', kinds: ['river', 'confluence', 'lake', 'wetland', 'dam', 'waterfall', 'sea', 'gulf', 'strait', 'canal'] },
-  { id: 'land', label: 'Land & coast', kinds: ['plateau', 'plain', 'desert', 'valley', 'coast', 'delta', 'island', 'cape', 'grassland', 'region'] },
-  { id: 'places', label: 'Cities & ports', kinds: ['capital', 'city', 'port'] },
-  { id: 'parks', label: 'Parks', kinds: ['park'] },
-  { id: 'heritage', label: 'Heritage', kinds: ['monument'] },
-]
+const GROUPS: Array<{ id: string; label: string; kinds: PlaceKind[] }> = [{ id: 'all', label: 'All', kinds: [] }, ...PLACE_GROUPS]
 
-const norm = (s: string) => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const norm = (s: string) =>
+  s
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[’'`]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
+interface Entry {
+  p: Place
+  name: string
+  /** Aliases, the states or countries it lies in, its type and designations – searched after the name. */
+  other: string
+}
 
 export function GazetteerSheet({ ex, open, onClose, onPick, sheet }: { ex: Exploration; open: boolean; onClose: () => void; onPick: (id: string) => void; sheet: SheetId }) {
   const [q, setQ] = useState('')
+  const term = norm(useDeferredValue(q))
   const [group, setGroup] = useState('all')
   const [scope, setScope] = useState<SheetId>(sheet)
   const [onlyKnown, setOnlyKnown] = useState(false)
@@ -36,28 +44,60 @@ export function GazetteerSheet({ ex, open, onClose, onPick, sheet }: { ex: Explo
   const byPriority = hasPriority && order === 'priority'
   const level = masteryFn(ex)
 
+  // Search text for every place, built once per gazetteer.
+  const index = useMemo<Entry[]>(
+    () =>
+      ex.atlas.places.map((p) => ({
+        p,
+        name: norm(p.name),
+        other: norm(
+          [
+            ...(p.aka ?? []),
+            ...(p.states ?? []).map((s) => ex.atlas.state(s)?.name ?? ''),
+            ...(p.countries ?? []).map((c) => ex.atlas.country(c)?.name ?? ''),
+            KIND_NAME[p.kind],
+            p.subtitle ?? '',
+            ...(p.tags ?? []).map((t) => TAG_LABEL[t] ?? ''),
+          ].join(' | '),
+        ),
+      })),
+    [ex.atlas],
+  )
+
   const results = useMemo(() => {
     const kinds = GROUPS.find((g) => g.id === group)!.kinds
-    const term = norm(q.trim())
-    const list = ex.atlas.bySheet[scope].filter(
-      (p) =>
-        (!kinds.length || kinds.includes(p.kind)) &&
-        (!onlyKnown || ex.state.discovered.has(p.id)) &&
-        (!term || norm(p.name).includes(term) || p.aka?.some((a) => norm(a).includes(term)) || (p.states ?? []).some((s) => norm(ex.atlas.state(s)?.name ?? '').includes(term))),
-    )
-    const rank = (name: string) => (term && norm(name).startsWith(term) ? 0 : 1)
+    const rank = (e: Entry) => {
+      if (!term) return 0
+      if (e.name.startsWith(term)) return 0
+      if (e.name.includes(' ' + term)) return 1
+      if (e.name.includes(term)) return 2
+      if (e.other.includes(term)) return 3
+      return -1
+    }
     const prio = (p: Place) => (byPriority ? (p.yield?.score ?? 0) : 0)
-    return list.sort((a, b) => rank(a.name) - rank(b.name) || prio(b) - prio(a) || a.level - b.level || a.name.localeCompare(b.name))
-  }, [q, group, scope, onlyKnown, ex, byPriority])
+    const out: Array<{ p: Place; r: number; other: boolean }> = []
+    for (const e of index) {
+      const p = e.p
+      // Searching looks across both sheets; browsing stays on the chosen one.
+      if (p.sheet !== scope && !term) continue
+      if (kinds.length && !kinds.includes(p.kind)) continue
+      if (onlyKnown && !ex.state.discovered.has(p.id)) continue
+      const r = rank(e)
+      if (r < 0) continue
+      out.push({ p, r, other: p.sheet !== scope })
+    }
+    return out.sort((a, b) => Number(a.other) - Number(b.other) || a.r - b.r || prio(b.p) - prio(a.p) || a.p.level - b.p.level || a.p.name.localeCompare(b.p.name))
+  }, [index, term, group, scope, onlyKnown, ex, byPriority])
 
-  const known = results.filter((p) => ex.state.discovered.has(p.id)).length
+  const inScope = results.filter((r) => !r.other)
+  const known = inScope.filter((r) => ex.state.discovered.has(r.p.id)).length
 
   return (
-    <Sheet open={open} onClose={onClose} title="Gazetteer" subtitle={`${known} of ${results.length} discovered`} size="lg">
+    <Sheet open={open} onClose={onClose} title="Gazetteer" subtitle={`${known} of ${inScope.length} discovered`} size="lg">
       <div className="sticky top-0 z-10 -mx-5 bg-surface px-5 pb-3">
         <label className="relative block">
           <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-3" />
-          <TextInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search places, rivers, parks, states…" className="pl-10" aria-label="Search the gazetteer" data-autofocus />
+          <TextInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search places, rivers, parks, Ramsar sites…" className="pl-10" aria-label="Search the gazetteer" data-autofocus />
         </label>
         <div className="mt-3 flex items-center justify-between gap-3">
           <Segmented value={scope} onChange={setScope} options={[{ value: 'india', label: 'India' }, { value: 'world', label: 'World' }]} />
@@ -88,7 +128,7 @@ export function GazetteerSheet({ ex, open, onClose, onPick, sheet }: { ex: Explo
         </div>
       </div>
       <ul className="divide-y divide-line">
-        {results.slice(0, 250).map((p) => {
+        {results.slice(0, 250).map(({ p, other }) => {
           const found = ex.state.discovered.has(p.id)
           const lvl = level(p.id)
           return (
@@ -99,6 +139,7 @@ export function GazetteerSheet({ ex, open, onClose, onPick, sheet }: { ex: Explo
                   <span className={cn('block truncate text-[15px] font-semibold', !found && 'text-ink-2')}>{p.name}</span>
                   <span className="block truncate text-[12.5px] text-ink-3">{placeSubtitle(p, ex.atlas, KIND_NAME[p.kind])}</span>
                 </span>
+                {other && <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[11px] font-bold text-ink-3">{p.sheet === 'india' ? 'India map' : 'World map'}</span>}
                 {byPriority && p.yield && (
                   <span className={cn('tabular shrink-0 rounded-full px-2 py-0.5 text-[11.5px] font-bold', BAND_CLASS[p.yield.band])} title={BAND_LABEL[p.yield.band]}>
                     {p.yield.score}

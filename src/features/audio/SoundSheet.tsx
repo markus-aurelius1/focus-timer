@@ -179,7 +179,7 @@ export function SoundSheet() {
           <div className="flex items-center justify-between gap-3">
             <span>
               <span className="block text-sm font-semibold">Follow the timer</span>
-              <span className="block text-xs text-ink-2">Play during focus, fade out for breaks.</span>
+              <span className="block text-xs text-ink-2">Sounds and music play during focus, pause when you pause, stop when you stop, and fade out for breaks.</span>
             </span>
             <Toggle label="Follow the timer" checked={settings.ambientFollowsTimer} onChange={(v) => void updateSettings({ ambientFollowsTimer: v })} />
           </div>

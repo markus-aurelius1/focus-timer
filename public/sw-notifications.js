@@ -8,7 +8,7 @@ self.addEventListener('notificationclick', (event) => {
       const client = all.find((c) => 'focus' in c)
       if (client) {
         await client.focus()
-        if (route) client.postMessage({ type: 'lodestar:navigate', route })
+        if (route) client.postMessage({ type: 'tars:navigate', route })
         return
       }
       await self.clients.openWindow(self.registration.scope + (route || ''))

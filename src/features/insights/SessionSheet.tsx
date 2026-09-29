@@ -5,9 +5,9 @@ import { create, patch, remove } from '@/data/repo'
 import type { Session } from '@/data/types'
 import { cn } from '@/lib/cn'
 import { atTime, dayKey, hhmm, todayKey } from '@/lib/time'
-import { Button, Field, Select, Stepper, TextArea, TextInput, Toggle } from '@/ui/controls'
+import { Button, Field, IconButton, Select, Stepper, TextArea, TextInput, Toggle } from '@/ui/controls'
 import { confirmDialog } from '@/ui/feedback'
-import { Sheet } from '@/ui/Sheet'
+import { Sheet, SheetActions } from '@/ui/Sheet'
 import { flattenLabels } from '@/features/shared/labels'
 
 /** Edit a recorded session or log one by hand (e.g. study done away from the app). */
@@ -95,16 +95,21 @@ export function SessionSheet({ session, onClose }: { session: Session | 'new' | 
       title={session === 'new' ? 'Log a session' : 'Edit session'}
       subtitle={session === 'new' ? 'Record focus time you did away from the timer.' : undefined}
       footer={
-        <div className="flex gap-2">
-          {session && session !== 'new' && (
-            <Button variant="danger" icon={<Trash2 className="size-4" />} onClick={() => void del()}>
-              Delete
-            </Button>
-          )}
-          <Button block variant="primary" onClick={() => void save()}>
-            Save
+        <SheetActions
+          start={
+            session &&
+            session !== 'new' && (
+              <IconButton label="Delete session" onClick={() => void del()} className="text-danger hover:bg-danger/10 hover:text-danger">
+                <Trash2 className="size-4.5" />
+              </IconButton>
+            )
+          }
+        >
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={() => void save()}>
+            {session === 'new' ? 'Log session' : 'Save'}
           </Button>
-        </div>
+        </SheetActions>
       }
     >
       <div className="space-y-5">

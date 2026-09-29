@@ -12,6 +12,7 @@ import type { Phase, Session, TimerProfile } from '@/data/types'
 import { playChime } from '@/audio/chimes'
 import { unlockAudio } from '@/audio/context'
 import { isNative } from '@/lib/platform'
+import { KEYS, migrateLegacyKeys } from '@/lib/storage'
 import { formatDuration, MINUTE } from '@/lib/time'
 import { haptics } from '@/services/haptics'
 import { isHidden, onWake } from '@/services/lifecycle'
@@ -46,7 +47,7 @@ import {
   type Transition,
 } from './engine'
 
-const STORAGE_KEY = 'lodestar.timer.v1'
+const STORAGE_KEY = KEYS.timer
 /** Effects older than this happened while the app was asleep – report them quietly. */
 const FRESH_MS = 15_000
 
@@ -79,6 +80,14 @@ export function configureTimerRuntime(patch: Partial<Runtime>) {
   if (patch.contextTitle !== undefined && patch.contextTitle !== before) syncSchedule(useTimer.getState().timer)
 }
 
+/** A phase that just ended while the app was open – drives the dial's completion moment. */
+export interface PhaseEnded {
+  phase: Phase
+  next: Phase
+  completed: boolean
+  at: number
+}
+
 export interface LastSession {
   id: string
   fresh: boolean
@@ -90,6 +99,7 @@ interface TimerStore {
   hydrated: boolean
   /** Most recent focus session recorded by the timer – drives the "how did it go?" card. */
   lastSession: LastSession | null
+  phaseEnded: PhaseEnded | null
   start: () => void
   pause: () => void
   toggle: () => void
@@ -115,6 +125,7 @@ export const DEFAULT_CONFIG: TimerConfig = configFromProfile({
 })
 
 function load(): TimerState {
+  migrateLegacyKeys()
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
@@ -146,6 +157,7 @@ export const useTimer = create<TimerStore>((set, get) => {
     timer: typeof localStorage === 'undefined' ? createTimer(DEFAULT_CONFIG) : load(),
     hydrated: false,
     lastSession: null,
+    phaseEnded: null,
     start: () => {
       unlockAudio()
       haptics.press()
@@ -235,8 +247,9 @@ async function applyEffects(effects: TimerEffect[], now: number) {
         missedFocus += 1
         missedSeconds += effect.session.duration
       }
-      window.dispatchEvent(new CustomEvent('lodestar:session', { detail: effect.session }))
+      window.dispatchEvent(new CustomEvent('tars:session', { detail: effect.session }))
     } else if (effect.type === 'phaseEnd' && fresh) {
+      useTimer.setState({ phaseEnded: { phase: effect.phase, next: effect.next, completed: effect.completed, at: effect.at } })
       announcePhaseEnd(effect.phase, effect.next)
     }
   }
@@ -262,7 +275,7 @@ function announcePhaseEnd(phase: Phase, next: Phase) {
   haptics.phaseEnd()
   if (!isNative && runtime.notifications && isHidden()) {
     void showNotification(title, `${body}${runtime.contextTitle ? ` · ${runtime.contextTitle}` : ''}`, {
-      tag: 'lodestar-timer',
+      tag: 'tars-timer',
       route: '#/focus',
       channel: 'timer',
     })

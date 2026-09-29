@@ -1,7 +1,7 @@
 /**
  * Sync-ready merge layer.
  *
- * Lodestar is local-first and needs no account. Every record has a UUID and an
+ * Tars is local-first and needs no account. Every record has a UUID and an
  * `updatedAt`, and deletions leave tombstones, so any two copies of the data
  * can be merged with last-write-wins semantics. JSON import uses this today;
  * a future cloud backend only has to implement `SyncAdapter` (exchange change

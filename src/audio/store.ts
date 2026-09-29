@@ -1,9 +1,10 @@
 /** Layered ambient mixer + its persisted state. */
 import { create } from 'zustand'
+import { KEYS, migrateLegacyKeys } from '@/lib/storage'
 import { getAudioContext, unlockAudio } from './context'
 import { renderSound, SOUND_BY_ID } from './sounds'
 
-const STORAGE_KEY = 'lodestar.audio.v1'
+const STORAGE_KEY = KEYS.audio
 
 interface Persisted {
   layers: Record<string, number>
@@ -18,13 +19,17 @@ interface AudioStore extends Persisted {
   setVolume: (id: string, volume: number) => void
   setMaster: (volume: number) => void
   play: () => void
+  /** Fade out; voices are released once silent. */
   pause: () => void
+  /** Quick fade and release – the next play starts every loop from the top. */
+  stop: () => void
   togglePlay: () => void
   applyPreset: (layers: Array<{ sound: string; volume: number }>, presetId: string | null) => void
   clear: () => void
 }
 
 function load(): Persisted {
+  migrateLegacyKeys()
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
@@ -58,6 +63,10 @@ export const useAudio = create<AudioStore>((set, get) => ({
     if (Object.keys(get().layers).length) set({ playing: true })
   },
   pause: () => set({ playing: false }),
+  stop: () => {
+    fadeOut = STOP_FADE
+    set({ playing: false })
+  },
   togglePlay: () => (get().playing ? get().pause() : get().play()),
   applyPreset: (layers, presetId) => {
     unlockAudio()
@@ -78,6 +87,9 @@ const pending = new Set<string>()
 let master: GainNode | null = null
 let stopTimer: ReturnType<typeof setTimeout> | undefined
 const FADE = 1.2
+const STOP_FADE = 0.3
+/** Length of the next fade-out (a stop is quicker than a pause). */
+let fadeOut = FADE
 
 function masterNode(ctx: AudioContext) {
   if (!master) {
@@ -152,11 +164,14 @@ function sync(state: AudioStore) {
     }
     for (const id of [...voices.keys()]) if (state.layers[id] === undefined) stopVoice(ctx, id)
   } else {
-    ramp(m.gain, 0, ctx)
+    const fade = fadeOut
+    fadeOut = FADE
+    ramp(m.gain, 0, ctx, fade)
     clearTimeout(stopTimer)
+    // Release every voice once silent, so nothing keeps playing (or running) unheard.
     stopTimer = setTimeout(() => {
       if (!useAudio.getState().playing) for (const id of [...voices.keys()]) stopVoice(ctx, id)
-    }, FADE * 1000 + 100)
+    }, fade * 1000 + 100)
   }
   updateMediaSession(state)
 }
@@ -169,11 +184,12 @@ function updateMediaSession(state: AudioStore) {
       .filter(Boolean)
       .join(' · ')
     if (state.playing && names) {
-      navigator.mediaSession.metadata = new MediaMetadata({ title: names, artist: 'Lodestar soundscape' })
+      navigator.mediaSession.metadata = new MediaMetadata({ title: names, artist: 'Tars soundscape' })
       navigator.mediaSession.playbackState = 'playing'
     } else navigator.mediaSession.playbackState = 'paused'
     navigator.mediaSession.setActionHandler('play', () => useAudio.getState().play())
     navigator.mediaSession.setActionHandler('pause', () => useAudio.getState().pause())
+    navigator.mediaSession.setActionHandler('stop', () => useAudio.getState().stop())
   } catch {
     /* unsupported action */
   }
@@ -190,5 +206,10 @@ export function installAudio() {
       /* ignore */
     }
     if (state.playing !== prev.playing || state.layers !== prev.layers || state.master !== prev.master) sync(state)
+  })
+  // Leaving the page (closing the tab, navigating away, bfcache): nothing may keep sounding.
+  window.addEventListener('pagehide', () => {
+    if (!useAudio.getState().playing) return
+    useAudio.getState().stop()
   })
 }

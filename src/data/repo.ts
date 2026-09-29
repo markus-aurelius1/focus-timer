@@ -44,6 +44,14 @@ export async function remove<K extends SyncTable>(name: K, ids: string | string[
   })
 }
 
+/** Bring back a record removed with `remove` (undo): the record returns and its tombstone goes. */
+export async function restore<K extends SyncTable>(name: K, record: TableMap[K]): Promise<void> {
+  await db.transaction('rw', [table(name), db.tombstones], async () => {
+    await table(name).put({ ...record, updatedAt: Date.now() })
+    await db.tombstones.delete(`${name}:${record.id}`)
+  })
+}
+
 /** Persist a new manual ordering for a list of ids. */
 export async function reorder<K extends SyncTable>(name: K, orderedIds: string[]): Promise<void> {
   const now = Date.now()

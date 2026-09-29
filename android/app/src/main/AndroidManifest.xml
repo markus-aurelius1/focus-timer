@@ -22,11 +22,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep links: lodestar://focus?start=1, lodestar://tasks?add=1 … -->
+            <!-- Deep links: tars://focus?start=1, tars://tasks?add=1 … (lodestar:// is the
+                 pre-rename scheme, kept so links and shortcuts made before still open the app) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tars" />
                 <data android:scheme="lodestar" />
             </intent-filter>
 

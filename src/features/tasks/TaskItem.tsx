@@ -78,7 +78,8 @@ export function TaskItem({ task, project, label, sessions = 0, showDate = true, 
   const dateKey = task.dueDate ?? task.plannedFor
   const dateText = dateKey ? `${task.dueDate ? 'Due ' : ''}${relativeDayLabel(dateKey, today)}${task.dueTime ? ` ${task.dueTime}` : ''}` : null
   const est = task.estimatedPomodoros
-  const hasMeta = project || label || (showDate && dateText) || est > 0 || sub.total > 0 || task.recurrence || task.reminderAt
+  const tags = task.tags ?? []
+  const hasMeta = project || label || tags.length > 0 || (showDate && dateText) || est > 0 || sub.total > 0 || task.recurrence || task.reminderAt
 
   return (
     <div
@@ -116,12 +117,18 @@ export function TaskItem({ task, project, label, sessions = 0, showDate = true, 
                 {project.name}
               </span>
             )}
-            {label && !project && (
+            {label && (
               <span className="inline-flex items-center gap-1.5">
                 <span className="size-2 rounded-[3px]" style={{ background: label.color }} />
                 {label.name}
               </span>
             )}
+            {tags.slice(0, 3).map((t) => (
+              <span key={t} className="font-semibold text-ink-3">
+                #{t}
+              </span>
+            ))}
+            {tags.length > 3 && <span className="text-ink-3">+{tags.length - 3}</span>}
             {showDate && dateText && <span className={cn(overdue && 'font-bold text-danger')}>{dateText}</span>}
             {est > 0 && (
               <span className="inline-flex items-center gap-1" title={`${sessions} of ${est} sessions`}>

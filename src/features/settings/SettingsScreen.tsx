@@ -16,13 +16,14 @@ import { MAP_STYLES, RANKS } from '@/game/progression'
 import { ensureSeed } from '@/data/seed'
 import type { AtlasStyle, ThemePreference } from '@/data/types'
 import { isNative, isStandalonePwa, platform } from '@/lib/platform'
+import { KEYS } from '@/lib/storage'
 import { pickTextFile, saveTextFile, stamp } from '@/services/files'
 import { promptInstall, useInstall } from '@/services/install'
 import { notificationPermission, requestNotificationPermission, showNotification } from '@/services/notifications'
 import { Button, IconButton, Segmented, Select, Stepper, Toggle } from '@/ui/controls'
 import { confirmDialog } from '@/ui/feedback'
 import { Wordmark } from '@/ui/Logo'
-import { Sheet } from '@/ui/Sheet'
+import { Sheet, SheetActions } from '@/ui/Sheet'
 import { toast } from '@/ui/toast'
 import { profileSummary } from '@/features/focus/ProfileSheet'
 import { LabelsManager } from './LabelsManager'
@@ -165,7 +166,7 @@ export default function SettingsScreen() {
       <AtlasSettings />
 
       <Group title="Notifications & feel">
-        <Line label="Notifications" hint={perm === 'denied' ? 'Blocked in system settings – allow notifications for Lodestar there.' : perm === 'unsupported' ? 'Not supported in this browser.' : 'Session endings and reminders.'}>
+        <Line label="Notifications" hint={perm === 'denied' ? 'Blocked in system settings – allow notifications for Tars there.' : perm === 'unsupported' ? 'Not supported in this browser.' : 'Session endings and reminders.'}>
           <Toggle
             label="Notifications"
             checked={settings.notifications && perm === 'granted'}
@@ -182,7 +183,7 @@ export default function SettingsScreen() {
         </Line>
         {perm === 'granted' && (
           <div className="px-4 pb-3">
-            <Button size="sm" icon={<Bell className="size-3.5" />} onClick={() => void showNotification('Lodestar', 'Notifications are working ✦', { tag: 'test' })}>
+            <Button size="sm" icon={<Bell className="size-3.5" />} onClick={() => void showNotification('Tars', 'Notifications are working ✦', { tag: 'test' })}>
               Send a test
             </Button>
           </div>
@@ -267,7 +268,7 @@ function DataGroup() {
 
   const exportJson = async () => {
     const backup = await createBackup()
-    await saveTextFile(`lodestar-backup-${stamp()}.json`, JSON.stringify(backup, null, 2), 'application/json')
+    await saveTextFile(`tars-backup-${stamp()}.json`, JSON.stringify(backup, null, 2), 'application/json')
     toast({ title: 'Backup saved', body: 'Keep it somewhere safe – you can restore it on any device.', tone: 'success' })
   }
 
@@ -302,7 +303,7 @@ function DataGroup() {
   const erase = async () => {
     if (!(await confirmDialog({ title: 'Erase all data?', body: 'Every session, task, label and setting on this device will be deleted. This can’t be undone.', confirmLabel: 'Erase everything', danger: true }))) return
     await eraseEverything()
-    localStorage.removeItem('lodestar.timer.v1')
+    localStorage.removeItem(KEYS.timer)
     location.reload()
   }
 
@@ -311,8 +312,8 @@ function DataGroup() {
       <Group title="Your data" hint={counts ? `${counts.sessions} sessions · ${counts.tasks} tasks${storage ? ` · ${storage}` : ''}` : undefined}>
         <ActionRow icon={<FileJson className="size-4.5" />} title="Back up everything" body="A complete JSON backup of all your data." onClick={() => void exportJson()} />
         <ActionRow icon={<Upload className="size-4.5" />} title="Restore from backup" body="Merge a backup into this device, or replace it." onClick={() => void importJson()} />
-        <ActionRow icon={<FileSpreadsheet className="size-4.5" />} title="Export sessions (CSV)" body="Every focus session – for spreadsheets." onClick={async () => void saveTextFile(`lodestar-sessions-${stamp()}.csv`, await sessionsCsv(), 'text/csv')} />
-        <ActionRow icon={<Download className="size-4.5" />} title="Export tasks (CSV)" body="Tasks with projects, dates and checklists." onClick={async () => void saveTextFile(`lodestar-tasks-${stamp()}.csv`, await tasksCsv(), 'text/csv')} />
+        <ActionRow icon={<FileSpreadsheet className="size-4.5" />} title="Export sessions (CSV)" body="Every focus session – for spreadsheets." onClick={async () => void saveTextFile(`tars-sessions-${stamp()}.csv`, await sessionsCsv(), 'text/csv')} />
+        <ActionRow icon={<Download className="size-4.5" />} title="Export tasks (CSV)" body="Tasks with projects, dates and checklists." onClick={async () => void saveTextFile(`tars-tasks-${stamp()}.csv`, await tasksCsv(), 'text/csv')} />
         <ActionRow icon={<Upload className="size-4.5" />} title="Import sessions (CSV)" body="Columns like date, start, minutes, subject, note." onClick={() => void importCsv('sessions')} />
         <ActionRow icon={<Upload className="size-4.5" />} title="Import tasks (CSV)" body="Columns like title, project, priority, due_date." onClick={() => void importCsv('tasks')} />
         {demo ? (
@@ -344,7 +345,22 @@ function DataGroup() {
         <ActionRow icon={<Trash2 className="size-4.5" />} title="Erase all data" body="Start completely fresh on this device." onClick={() => void erase()} danger />
       </Group>
 
-      <Sheet open={!!pending} onClose={() => setPending(null)} title="Restore backup" size="sm">
+      <Sheet
+        open={!!pending}
+        onClose={() => setPending(null)}
+        title="Restore backup"
+        size="sm"
+        footer={
+          <SheetActions stack>
+            <Button variant="primary" block onClick={() => void restore('merge')}>
+              Merge – keep the newest of each item
+            </Button>
+            <Button variant="danger" block onClick={() => void restore('replace')}>
+              Replace everything on this device
+            </Button>
+          </SheetActions>
+        }
+      >
         {pending && (
           <div className="space-y-4">
             <p className="text-[15px] text-ink-2">Backup from {new Date(pending.exportedAt).toLocaleString()}.</p>
@@ -357,14 +373,6 @@ function DataGroup() {
                   </li>
                 ))}
             </ul>
-            <div className="flex flex-col gap-2">
-              <Button variant="primary" block onClick={() => void restore('merge')}>
-                Merge – keep the newest of each item
-              </Button>
-              <Button variant="danger" block onClick={() => void restore('replace')}>
-                Replace everything on this device
-              </Button>
-            </div>
           </div>
         )}
       </Sheet>
@@ -379,7 +387,7 @@ function InstallGroup() {
   return (
     <Group title="App">
       {isNative ? (
-        <Line label={`Lodestar for ${platform === 'ios' ? 'iOS' : 'Android'}`} hint="Timer alerts are scheduled with the system, so they arrive even if the app is closed.">
+        <Line label={`Tars for ${platform === 'ios' ? 'iOS' : 'Android'}`} hint="Timer alerts are scheduled with the system, so they arrive even if the app is closed.">
           <Smartphone className="size-5 text-ink-3" />
         </Line>
       ) : installed ? (
@@ -387,7 +395,7 @@ function InstallGroup() {
           <HardDrive className="size-5 text-success" />
         </Line>
       ) : canPrompt ? (
-        <ActionRow icon={<Download className="size-4.5" />} title="Install Lodestar" body="Add it to your home screen or dock. Works fully offline." onClick={() => void promptInstall()} />
+        <ActionRow icon={<Download className="size-4.5" />} title="Install Tars" body="Add it to your home screen or dock. Works fully offline." onClick={() => void promptInstall()} />
       ) : (
         <Line label="Install as an app" hint={ios ? 'In Safari, tap Share → Add to Home Screen.' : 'Use your browser’s “Install app” or “Add to Home screen” option.'}>
           <Info className="size-5 text-ink-3" />

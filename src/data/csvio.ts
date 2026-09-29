@@ -5,6 +5,7 @@ import { dayKey, isDayKey } from '@/lib/time'
 import { db } from './db'
 import { create } from './repo'
 import { PALETTE } from './seed'
+import { normalizeTags } from '@/planner/tasks'
 import type { Label, Priority, Project, Session, Task } from './types'
 
 const iso = (ms: number | null) => (ms ? new Date(ms).toISOString() : '')
@@ -48,13 +49,14 @@ export async function tasksCsv(): Promise<string> {
   const L = new Map(labels.map((l) => [l.id, l.name]))
   const P = new Map(projects.map((p) => [p.id, p.name]))
   return toCsv(
-    ['id', 'title', 'status', 'project', 'label', 'priority', 'planned_for', 'due_date', 'due_time', 'estimated_pomodoros', 'completed_at', 'subtasks', 'notes'],
+    ['id', 'title', 'status', 'project', 'label', 'tags', 'priority', 'planned_for', 'due_date', 'due_time', 'estimated_pomodoros', 'completed_at', 'subtasks', 'notes'],
     tasks.map((t) => ({
       id: t.id,
       title: t.title,
       status: t.done ? 'done' : 'open',
       project: t.projectId ? (P.get(t.projectId) ?? '') : '',
       label: t.labelId ? (L.get(t.labelId) ?? '') : '',
+      tags: (t.tags ?? []).join(' '),
       priority: PRIORITY_NAME[t.priority],
       planned_for: t.plannedFor ?? '',
       due_date: t.dueDate ?? '',
@@ -103,7 +105,7 @@ export interface CsvImportReport {
 }
 
 /**
- * Import sessions. Accepts Lodestar's own export and most tracker exports:
+ * Import sessions. Accepts Tars's own export and most tracker exports:
  * needs a start (or date + time) and either an end or a duration in minutes.
  */
 export async function importSessionsCsv(text: string): Promise<CsvImportReport> {
@@ -186,6 +188,7 @@ export async function importTasksCsv(text: string): Promise<CsvImportReport> {
       notes: r.notes ?? r.note ?? '',
       projectId: await resolveProject(r.project ?? r.list ?? ''),
       labelId: await resolveLabel(r.label ?? r.subject ?? ''),
+      tags: normalizeTags((r.tags ?? '').split(/[\s,]+/)),
       priority: (prio > 0 ? prio : Number(r.priority) >= 1 && Number(r.priority) <= 3 ? Number(r.priority) : 0) as Priority,
       plannedFor: isDayKey(r.planned_for) ? r.planned_for : null,
       dueDate: isDayKey(due) ? due : null,

@@ -1,4 +1,4 @@
-import { Check, Flame, Plus, Repeat, Timer } from 'lucide-react'
+import { Archive, Check, Flame, Plus, Repeat, Timer, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { db } from '@/data/db'
 import { useHabitLogs, useHabits, useLabels, useSessionsBetween, useSettings } from '@/data/hooks'
@@ -9,11 +9,11 @@ import { cn } from '@/lib/cn'
 import { addDaysKey, parseDayKey, startOfWeekKey, todayKey, weekdayOrder, weekdayShort, type DayKey } from '@/lib/time'
 import { habitEvaluator, habitStreak } from '@/planner/habits'
 import { haptics } from '@/services/haptics'
-import { Button, Card, Field, Segmented, Stepper, TextInput, Select } from '@/ui/controls'
+import { Button, Card, Field, IconButton, Segmented, Stepper, TextInput, Select } from '@/ui/controls'
 import { ColorPicker } from '@/ui/ColorPicker'
 import { confirmDialog, EmptyState } from '@/ui/feedback'
 import { Ring } from '@/ui/Ring'
-import { Sheet } from '@/ui/Sheet'
+import { Sheet, SheetActions, SheetFooter } from '@/ui/Sheet'
 import { flattenLabels } from '@/features/shared/labels'
 
 export function HabitsView() {
@@ -214,27 +214,35 @@ function HabitSheet({ habit, onClose }: { habit: Habit | 'new' | null; onClose: 
         <Field label="Colour">
           <ColorPicker value={color} onChange={setColor} />
         </Field>
-        <div className="flex gap-2">
-          {habit && habit !== 'new' && (
-            <>
-              <Button variant="danger" onClick={() => void del()}>
-                Delete
-              </Button>
-              <Button
-                onClick={async () => {
-                  await patch('habits', habit.id, { archived: true })
-                  onClose()
-                }}
-              >
-                Archive
-              </Button>
-            </>
-          )}
-          <Button block variant="primary" onClick={() => void save()}>
+      </div>
+      <SheetFooter>
+        <SheetActions
+          start={
+            habit &&
+            habit !== 'new' && (
+              <>
+                <IconButton label="Delete habit" onClick={() => void del()} className="text-danger hover:bg-danger/10 hover:text-danger">
+                <Trash2 className="size-4.5" />
+              </IconButton>
+                <IconButton
+                  label="Archive habit"
+                  onClick={async () => {
+                    await patch('habits', habit.id, { archived: true })
+                    onClose()
+                  }}
+                >
+                  <Archive className="size-4.5" />
+                </IconButton>
+              </>
+            )
+          }
+        >
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={() => void save()}>
             {habit === 'new' ? 'Create habit' : 'Save'}
           </Button>
-        </div>
-      </div>
+        </SheetActions>
+      </SheetFooter>
     </Sheet>
   )
 }

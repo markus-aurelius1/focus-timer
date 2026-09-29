@@ -16,16 +16,17 @@
  *   layers and pauses while the map moves.
  */
 import { forwardRef, memo, startTransition, useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { distanceToLines, featureAt, type MapFeature, type Sheet } from '@/atlas/sheet'
+import { distanceToLines, featureAt, pointInGeometry, type AreaFeature, type MapFeature, type Sheet } from '@/atlas/sheet'
 import type { LivingWorld } from '@/atlas/living'
 import { GridIndex, viewRect } from '@/atlas/spatial'
-import type { Place } from '@/atlas/types'
+import type { Place, PlaceKind } from '@/atlas/types'
 import { cn } from '@/lib/cn'
 import { lowPowerDevice, prefersReducedMotion } from '@/lib/device'
 import { baselineFromTop, labelIndexFor, labelKeyOf, layoutLabels, resetMeasureCache, STYLE_SPEC, FONT_SANS, FONT_SERIF, type PlacedLabel, type PlacedSymbol, type Transform } from './labels'
 import { colourAssignment, FOG_FILL, FOG_HATCH, HIGHLIGHT, INK, INK_SOFT, NEIGHBOUR_FILL, PHYSICAL, POLITICAL, ROUTE, SEA_FLAT, WATER, WATER_LINE, type MasteryLevel } from './style'
 import { MasteryBadge, Symbol } from './symbols'
 import { Animal, RoutePath, ShipGlyph } from './living'
+import { easeInOut, easeOut, flight, isWheelNotch, type View } from './camera'
 
 export type Plate = 'physical' | 'political'
 export type Tone = 'day' | 'night' | 'antique'
@@ -49,6 +50,11 @@ interface TonePalette {
   stateBorder: string
   halo: string
   graticule: string
+  /** Protected areas: tint and edge. */
+  park: string
+  parkLine: string
+  /** Disputed and conflict regions: edge. */
+  dispute: string
   political?: string[]
   imageFilter?: string
   text: { state: string; stateMuted: string; country: string; water: string; physical: string; place: string }
@@ -72,6 +78,9 @@ const DAY: TonePalette = {
   stateBorder: '#3b3b3b',
   halo: '#fff',
   graticule: '#3f6f96',
+  park: '#3f8f46',
+  parkLine: '#2e6b33',
+  dispute: '#8b1e3f',
   text: { state: INK, stateMuted: '#6b6a66', country: INK_SOFT, water: WATER, physical: PHYSICAL, place: INK },
 }
 
@@ -96,6 +105,9 @@ export const TONES: Record<Tone, TonePalette> = {
     stateBorder: '#a98a4a',
     halo: '#0c1930',
     graticule: '#b8964c',
+    park: '#4f9a5a',
+    parkLine: '#7cc187',
+    dispute: '#e0708f',
     political: ['#1f3558', '#253d63', '#1b2f4f', '#2b4468', '#22385b', '#29416b', '#1e3354'],
     text: { state: '#f1d58a', stateMuted: '#8f8a78', country: '#c9c3b3', water: '#8cc2f2', physical: '#e4b98b', place: '#f3ead3' },
   },
@@ -117,6 +129,9 @@ export const TONES: Record<Tone, TonePalette> = {
     stateBorder: '#5a4630',
     halo: '#f4ead3',
     graticule: '#8a7556',
+    park: '#6b7d3a',
+    parkLine: '#55632c',
+    dispute: '#7a2233',
     imageFilter: 'sepia(0.72) saturate(0.7) contrast(1.06) brightness(1.03)',
     text: { state: '#3a2412', stateMuted: '#7a6a55', country: '#5b4430', water: '#2f4f6a', physical: '#6b3a17', place: '#2e1d0e' },
   },
@@ -139,7 +154,7 @@ export interface MapPin {
 
 export interface Highlight {
   /** Outline a state/country, or glow a river/region/sea shape. */
-  kind: 'state' | 'country' | 'river' | 'region' | 'marine' | 'lake' | 'point'
+  kind: 'state' | 'country' | 'river' | 'region' | 'marine' | 'lake' | 'area' | 'point'
   id?: string
   x?: number
   y?: number
@@ -152,7 +167,8 @@ export interface RouteOverlay {
 }
 
 export interface AtlasMapHandle {
-  flyTo: (x: number, y: number, zoom?: number) => void
+  /** Fly to a point (sheet px) at `zoom` × the fitted scale, centred in the part of the map not covered by `insets`. */
+  flyTo: (x: number, y: number, zoom?: number, insets?: { top?: number; bottom?: number }) => void
   fitFocus: () => void
   zoomBy: (f: number) => void
 }
@@ -187,6 +203,16 @@ export interface AtlasMapProps {
   living?: LivingWorld | null
   /** Screen space covered by overlays, kept clear when fitting (px). */
   insets?: { top: number; bottom: number }
+  /** Places that are discovered; the rest are drawn muted. Omit to draw every place as discovered. */
+  discovered?: ReadonlySet<string> | ReadonlyMap<string, unknown>
+  /** Draw places not yet discovered (muted). */
+  showUndiscovered?: boolean
+  /** Only these kinds of place (null or omitted: all). */
+  kinds?: ReadonlySet<PlaceKind> | null
+  /** Draw overlay outlines (protected areas, disputed regions). Lakes and wetlands are always drawn. */
+  showAreas?: boolean
+  /** Sheet feature key (`river:…`, `area:…`, `region:…`) → place id, for every place: tapping a name, course or outline opens it. */
+  featurePlaces?: Map<string, string>
 }
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
@@ -196,8 +222,17 @@ const SETTLE_MS = 140
 /** Repaint mid-gesture at most this often (only when the painted margin runs out). */
 const MIN_REPAINT_GAP = 220
 /** Momentum decay time constant (ms) and the fastest fling we accept (px/ms). */
-const GLIDE_TAU = 280
+const GLIDE_TAU = 300
 const MAX_FLING = 3.5
+/** Mouse-wheel notches ease towards their target zoom with this time constant (ms). */
+const WHEEL_TAU = 65
+/** Zoom per pixel of wheel delta (a 100 px notch ≈ ×1.25). */
+const WHEEL_RATE = 0.0022
+/** Double-tap zoom and its animation. */
+const TAP_ZOOM = 2
+const TAP_ZOOM_MS = 300
+/** Zoom level (× the fitted scale) at which protected-area outlines appear. */
+const AREAS_FROM_ZOOM = 1.7
 
 export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function AtlasMap(props, ref) {
   const { sheet, onSelect } = props
@@ -208,6 +243,9 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
   const labelLayer = useRef<HTMLDivElement>(null)
   const worldG = useRef<SVGGElement>(null)
   const flowG = useRef<SVGGElement>(null)
+  /** The previous map style, fading out over the new one after a style change. */
+  const fadeLayer = useRef<HTMLDivElement>(null)
+  const fadeG = useRef<SVGGElement>(null)
   const hatchRef = useRef<SVGPatternElement>(null)
   /** The live view (sheet px → screen px). Changes every frame, so it is never React state. */
   const t = useRef<Transform>({ k: 1, x: 0, y: 0 })
@@ -223,11 +261,18 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
   const settleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const anim = useRef(0)
   const moving = useRef(false)
+  const invRef = useRef(1)
+  /** Names and symbols that keep their size while zooming (collected after each layout). */
+  const anchors = useRef<Array<HTMLElement | SVGElement>>([])
+  const calmRef = useRef(lowPowerDevice())
+  /** Fingers or a mouse button are down: names wait for the release instead of re-laying out mid-gesture. */
+  const holding = useRef(false)
 
   const limits = useCallback(() => {
     const { w, h } = size.current
-    const contain = Math.min(w / sheet.width, h / sheet.height)
-    return { min: contain * 0.9, max: kFit.current * 7 }
+    // Cover the viewport at every zoom so the paper around the sheet never appears.
+    const cover = Math.max(w / sheet.width, h / sheet.height)
+    return { min: cover, max: Math.max(cover, kFit.current * 7) }
   }, [sheet])
 
   const clampT = useCallback(
@@ -235,11 +280,14 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       const { w, h } = size.current
       const { min, max } = limits()
       const k = clamp(n.k, min, max)
+      // If a caller overshoots a zoom limit, keep its requested centre instead of
+      // applying an offset calculated for a different scale (which jumps the map).
+      const xAtScale = k === n.k ? n.x : w / 2 - ((w / 2 - n.x) / n.k) * k
+      const yAtScale = k === n.k ? n.y : h / 2 - ((h / 2 - n.y) / n.k) * k
       const sw = sheet.width * k
       const sh = sheet.height * k
-      // Keep at least part of the sheet under the centre of the screen.
-      const x = sw <= w ? clamp(n.x, -sw * 0.2, w - sw * 0.8) : clamp(n.x, w * 0.5 - sw, w * 0.5)
-      const y = sh <= h ? clamp(n.y, -sh * 0.2, h - sh * 0.8) : clamp(n.y, h * 0.5 - sh, h * 0.5)
+      const x = clamp(xAtScale, w - sw, 0)
+      const y = clamp(yAtScale, h - sh, 0)
       return { k, x, y }
     },
     [limits, sheet],
@@ -255,11 +303,22 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       const tf = `translate3d(${cur.x + m - s * (p.x + m)}px,${cur.y + m - s * (p.y + m)}px,0) scale(${s})`
       if (baseLayer.current) baseLayer.current.style.transform = tf
       if (flowLayer.current) flowLayer.current.style.transform = tf
+      if (fadeLayer.current) fadeLayer.current.style.transform = tf
     }
     const l = laidOut.current
-    if (l && labelLayer.current) {
+    const layer = labelLayer.current
+    if (l && layer) {
       const s = cur.k / l.k
-      labelLayer.current.style.transform = `translate3d(${cur.x - s * l.x}px,${cur.y - s * l.y}px,0) scale(${s})`
+      layer.style.transform = `translate3d(${cur.x - s * l.x}px,${cur.y - s * l.y}px,0) scale(${s})`
+      // Names and symbols keep their size while the map zooms (counter-scaled about their anchors),
+      // so zooming reads as one continuous motion. Low-power devices let them scale instead.
+      // Written on the anchors themselves: a custom property on the layer would restyle every SVG node beneath it.
+      const inv = calmRef.current ? 1 : Math.round((1 / s) * 1000) / 1000
+      if (inv !== invRef.current) {
+        invRef.current = inv
+        const v = inv === 1 ? '' : String(inv)
+        for (const el of anchors.current) el.style.scale = v
+      }
     }
   }, [])
 
@@ -272,6 +331,7 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
     const tf = `translate(${cur.x + m},${cur.y + m}) scale(${cur.k})`
     worldG.current?.setAttribute('transform', tf)
     flowG.current?.setAttribute('transform', tf)
+    fadeG.current?.setAttribute('transform', tf)
     // Fog hatching keeps a constant screen spacing.
     const hatch = hatchRef.current
     if (hatch) {
@@ -308,6 +368,8 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       moving.current = false
       container.current?.classList.remove('atlas-moving')
     }
+    // Zoom-dependent layers switch only at rest, never mid-gesture.
+    container.current?.classList.toggle('atlas-near', cur.k / kFit.current >= AREAS_FROM_ZOOM)
     const snap = { ...cur }
     startTransition(() => setLayoutT(snap))
   }, [paint])
@@ -322,7 +384,7 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       if (stale() && performance.now() - lastPaint.current > MIN_REPAINT_GAP) paint()
       else place()
       clearTimeout(settleTimer.current)
-      settleTimer.current = setTimeout(settle, SETTLE_MS)
+      if (!holding.current) settleTimer.current = setTimeout(settle, SETTLE_MS)
     },
     [clampT, paint, place, settle, stale],
   )
@@ -331,27 +393,34 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
   useLayoutEffect(() => {
     if (!layoutT) return
     laidOut.current = layoutT
+    anchors.current = labelLayer.current ? [...labelLayer.current.querySelectorAll<HTMLElement | SVGElement>('.atlas-name, .atlas-sym, .atlas-ring')] : []
+    invRef.current = NaN
     place()
   }, [layoutT, place])
 
+  /**
+   * Move the camera to `target` along one continuous zoom-and-pan path
+   * (camera.ts). `focus` is the screen point that stays the centre of the
+   * motion (a tapped point for zooms). Under reduced motion it jumps.
+   */
   const animateTo = useCallback(
-    (target: Transform, ms = 520) => {
+    (target: Transform, opts: { ms?: number; ease?: (p: number) => number; focus?: [number, number] } = {}) => {
       cancelAnimationFrame(anim.current)
-      const from = { ...t.current }
+      const from: View = { ...t.current }
       const to = clampT(target)
-      if (ms <= 0 || prefersReducedMotion()) {
+      if (opts.ms === 0 || prefersReducedMotion()) {
         setT(to)
         settle()
         return
       }
+      const { w, h } = size.current
+      const path = flight(from, to, w, h, opts.focus)
+      const ms = opts.ms ?? path.duration
+      const ease = opts.ease ?? easeInOut
       const start = performance.now()
-      const ease = (p: number) => 1 - Math.pow(1 - p, 3)
       const step = (now: number) => {
         const p = Math.min(1, (now - start) / ms)
-        const e = ease(p)
-        // Interpolate zoom geometrically so the motion feels even.
-        const k = from.k * Math.pow(to.k / from.k, e)
-        setT({ k, x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e })
+        setT(path.at(ease(p)))
         if (p < 1) anim.current = requestAnimationFrame(step)
         else settle()
       }
@@ -364,32 +433,37 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
   insetsRef.current = props.insets
   const fitRect = useCallback((r: [number, number, number, number], pad = 0.08): Transform => {
     const { w, h } = size.current
-    const top = insetsRef.current?.top ?? 0
-    const avail = Math.max(120, h - top - (insetsRef.current?.bottom ?? 0))
     const bw = r[2] - r[0]
     const bh = r[3] - r[1]
-    const k = Math.min(w / (bw * (1 + pad * 2)), avail / (bh * (1 + pad * 2)))
-    return { k, x: w / 2 - ((r[0] + r[2]) / 2) * k, y: top + avail / 2 - ((r[1] + r[3]) / 2) * k }
-  }, [])
+    const focusFit = Math.min(w / (bw * (1 + pad * 2)), h / (bh * (1 + pad * 2)))
+    const k = Math.max(w / sheet.width, h / sheet.height, focusFit)
+    return { k, x: w / 2 - ((r[0] + r[2]) / 2) * k, y: h / 2 - ((r[1] + r[3]) / 2) * k }
+  }, [sheet])
 
   useImperativeHandle(
     ref,
     () => ({
-      flyTo: (x, y, zoom = 2.6) => {
+      flyTo: (x, y, zoom = 2.6, insets) => {
         const { w, h } = size.current
-        const k = Math.max(t.current.k, kFit.current * zoom)
-        animateTo({ k, x: w / 2 - x * k, y: h / 2 - y * k })
+        const top = insets?.top ?? insetsRef.current?.top ?? 0
+        const bottom = insets?.bottom ?? insetsRef.current?.bottom ?? 0
+        const cx = w / 2
+        const cy = top + Math.max(80, h - top - bottom) / 2
+        const { max } = limits()
+        const k = Math.min(max, Math.max(t.current.k, kFit.current * zoom))
+        animateTo({ k, x: cx - x * k, y: cy - y * k }, { focus: [cx, cy] })
       },
       fitFocus: () => animateTo(fitRect(props.initialFocus ?? sheet.focus)),
       zoomBy: (f) => {
         const { w, h } = size.current
-        const k = t.current.k * f
+        const { min, max } = limits()
+        const k = clamp(t.current.k * f, min, max)
         const cx = (w / 2 - t.current.x) / t.current.k
         const cy = (h / 2 - t.current.y) / t.current.k
-        animateTo({ k, x: w / 2 - cx * k, y: h / 2 - cy * k }, 280)
+        animateTo({ k, x: w / 2 - cx * k, y: h / 2 - cy * k }, { ms: 280, ease: easeOut, focus: [w / 2, h / 2] })
       },
     }),
-    [animateTo, fitRect, props.initialFocus, sheet],
+    [animateTo, fitRect, limits, props.initialFocus, sheet],
   )
 
   // Size, painted margin and the initial fit.
@@ -411,7 +485,7 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
         layer.style.width = `${w + 2 * m}px`
         layer.style.height = `${h + 2 * m}px`
       }
-      const fit = fitRect(props.initialFocus ?? sheet.focus, 0.04)
+      const fit = fitRect(props.initialFocus ?? sheet.focus, 0)
       kFit.current = fit.k
       if (initial) t.current = clampT(fit)
       else {
@@ -460,16 +534,28 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
     let rect = el.getBoundingClientRect()
     /** Pan anchor: where the finger went down and the view at that moment. */
     let pan: { x: number; y: number; tx: number; ty: number } | null = null
-    let pinch: { dist: number; k: number; wx: number; wy: number } | null = null
+    let pinch: { dist: number; k: number; wx: number; wy: number; cx: number; cy: number } | null = null
     let tap: { x: number; y: number; time: number } | null = null
+    /** Two fingers down together and lifted without moving: zoom out (as in other map apps). */
+    let twoTap: { time: number; moved: boolean; cx: number; cy: number } | null = null
     let moved = false
     let samples: Array<{ x: number; y: number; t: number }> = []
+    let zoomSamples: Array<{ k: number; t: number; cx: number; cy: number }> = []
     let wheel: { f: number; x: number; y: number } | null = null
+    /** A mouse-wheel zoom easing towards `target` around the cursor. */
+    let wheelTo: { target: number; fx: number; fy: number; last: number } | null = null
     let lastWheel = 0
     let frame = 0
     let lastTap = 0
+    let hoverFrame = 0
+    let pendingTap: ReturnType<typeof setTimeout> | undefined
+    let hoverAt: { x: number; y: number } | null = null
 
-    const local = (e: PointerEvent | WheelEvent) => ({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+    const local = (e: PointerEvent | WheelEvent | MouseEvent) => ({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+    const stopMotion = () => {
+      cancelAnimationFrame(anim.current)
+      wheelTo = null
+    }
 
     const flush = () => {
       frame = 0
@@ -478,8 +564,12 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
         const dist = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y))
         const cx = (a.x + b.x) / 2
         const cy = (a.y + b.y) / 2
-        const k = pinch.k * (dist / pinch.dist)
+        if (twoTap && (Math.abs(dist - pinch.dist) > 12 || Math.hypot(cx - pinch.cx, cy - pinch.cy) > 12)) twoTap.moved = true
+        const { min, max } = limits()
+        const k = clamp(pinch.k * (dist / pinch.dist), min, max)
         setT({ k, x: cx - pinch.wx * k, y: cy - pinch.wy * k })
+        zoomSamples.push({ k: t.current.k, t: performance.now(), cx, cy })
+        if (zoomSamples.length > 10) zoomSamples.shift()
       } else if (pan && moved && pointers.size === 1) {
         const p = pointers.values().next().value!
         setT({ k: t.current.k, x: pan.tx + (p.x - pan.x), y: pan.ty + (p.y - pan.y) })
@@ -488,7 +578,8 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
         const { f, x, y } = wheel
         wheel = null
         const cur = t.current
-        const k = cur.k * f
+        const { min, max } = limits()
+        const k = clamp(cur.k * f, min, max)
         const wx = (x - cur.x) / cur.k
         const wy = (y - cur.y) / cur.k
         setT({ k, x: x - wx * k, y: y - wy * k })
@@ -503,31 +594,46 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       const cx = (a.x + b.x) / 2
       const cy = (a.y + b.y) / 2
       const cur = t.current
-      pinch = { dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), k: cur.k, wx: (cx - cur.x) / cur.k, wy: (cy - cur.y) / cur.k }
+      pinch = { dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), k: cur.k, wx: (cx - cur.x) / cur.k, wy: (cy - cur.y) / cur.k, cx, cy }
+      zoomSamples = []
     }
 
     const onDown = (e: PointerEvent) => {
       if ((e.target as Element).closest('[data-map-ui]')) return
       if (e.pointerType === 'mouse' && e.button !== 0) return
-      cancelAnimationFrame(anim.current)
+      stopMotion()
       el.setPointerCapture(e.pointerId)
       rect = el.getBoundingClientRect()
       const p = local(e)
       pointers.set(e.pointerId, p)
+      holding.current = true
       if (pointers.size === 1) {
         pan = { x: p.x, y: p.y, tx: t.current.x, ty: t.current.y }
         tap = { ...p, time: performance.now() }
         moved = false
         samples = [{ ...p, t: e.timeStamp }]
+        twoTap = null
       } else if (pointers.size === 2) {
         startPinch()
+        twoTap = tap && pinch && performance.now() - tap.time < 250 ? { time: performance.now(), moved: false, cx: pinch.cx, cy: pinch.cy } : null
         moved = true
         tap = null
       }
     }
 
     const onMove = (e: PointerEvent) => {
-      if (!pointers.has(e.pointerId)) return
+      if (!pointers.has(e.pointerId)) {
+        // Hover (mouse, no buttons): show what a click would open.
+        if (e.pointerType === 'mouse' && !e.buttons) {
+          hoverAt = local(e)
+          if (!hoverFrame)
+            hoverFrame = requestAnimationFrame(() => {
+              hoverFrame = 0
+              if (hoverAt && !moving.current) hoverRef.current(hoverAt.x, hoverAt.y)
+            })
+        }
+        return
+      }
       const p = local(e)
       pointers.set(e.pointerId, p)
       if (pointers.size === 1) {
@@ -570,22 +676,66 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       anim.current = requestAnimationFrame(step)
     }
 
+    /** Zoom momentum after a quick pinch: the scale keeps changing briefly around the fingers' last centre. */
+    const zoomGlide = () => {
+      const last = zoomSamples[zoomSamples.length - 1]
+      const first = last && zoomSamples.find((s) => last.t - s.t <= 90)
+      if (!last || !first || last.t - first.t < 12 || performance.now() - last.t > 60 || prefersReducedMotion()) return false
+      let v = Math.log(last.k / first.k) / (last.t - first.t) // ln(scale) per ms
+      if (Math.abs(v) < 0.0012) return false
+      v = Math.max(-0.006, Math.min(0.006, v))
+      let prev = performance.now()
+      const step = (now: number) => {
+        const dt = Math.min(48, Math.max(1, now - prev))
+        prev = now
+        const cur = t.current
+        const { min, max } = limits()
+        const k = clamp(cur.k * Math.exp(v * dt), min, max)
+        const wx = (last.cx - cur.x) / cur.k
+        const wy = (last.cy - cur.y) / cur.k
+        setT({ k, x: last.cx - wx * k, y: last.cy - wy * k })
+        v *= Math.exp(-dt / 140)
+        if (Math.abs(v) > 0.00015 && t.current.k !== cur.k) anim.current = requestAnimationFrame(step)
+        else settle()
+      }
+      anim.current = requestAnimationFrame(step)
+      return true
+    }
+
+    const zoomAround = (x: number, y: number, f: number) => {
+      const cur = t.current
+      const wx = (x - cur.x) / cur.k
+      const wy = (y - cur.y) / cur.k
+      const { min, max } = limits()
+      const k = clamp(cur.k * f, min, max)
+      animateTo({ k, x: x - wx * k, y: y - wy * k }, { ms: TAP_ZOOM_MS, ease: easeOut, focus: [x, y] })
+    }
+
     const onUp = (e: PointerEvent) => {
       if (!pointers.has(e.pointerId)) return
       const p = local(e)
       pointers.delete(e.pointerId)
+      holding.current = pointers.size > 0
+      // Two fingers down together and both lifted without moving: zoom out around them.
+      if (pointers.size === 0 && twoTap && !twoTap.moved && performance.now() - twoTap.time < 350) {
+        const { cx, cy } = twoTap
+        twoTap = null
+        pinch = null
+        pan = null
+        tap = null
+        zoomAround(cx, cy, 1 / TAP_ZOOM)
+        return
+      }
       if (pinch) {
         if (pointers.size >= 2) startPinch()
-        else {
-          pinch = null
+        else if (pointers.size === 1) {
           // Carry on panning with the finger that stayed down.
-          const rest = pointers.values().next().value
-          if (rest) {
-            pan = { x: rest.x, y: rest.y, tx: t.current.x, ty: t.current.y }
-            samples = []
-          }
-        }
-        if (pointers.size === 0) settle()
+          pinch = null
+          const rest = pointers.values().next().value!
+          pan = { x: rest.x, y: rest.y, tx: t.current.x, ty: t.current.y }
+          samples = []
+        } else pinch = null
+        if (pointers.size === 0 && (e.type === 'pointercancel' || !zoomGlide())) settle()
         return
       }
       if (pointers.size > 0) return
@@ -599,60 +749,186 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       if (wasTap) {
         const now = performance.now()
         const cur = t.current
-        const wx = (p.x - cur.x) / cur.k
-        const wy = (p.y - cur.y) / cur.k
         if (now - lastTap < 300) {
-          // Double tap → zoom in around the point.
-          const k = cur.k * 2
-          animateTo({ k, x: p.x - wx * k, y: p.y - wy * k }, 280)
+          // Double tap / double click → zoom in around the point (Shift: out). The first tap's pending selection is dropped.
+          clearTimeout(pendingTap)
+          zoomAround(p.x, p.y, e.shiftKey ? 1 / TAP_ZOOM : TAP_ZOOM)
           lastTap = 0
         } else {
           lastTap = now
-          tapRef.current(wx, wy)
+          const target = tapRef.current((p.x - cur.x) / cur.k, (p.y - cur.y) / cur.k)
+          // A single tap acts after a moment, in case it is the first of a double tap (as in other map apps);
+          // answering a map question (pins) needs no zoom, so it acts at once.
+          if (target.type === 'pin') selectRef.current?.(target)
+          else pendingTap = setTimeout(() => selectRef.current?.(target), 250)
         }
         return
       }
       const v = velocity(e.timeStamp)
-      if (e.type !== 'pointercancel' && Math.hypot(v.x, v.y) > 0.12) glide(v)
+      if (e.type !== 'pointercancel' && Math.hypot(v.x, v.y) > 0.12 && !prefersReducedMotion()) glide(v)
       else settle()
+    }
+
+    const wheelStep = (now: number) => {
+      if (!wheelTo) return
+      const dt = Math.min(48, Math.max(1, now - wheelTo.last))
+      wheelTo.last = now
+      const cur = t.current
+      const a = 1 - Math.exp(-dt / WHEEL_TAU)
+      let k = cur.k * Math.pow(wheelTo.target / cur.k, a)
+      const done = Math.abs(Math.log(wheelTo.target / k)) < 0.003
+      if (done) k = wheelTo.target
+      const wx = (wheelTo.fx - cur.x) / cur.k
+      const wy = (wheelTo.fy - cur.y) / cur.k
+      setT({ k, x: wheelTo.fx - wx * k, y: wheelTo.fy - wy * k })
+      if (done || Math.abs(t.current.k - k) > 1e-9) {
+        wheelTo = null
+        settle()
+        return
+      }
+      anim.current = requestAnimationFrame(wheelStep)
     }
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
-      cancelAnimationFrame(anim.current)
       // The container only moves on resize; refresh its position once per wheel burst.
       if (e.timeStamp - lastWheel > 250) rect = el.getBoundingClientRect()
       lastWheel = e.timeStamp
       const p = local(e)
-      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY
-      const f = Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0022))
+      const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY
+      if (isWheelNotch(e) && !prefersReducedMotion()) {
+        // A mouse wheel moves in steps: ease each step in, accumulating, around the cursor.
+        const { min, max } = limits()
+        const base = wheelTo && performance.now() - wheelTo.last < 150 ? wheelTo.target : t.current.k
+        const target = clamp(base * Math.exp(-dy * WHEEL_RATE), min, max)
+        const running = !!wheelTo
+        wheelTo = { target, fx: p.x, fy: p.y, last: wheelTo?.last ?? performance.now() }
+        if (!running) {
+          cancelAnimationFrame(anim.current)
+          anim.current = requestAnimationFrame(wheelStep)
+        }
+        return
+      }
+      // Trackpads send a stream of small deltas (pinch arrives with ctrlKey): apply them directly.
+      stopMotion()
+      const f = Math.exp(-dy * (e.ctrlKey ? 0.01 : WHEEL_RATE))
       wheel = { f: (wheel?.f ?? 1) * f, x: p.x, y: p.y }
       request()
+    }
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target !== el) return
+      const { w, h } = size.current
+      const cur = t.current
+      const step = 90
+      const nudge = (dx: number, dy: number) => animateTo({ ...cur, x: cur.x + dx, y: cur.y + dy }, { ms: 180, ease: easeOut })
+      switch (e.key) {
+        case 'ArrowLeft':
+          nudge(step, 0)
+          break
+        case 'ArrowRight':
+          nudge(-step, 0)
+          break
+        case 'ArrowUp':
+          nudge(0, step)
+          break
+        case 'ArrowDown':
+          nudge(0, -step)
+          break
+        case '+':
+        case '=':
+          zoomAround(w / 2, h / 2, 1.6)
+          break
+        case '-':
+        case '_':
+          zoomAround(w / 2, h / 2, 1 / 1.6)
+          break
+        default:
+          return
+      }
+      e.preventDefault()
+    }
+
+    const onLeave = () => {
+      hoverAt = null
+      hoverRef.current(NaN, NaN)
     }
 
     el.addEventListener('pointerdown', onDown)
     el.addEventListener('pointermove', onMove)
     el.addEventListener('pointerup', onUp)
     el.addEventListener('pointercancel', onUp)
+    el.addEventListener('pointerleave', onLeave)
     el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('keydown', onKey)
     return () => {
       cancelAnimationFrame(frame)
+      cancelAnimationFrame(hoverFrame)
+      clearTimeout(pendingTap)
       el.removeEventListener('pointerdown', onDown)
       el.removeEventListener('pointermove', onMove)
       el.removeEventListener('pointerup', onUp)
       el.removeEventListener('pointercancel', onUp)
+      el.removeEventListener('pointerleave', onLeave)
       el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('keydown', onKey)
     }
-  }, [animateTo, setT, settle])
+  }, [animateTo, limits, setT, settle])
 
   // Spatial indexes: built when the data changes, not on every layout.
   const placeIndex = useMemo(() => new GridIndex(props.places, (p) => [p.x, p.y, p.x, p.y], sheet.width, sheet.height), [props.places, sheet])
   const labelIndex = useMemo(() => labelIndexFor(sheet.labels, sheet.width, sheet.height), [sheet])
   const riversById = useMemo(() => new Map(sheet.rivers.map((r) => [`river:${r.id}`, r])), [sheet])
+  /** Outlines smallest first, so a tap inside nested areas opens the innermost. */
+  const areasBySize = useMemo(() => [...sheet.areas].sort((a, b) => (a.bbox[2] - a.bbox[0]) * (a.bbox[3] - a.bbox[1]) - (b.bbox[2] - b.bbox[0]) * (b.bbox[3] - b.bbox[1])), [sheet])
+  /** Sheet features whose own name already labels a place, so the place needs no symbol. */
+  const labelled = useMemo(() => new Set(sheet.labels.map(labelKeyOf)), [sheet])
+  const discovered = props.discovered
+  const known = useCallback((id: string) => !discovered || discovered.has(id), [discovered])
+  /** The symbols drawn at the last layout: taps and hovers only find what is on screen. */
+  const drawn = useRef<Place[]>([])
 
-  // Tap → the nearest symbol, else the state/country under the finger.
-  const tapRef = useRef<(x: number, y: number) => void>(() => {})
-  tapRef.current = (wx: number, wy: number) => {
+  /** The place a tap or hover at (wx, wy) sheet px points at: a symbol, a name, a course or an outline. */
+  const placeAt = (wx: number, wy: number): string | null => {
+    const k = t.current.k
+    let best: Place | null = null
+    let bestD = 18 / k
+    for (const p of drawn.current) {
+      const d = Math.hypot(p.x - wx, p.y - wy)
+      if (d < bestD) {
+        bestD = d
+        best = p
+      }
+    }
+    if (best) return best.id
+    const features = props.featurePlaces ?? props.linkedLabels ?? new Map<string, string>()
+    // Named features (ranges, seas, lakes…) by their name.
+    const near = 34 / k
+    for (const l of labelIndex.query([wx - near, wy - near, wx + near, wy + near])) {
+      if (l.kind === 'river' || l.x === undefined || l.y === undefined) continue
+      const placeId = features.get(labelKeyOf(l))
+      if (placeId && Math.hypot(l.x - wx, l.y - wy) < near) return placeId
+    }
+    // Rivers along their course.
+    for (const [key, placeId] of features) {
+      if (!key.startsWith('river:')) continue
+      const r = riversById.get(key)
+      if (r && distanceToLines([wx, wy], r.coords) < 7 / k) return placeId
+    }
+    // Inside a drawn outline (a park, a wetland, a disputed region).
+    const near2 = container.current?.classList.contains('atlas-near')
+    for (const a of areasBySize) {
+      if (a.kind === 'land' || (a.kind === 'park' && !(props.showAreas && near2)) || (a.kind === 'region' && !props.showAreas)) continue
+      if (wx < a.bbox[0] || wx > a.bbox[2] || wy < a.bbox[1] || wy > a.bbox[3]) continue
+      const placeId = features.get(`area:${a.id}`)
+      if (placeId && pointInGeometry([wx, wy], a.geometry)) return placeId
+    }
+    return null
+  }
+
+  // Tap → a pin, else a place, else the state/country under the finger.
+  const tapRef = useRef<(x: number, y: number) => MapTarget>(() => ({ type: 'point', x: 0, y: 0 }))
+  tapRef.current = (wx: number, wy: number): MapTarget => {
     const k = t.current.k
     if (props.pins?.length) {
       let best: MapPin | null = null
@@ -664,38 +940,35 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
           best = p
         }
       }
-      if (best) return onSelect?.({ type: 'pin', id: best.id })
+      if (best) return { type: 'pin', id: best.id }
     }
     if (props.showPlaces !== false) {
-      let best: Place | null = null
-      let bestD = 18 / k
-      for (const p of placeIndex.query([wx - bestD, wy - bestD, wx + bestD, wy + bestD])) {
-        const d = Math.hypot(p.x - wx, p.y - wy)
-        if (d < bestD) {
-          bestD = d
-          best = p
-        }
-      }
-      if (best) return onSelect?.({ type: 'place', id: best.id })
-      // Rivers that are discovered places can be tapped along their course,
-      // and named features (ranges, seas, lakes…) by their name.
-      const linked = props.linkedLabels ?? new Map<string, string>()
-      const near = 34 / k
-      for (const l of labelIndex.query([wx - near, wy - near, wx + near, wy + near])) {
-        if (l.kind === 'river' || l.x === undefined || l.y === undefined) continue
-        const placeId = linked.get(labelKeyOf(l))
-        if (placeId && Math.hypot(l.x - wx, l.y - wy) < near) return onSelect?.({ type: 'place', id: placeId })
-      }
-      for (const [key, placeId] of linked) {
-        const r = riversById.get(key)
-        if (r && distanceToLines([wx, wy], r.coords) < 7 / k) return onSelect?.({ type: 'place', id: placeId })
-      }
+      const id = placeAt(wx, wy)
+      if (id) return { type: 'place', id }
     }
     const st = featureAt(sheet.states, [wx, wy])
-    if (st) return onSelect?.({ type: 'state', id: st.id })
+    if (st) return { type: 'state', id: st.id }
     const c = featureAt(sheet.countries, [wx, wy])
-    if (c) return onSelect?.({ type: 'country', id: c.id })
-    onSelect?.({ type: 'point', x: wx, y: wy })
+    if (c) return { type: 'country', id: c.id }
+    return { type: 'point', x: wx, y: wy }
+  }
+  const selectRef = useRef(onSelect)
+  selectRef.current = onSelect
+
+  // Hover (mouse): a pointer cursor and a lifted symbol over anything a click would open.
+  const hovered = useRef<string | null>(null)
+  const hoverRef = useRef<(sx: number, sy: number) => void>(() => {})
+  hoverRef.current = (sx: number, sy: number) => {
+    const el = container.current
+    if (!el || props.showPlaces === false) return
+    const cur = t.current
+    const id = Number.isNaN(sx) ? null : placeAt((sx - cur.x) / cur.k, (sy - cur.y) / cur.k)
+    if (id === hovered.current) return
+    const layer = labelLayer.current
+    if (hovered.current) layer?.querySelector(`[data-place="${CSS.escape(hovered.current)}"]`)?.classList.remove('is-hover')
+    hovered.current = id
+    if (id) layer?.querySelector(`[data-place="${CSS.escape(id)}"]`)?.classList.add('is-hover')
+    el.style.cursor = id ? 'pointer' : ''
   }
 
   // ── derived drawing data (recomputed only when the view settles) ────────
@@ -706,18 +979,29 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
 
   /**
    * Which place symbols to draw at this zoom: capitals always, then more detail
-   * as you zoom in, thinned so symbols never crowd. Places the base map already
-   * names (rivers, ranges, seas…) are shown through that name instead.
+   * as you zoom in, thinned so symbols never crowd. Discovered places come
+   * first; places not yet discovered are drawn muted and a little later.
+   * Places the base map already names (rivers, ranges, seas…) show through
+   * that name instead.
    */
   const visible = useMemo<Place[]>(() => {
     if (!layoutT || props.showPlaces === false) return []
     const z = layoutT.k / kFit.current
     const { w, h } = size.current
+    const kinds = props.kinds
     const minZ = (p: Place) => (p.kind === 'capital' ? (p.tags?.includes('national') || p.level === 1 ? 0 : 1.4) : p.level === 1 ? 1.3 : p.level === 2 ? 2 : 2.9)
-    const prio = (p: Place) => (p.id === props.selectedId ? 1000 : 0) + (props.newIds?.has(p.id) ? 500 : 0) + (p.kind === 'capital' ? 60 : 0) + (4 - p.level) * 20
+    const prio = (p: Place) =>
+      (p.id === props.selectedId ? 1000 : 0) + (props.newIds?.has(p.id) ? 500 : 0) + (known(p.id) ? 200 : 0) + (p.kind === 'capital' ? 60 : 0) + (4 - p.level) * 20 + (p.yield?.score ?? 0) / 5
     const cand = placeIndex
       .query(viewRect(layoutT, w, h, 20))
-      .filter((p) => p.id === props.selectedId || props.newIds?.has(p.id) || (!(p.geom && sheet.labels.length) && z >= minZ(p)))
+      .filter((p) => {
+        if (p.id === props.selectedId || props.newIds?.has(p.id)) return true
+        if (kinds && !kinds.has(p.kind)) return false
+        const isKnown = known(p.id)
+        if (!isKnown && !props.showUndiscovered) return false
+        if (p.geom && labelled.has(p.geom)) return false
+        return z >= minZ(p) + (isKnown ? 0 : 0.35)
+      })
       .map((p) => ({ p, sx: p.x * layoutT.k + layoutT.x, sy: p.y * layoutT.k + layoutT.y }))
       .filter(({ sx, sy }) => sx > -20 && sx < w + 20 && sy > -20 && sy < h + 20)
       .sort((a, b) => prio(b.p) - prio(a.p))
@@ -729,7 +1013,8 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       out.push(c.p)
     }
     return out
-  }, [layoutT, placeIndex, props.showPlaces, props.selectedId, props.newIds, sheet])
+  }, [layoutT, placeIndex, props.showPlaces, props.selectedId, props.newIds, props.kinds, props.showUndiscovered, known, labelled])
+  drawn.current = visible
 
   const labels = useMemo<PlacedLabel[]>(() => {
     if (!layoutT) return []
@@ -740,6 +1025,7 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       mastery: props.mastery?.(p.id) ?? 'discovered',
       isNew: props.newIds?.has(p.id) ?? false,
       selected: props.selectedId === p.id,
+      muted: !known(p.id),
     }))
     const fogged = new Set(props.explored ? sheet.states.filter((s) => !props.explored!.has(s.id)).map((s) => s.id) : [])
     return layoutLabels({
@@ -757,12 +1043,12 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       sheetId: sheet.id,
       hidden: props.hiddenLabels,
     })
-  }, [layoutT, visible, labelIndex, props.mastery, props.newIds, props.selectedId, props.explored, props.mutedLabels, props.linkedLabels, props.hiddenLabels, sheet])
+  }, [layoutT, visible, labelIndex, props.mastery, props.newIds, props.selectedId, props.explored, props.mutedLabels, props.linkedLabels, props.hiddenLabels, sheet, known])
 
   const symbols = useMemo(() => {
     if (!layoutT) return []
-    return visible.map((p) => ({ p, x: p.x * layoutT.k + layoutT.x, y: p.y * layoutT.k + layoutT.y }))
-  }, [layoutT, visible])
+    return visible.map((p) => ({ p, x: p.x * layoutT.k + layoutT.x, y: p.y * layoutT.k + layoutT.y, muted: !known(p.id) }))
+  }, [layoutT, visible, known])
 
   const routeScreen = useMemo(() => {
     if (!layoutT || !props.route) return null
@@ -794,6 +1080,17 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
   }, [layoutT, props.highlights])
 
   const toneId = props.tone ?? 'day'
+  // A style change cross-fades: the old style stays on its own compositor layer and fades out.
+  const [fadeFrom, setFadeFrom] = useState<{ plate: Plate; tone: Tone } | null>(null)
+  const lastStyle = useRef({ plate: props.plate, tone: toneId })
+  useEffect(() => {
+    const prev = lastStyle.current
+    lastStyle.current = { plate: props.plate, tone: toneId }
+    if ((prev.plate === props.plate && prev.tone === toneId) || prefersReducedMotion()) return
+    setFadeFrom(prev)
+    const id = setTimeout(() => setFadeFrom(null), 360)
+    return () => clearTimeout(id)
+  }, [props.plate, toneId])
   const tone = TONES[toneId]
   const routeColour = props.route?.color ?? ROUTE
   const flowing = props.living?.flowing
@@ -803,10 +1100,11 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
   return (
     <div
       ref={container}
-      className={cn('relative size-full touch-none overflow-hidden select-none', calm && 'atlas-calm', props.className)}
+      className={cn('atlas relative size-full touch-none overflow-hidden outline-none select-none', calm && 'atlas-calm', props.className)}
       style={{ background: tone.paper, contain: 'layout paint' }}
       role="application"
-      aria-label={`${sheet.title} map`}
+      aria-label={`${sheet.title} map. Drag to pan, scroll or pinch to zoom, arrow keys to move, plus and minus to zoom.`}
+      tabIndex={0}
     >
       {/* Base map, painted in sheet coordinates into an oversized layer. */}
       <div ref={baseLayer} className="atlas-layer" aria-hidden="true">
@@ -821,7 +1119,7 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
           </defs>
           <g ref={worldG}>
             <g clipPath={`url(#${ids.clip})`}>
-              <BaseMap sheet={sheet} plate={props.plate} tone={toneId} colours={colours} explored={props.explored} hatchId={ids.hatch} />
+              <BaseMap sheet={sheet} plate={props.plate} tone={toneId} colours={colours} explored={props.explored} hatchId={ids.hatch} showAreas={props.showAreas ?? false} />
               <Highlights sheet={sheet} highlights={props.highlights} selectedId={props.selectedId} />
             </g>
             {/* Neatline: the printed border of the map sheet. */}
@@ -829,6 +1127,23 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
           </g>
         </svg>
       </div>
+
+      {fadeFrom && (
+        <div
+          ref={fadeLayer}
+          className="atlas-layer atlas-fade-out"
+          aria-hidden="true"
+          style={{ left: -size.current.m, top: -size.current.m, width: size.current.w + 2 * size.current.m, height: size.current.h + 2 * size.current.m, transform: baseLayer.current?.style.transform }}
+        >
+          <svg className="absolute inset-0 size-full">
+            <g ref={fadeG} transform={worldG.current?.getAttribute('transform') ?? undefined}>
+              <g clipPath={`url(#${ids.clip})`}>
+                <BaseMap sheet={sheet} plate={fadeFrom.plate} tone={fadeFrom.tone} colours={colours} explored={props.explored} hatchId={ids.hatch} showAreas={props.showAreas ?? false} />
+              </g>
+            </g>
+          </svg>
+        </div>
+      )}
 
       {/* Flowing rivers get a layer of their own, so their motion never repaints the base map. */}
       <div ref={flowLayer} className="atlas-layer" style={{ display: hasFlow ? undefined : 'none' }} aria-hidden="true">
@@ -868,12 +1183,15 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
               ))}
             </g>
           )}
-          {symbols.map(({ p, x, y }) => (
+          {symbols.map(({ p, x, y, muted }) => (
             <g key={p.id} transform={`translate(${x},${y})`}>
-              {toneId === 'night' && props.living?.lights.has(p.id) && <circle r={12} fill={`url(#${ids.glow})`} />}
-              {props.selectedId === p.id && <circle r={12} fill="none" stroke={HIGHLIGHT} strokeWidth={2.5} />}
-              <Symbol kind={p.kind} tags={p.tags} national={p.tags?.includes('national')} />
-              <MasteryBadge level={props.mastery?.(p.id) ?? 'discovered'} />
+              <PlaceSymbol
+                place={p}
+                muted={muted}
+                selected={props.selectedId === p.id}
+                mastery={muted ? 'discovered' : (props.mastery?.(p.id) ?? 'discovered')}
+                glowId={toneId === 'night' && props.living?.lights.has(p.id) ? ids.glow : undefined}
+              />
             </g>
           ))}
           {labels.map((l) => l.path && <RiverName key={l.key} label={l} tone={toneId} idPrefix={uid} />)}
@@ -959,8 +1277,26 @@ function labelPaint(l: PlacedLabel, toneId: Tone) {
     halo: TONES[toneId].halo,
     haloWidth: l.style === 'state' || l.style === 'country' ? 3.2 : 2.8,
     opacity: l.muted ? 0.62 : 1,
+    // HTML names are muted by colour, not opacity: opacity would give every name a paint layer of its own.
+    color: l.muted ? `color-mix(in srgb, ${fill} 62%, ${TONES[toneId].halo})` : fill,
   }
 }
+
+/**
+ * A place's symbol. Memoised: when the view settles only its outer translate
+ * changes, so React leaves the symbol itself alone.
+ */
+const PlaceSymbol = memo(function PlaceSymbol({ place: p, muted, selected, mastery, glowId }: { place: Place; muted: boolean; selected: boolean; mastery: MasteryLevel; glowId?: string }) {
+  // Inner group: hover lift, fade-in and the muted look, all in CSS.
+  return (
+    <g data-place={p.id} className={cn('atlas-sym', muted && 'atlas-sym-muted')}>
+      {glowId && <circle r={12} fill={`url(#${glowId})`} />}
+      {selected && <circle r={12} fill="none" stroke={HIGHLIGHT} strokeWidth={2.5} className="atlas-selected" />}
+      <Symbol kind={p.kind} tags={p.tags} national={p.tags?.includes('national')} />
+      {!muted && <MasteryBadge level={mastery} />}
+    </g>
+  )
+})
 
 /** A name that follows a river's course (SVG textPath). */
 const RiverName = memo(function RiverName({ label: l, tone: toneId, idPrefix }: { label: PlacedLabel; tone: Tone; idPrefix: string }) {
@@ -981,25 +1317,25 @@ const RiverName = memo(function RiverName({ label: l, tone: toneId, idPrefix }: 
 
 /** A point name, positioned so its baseline sits where an SVG `<text y>` would put it. */
 const PlaceName = memo(function PlaceName({ label: l, tone: toneId }: { label: PlacedLabel; tone: Tone }) {
-  const { fill, fontFamily, fontStyle, fontWeight, fontSize, letterSpacing, halo, haloWidth, opacity } = labelPaint(l, toneId)
+  const { color, fontFamily, fontStyle, fontWeight, fontSize, letterSpacing, halo, haloWidth } = labelPaint(l, toneId)
   return (
-    <span
-      className="atlas-name"
-      style={{
-        left: l.x,
-        top: l.y - baselineFromTop(l.style, l.size),
-        color: fill,
-        fontFamily,
-        fontStyle,
-        fontWeight,
-        fontSize,
-        letterSpacing,
-        WebkitTextStroke: `${haloWidth}px ${halo}`,
-        opacity,
-        transform: l.anchor === 'middle' ? 'translateX(-50%)' : l.anchor === 'end' ? 'translateX(-100%)' : undefined,
-      }}
-    >
-      {l.text}
+    // The outer span is the anchor point, so a counter-scale keeps it in place; the inner one holds the text.
+    <span className="atlas-name" style={{ left: l.x, top: l.y }}>
+      <span
+        className="atlas-name-text"
+        style={{
+          color,
+          fontFamily,
+          fontStyle,
+          fontWeight,
+          fontSize,
+          letterSpacing,
+          WebkitTextStroke: `${haloWidth}px ${halo}`,
+          transform: `translate(${l.anchor === 'middle' ? '-50%' : l.anchor === 'end' ? '-100%' : '0'},${-baselineFromTop(l.style, l.size)}px)`,
+        }}
+      >
+        {l.text}
+      </span>
     </span>
   )
 })
@@ -1022,9 +1358,10 @@ function joinBy<T>(items: readonly T[], key: (item: T) => string | undefined, d:
 
 const riverRanks = new WeakMap<Sheet, Array<[string, string]>>()
 const lakeGroups = new WeakMap<Sheet, Array<[string, string]>>()
+const areaGroups = new WeakMap<Sheet, Record<AreaFeature['kind'], string>>()
 
 /** Everything drawn in sheet coordinates. Memoised: only re-renders when data changes, and only repaints when the view settles. */
-const BaseMap = memo(function BaseMap({ sheet, plate, tone: toneId, colours, explored, hatchId }: { sheet: Sheet; plate: Plate; tone: Tone; colours: Map<string, string>; explored: Set<string> | null; hatchId: string }) {
+const BaseMap = memo(function BaseMap({ sheet, plate, tone: toneId, colours, explored, hatchId, showAreas }: { sheet: Sheet; plate: Plate; tone: Tone; colours: Map<string, string>; explored: Set<string> | null; hatchId: string; showAreas: boolean }) {
   const isIndia = sheet.states.length > 0
   const tone = TONES[toneId]
   // The night chart is always drawn in flat colours.
@@ -1055,6 +1392,15 @@ const BaseMap = memo(function BaseMap({ sheet, plate, tone: toneId, colours, exp
     if (!l) lakeGroups.set(sheet, (l = joinBy(sheet.lakes, (x) => (Math.max(x.bbox[2] - x.bbox[0], x.bbox[3] - x.bbox[1]) > (isIndia ? 10 : 6) ? 'big' : 'small'), (x) => x.d)))
     return l
   }, [sheet, isIndia])
+  const areas = useMemo(() => {
+    let a = areaGroups.get(sheet)
+    if (!a) {
+      a = { park: '', water: '', region: '', land: '' }
+      for (const f of sheet.areas) a[f.kind] += f.d
+      areaGroups.set(sheet, a)
+    }
+    return a
+  }, [sheet])
   const fog = useMemo(() => {
     const units: MapFeature[] = isIndia ? sheet.states : sheet.countries
     return explored ? units.filter((u) => !explored.has(u.id)).map((u) => u.d).join('') : ''
@@ -1086,6 +1432,13 @@ const BaseMap = memo(function BaseMap({ sheet, plate, tone: toneId, colours, exp
       {lakes.map(([size, d]) => (
         <path key={size} d={d} fill={tone.lake} stroke={size === 'big' ? tone.lakeStroke : 'none'} strokeWidth={0.7} {...ns} />
       ))}
+      {/* Overlay outlines: lakes and wetlands always; protected areas close up; disputed regions. */}
+      {areas.water && <path d={areas.water} fill={tone.lake} stroke={tone.lakeStroke} strokeWidth={0.6} {...ns} />}
+      {showAreas && areas.park && (
+        <g className="atlas-parks">
+          <path d={areas.park} fill={tone.park} fillOpacity={0.16} stroke={tone.parkLine} strokeWidth={0.9} strokeDasharray="3 2" strokeOpacity={0.85} {...ns} />
+        </g>
+      )}
 
       {/* Unexplored areas: a muted veil with fine hatching – still readable. */}
       {fog && (
@@ -1108,6 +1461,8 @@ const BaseMap = memo(function BaseMap({ sheet, plate, tone: toneId, colours, exp
           <path d={sheet.lines.stateBorders} fill="none" stroke={tone.stateBorder} strokeWidth={1.15} strokeDasharray="5 2.5" {...ns} />
         </>
       )}
+
+      {showAreas && areas.region && <path d={areas.region} fill={tone.dispute} fillOpacity={0.07} stroke={tone.dispute} strokeWidth={1.1} strokeDasharray="5 3" {...ns} />}
 
       {/* International boundaries: bold dash-dot, on a light halo. */}
       <path d={sheet.lines.intlBorders} fill="none" stroke={tone.halo} strokeWidth={isIndia ? 3.6 : 2.4} opacity={0.7} {...ns} />
@@ -1162,8 +1517,8 @@ const Highlights = memo(function Highlights({ sheet, highlights, selectedId }: {
             </g>
           )
         }
-        if (h.kind === 'region' || h.kind === 'marine' || h.kind === 'lake') {
-          const f = (h.kind === 'region' ? sheet.regions : h.kind === 'marine' ? sheet.marine : sheet.lakes).find((x) => x.id === h.id)
+        if (h.kind === 'region' || h.kind === 'marine' || h.kind === 'lake' || h.kind === 'area') {
+          const f = (h.kind === 'region' ? sheet.regions : h.kind === 'marine' ? sheet.marine : h.kind === 'area' ? sheet.areas : sheet.lakes).find((x) => x.id === h.id)
           if (!f) return null
           return (
             <g key={i}>

@@ -1,5 +1,5 @@
 /**
- * Lodestar data model.
+ * Tars data model.
  *
  * Every persisted record carries a globally unique `id` plus `createdAt`/`updatedAt`
  * timestamps. Deletions are recorded as tombstones. Together this gives a
@@ -73,6 +73,13 @@ export interface Task extends Entity {
   dueTime: string | null
   reminderAt: number | null
   estimatedPomodoros: number
+  /**
+   * Free-form tags ("exam", "revision"), lower-case, without the '#'. Optional:
+   * tasks saved before tags existed have none. Not indexed – no schema change.
+   */
+  tags?: string[]
+  /** Timer profile to focus on this task with (null: whichever is active). */
+  profileId?: string | null
   subtasks: Subtask[]
   recurrence: RecurrenceRule | null
   /** Shared by every instance of a recurring task so history can be grouped. */
@@ -258,6 +265,15 @@ export interface ReminderLog {
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type AtlasStyle = 'physical' | 'political' | 'night' | 'antique'
 
+export interface AtlasLayers {
+  /** Draw places not yet discovered (muted) as well as discovered ones. */
+  undiscovered: boolean
+  /** Protected-area outlines and disputed regions. */
+  areas: boolean
+  /** Place categories to show (ids from features/atlas/groups.ts); empty = all. */
+  groups: string[]
+}
+
 export interface Settings {
   id: 'settings'
   updatedAt: number
@@ -273,7 +289,7 @@ export interface Settings {
   endVolume: number
   /** Interrupted sessions shorter than this are discarded. */
   minSessionSeconds: number
-  /** Resume the current soundscape when focus starts and fade it during breaks. */
+  /** Sound follows the timer: plays during focus, pauses/stops with it, fades for breaks (audio/follow.ts). */
   ambientFollowsTimer: boolean
   /** Atlas map style (styles beyond the first two unlock with rank). */
   atlasStyle: AtlasStyle
@@ -283,6 +299,8 @@ export interface Settings {
   breakReview: boolean
   /** Draw the active expedition's chart behind immersive mode (off: a plain, calm background). */
   immersiveChart?: boolean
+  /** What the Atlas map shows (layers and place categories). */
+  atlasLayers?: AtlasLayers
   onboarded: boolean
 }
 

@@ -1,21 +1,21 @@
-# Development handoff — UI/UX + Atlas performance + PYQ data upgrade
+# Development handoff — UI/UX + Atlas performance + PYQ data upgrade + Atlas v2 + Tars rebrand & UI overhaul
 
-Last updated: 2026-09-25 (local session: M7 PYQ data from the user’s PDFs).
+Last updated: 2026-09-26 (local session: M10 — rename Lodestar → Tars and premium UI/UX pass, see §11; before that M9 Atlas v2).
 Read this before changing anything, then verify every claim against the code.
 
 ## 1. Where the work is
 
 | | |
 | --- | --- |
-| Working branch | `claude/jolly-clarke-qk4fys` |
-| Built on | `claude/serene-heisenberg-5ibr5v` (the whole app; open PR markus-aurelius1/study-timer#1 → `main`, **not merged**) |
+| Working branch (M9) | `claude/atlas-gazetteer-rebuild`, branched from `claude/jolly-clarke-qk4fys` at `fec9da0` |
+| Earlier work | `claude/jolly-clarke-qk4fys` (M0–M7), built on `claude/serene-heisenberg-5ibr5v` (the whole app; PR markus-aurelius1/study-timer#1 → `main`, **not merged**) |
 | `main` | only the initial commit (README) |
 
-`claude/jolly-clarke-qk4fys` = every commit of PR #1 **plus** the checkpoint commit(s) of this upgrade. Do not rebase or force-push it; add commits on top.
+Do not rebase or force-push shared branches; add commits on top. §10 describes the M9 upgrade (Atlas v2).
 
 ## 2. What the project is
 
-**Lodestar** — a calm, local-first study app for UPSC / UPPCS aspirants:
+**Tars** (called **Lodestar** until M10) — a calm, local-first study app for UPSC / UPPCS aspirants:
 PLAN → FOCUS → TRACK → REVIEW → IMPROVE.
 
 - **Focus**: pomodoro / countdown / open-focus timer (timestamp-based engine, survives sleep/reload), immersive mode, sounds.
@@ -203,8 +203,38 @@ Environment: no environment variables or secrets are required. Optional: `BASE=/
 - Inventing PYQ years/appearances or facts; every PYQ record needs a source.
 - Profiling the dev server (React dev overhead dominates).
 - Force-pushing / rebasing shared branches.
+- Renaming the identifiers that still say "lodestar" (§11.3): the IndexedDB name, the PWA manifest `id`, the
+  Android/iOS app id, the legacy `lodestar://` scheme and the legacy-key migration. They carry users' data and installs.
+- `AnimatePresence mode="wait"` around whole screens (a stuck exit once left the old screen showing – §11.4).
 
 ## 8. Progress log (newest first) — continue from the first unchecked item
+
+- [x] M10 **Tars rebrand + premium UI/UX pass** (see §11). Verified: `npx tsc -b` clean; `npm test` 88/88;
+      `npm run build` OK; `tools/perf/smoke.mjs` 12/12 (production build); `tools/perf/atlas-check.mjs` 18/18;
+      new `tools/perf/ui-audit.mjs` — no unwanted scrollbars at 375/768/1366/1920 px, light + dark, every screen and
+      dialog; new `tools/perf/features-check.mjs` 18/18 (sound follows pause/resume/stop, task creation with
+      subject/tags, undo, palette capture, sidebar persistence, Atlas + immersive full-screen sync). Not committed.
+
+- [x] M9 **Atlas v2** (see §10): gazetteer 1,181 → **2,273 places** (India 705 → 1,126, World 476 → 1,147), every
+      one linked to Wikipedia (2,262) and Wikidata; 98 of 101 Ramsar sites, 59 tiger reserves, 107 national parks,
+      18 biosphere reserves, 204 national capitals, 83 strategic and 15 facility places; overlay geometry for 777
+      places (courses and outlines); PYQ ledger now matches 1,044 places (0 unmatched, 0 ambiguous; 119 names
+      explained as not mapped, down from 305). Coordinate audit of version 1 (`reports/coords-audit.json`): 2 real
+      errors fixed (Koodli, Kunchikal Falls), the rest are deliberate label positions of large features.
+      Map: all places drawn (undiscovered muted), layers/filters, global search with fly-to, camera paths, eased
+      wheel, zoom gestures, hover, keyboard, constant-size names while zooming, fades, style cross-fade.
+      Verified (production build, headless Chromium): `npx tsc -b` clean; `npm test` 77/77; atlas-build tests 15/15;
+      `tools/perf/smoke.mjs` 12/12; `tools/perf/atlas-check.mjs` 18/18 (desktop wheel/dbl-click/shift/keys/hover/layers/
+      search→fly→card across sheets; phone double tap, two-finger tap, search→fly→card above the sheet).
+      Profile (390×844 @3x, 4× CPU throttle, before → after, with ~2× the places drawn): pan 11 → 2 frames > 50 ms;
+      wheel zoom in 18.6 → 37.4 fps (p95 283 → 67 ms); pan zoomed 44.6 → 55.9 fps (13 → 5 janky); wheel zoom out
+      20.7 → 30.9 fps (p95 250 → 83 ms); mouse-wheel notches 25.8 fps. Lessons: never put a custom property on the
+      label layer (it restyles every SVG node below; 800 ms frames), never use opacity on HTML names (a paint layer
+      each), no `animation-fill-mode: both` on symbols (slow style path on every recalc).
+      Follow-ups: (1) the World discovery gap (§10.2); (2) 21 India rivers have no course in Natural Earth or OSM
+      (drawn as symbols) — a full `node build.mjs` with `line: trace(...)` could add them; (3) 3 Ramsar sites
+      (Sakhya Sagar, Ankasamudra, Gogabeel) and Glaw Lake have no position in any open source; (4) real-device check
+      on iOS Safari / Android WebView.
 
 - [ ] M8 **Remaining (optional follow-ups):** (1) transcribe the four web sources in §4 (reachable from a local
       session; not done in M7, which used the user's PDFs); (2) Indian rivers that PYQs name but the India sheet
@@ -311,3 +341,156 @@ claude/jolly-clarke-qk4fys. You have no access to earlier sessions.
    in §8 of docs/HANDOFF.md, commit with a clear message and push to claude/jolly-clarke-qk4fys.
    No rebases or force-pushes; no rewrites of working code.
 ```
+
+## 10. Atlas v2 — the gazetteer rebuild (M9, 2026-09-26)
+
+**Request (verbatim scope, condensed):** ~1,000 high-value India and ~1,000 World locations from authoritative sources
+(no invented places, coordinates or facts; provenance kept); audit, match and deduplicate against the existing
+gazetteer without losing user progress; map every feature as a point, line or outline; Google/Apple/Mapbox-quality
+interaction (smooth wheel/trackpad/pinch/double-tap zoom, momentum, animated fly-to, focal point preserved, labels that
+appear progressively, no snapping); performance on mobile with the full dataset; search, filters, layers, easy
+India ↔ World navigation; UPSC metadata kept apart from geographic facts; remove the "Sources: UPPSC Question Papers …
+A study heuristic …" lines from place cards (provenance stays in the detail view); verify; deploy to Vercel.
+
+### 10.1 Data pipeline (tools/atlas-build/gazetteer + lib)
+
+```
+content/candidates/{india,world}.mjs   curated candidates: C(kind, 'Wikipedia title', { lvl, why, tags, sub, … })
+content/candidates/lists/*.json        official lists read from Wikipedia list articles that cite their owners:
+                                       Ramsar (RSIS), tiger reserves (NTCA), national parks (MoEFCC/WII),
+                                       biosphere reserves (MoEFCC/UNESCO MAB); national capitals from Natural Earth
+gazetteer/lists.mjs                    refreshes the lists
+gazetteer/link-existing.mjs            links every version 1 place to its Wikipedia article + Wikidata item
+                                       → content/sources/links.json (+ hand overrides in link-overrides.mjs)
+gazetteer/generate.mjs                 resolves candidates → content/generated/{india,world}.json (+ enrich.json
+                                       for existing places) and reports/generate-review.json
+lib/wiki.mjs                           cached, rate-limited Wikipedia / Wikidata / Overpass / Nominatim client
+                                       (.cache/wiki, git-ignored)
+lib/overlay.mjs                        {sheet}-overlay.json: river courses and outlines for places the base sheet
+                                       does not draw (Natural Earth 10m by wikidataid, then OSM by wikidata tag)
+```
+
+Rules the generator enforces:
+- Position: Wikidata P625, else the article, else (designated sites without an article) OpenStreetMap/Nominatim.
+  When Wikidata and Wikipedia disagree by > 20 km on a point feature, the more precise value wins (Wikidata sometimes
+  holds whole degrees; Wikipedia had a sign error for Kudremukh). Nothing is filled from memory; candidates with no
+  position are listed in `reports/generate-review.json` (`noCoords`) and left out.
+- Facts: sentences taken verbatim from the article's lead (`gazetteer/facts.mjs`: pronunciations/native-script
+  glosses stripped, etymology/census/transport sentences skipped), plus designation facts from the official list
+  (e.g. "Designated a Ramsar site on 19 August 2002 (901 km²)").
+- Relations from Wikidata statements when the target is in the gazetteer (mouth → tributaryOf/flowsInto, mountain
+  range, located next to a river, located in a physical feature).
+- Dedupe: same Wikidata item as an existing place → enrich that place (tags, list facts, sources) instead of adding;
+  same distinctive name nearby → same; hand merges in `MERGE_INTO` (a reservoir and its dam…). National capitals may
+  exist on both sheets (as New Delhi already did).
+- Matching articles is strict (`gazetteer/match.mjs`): the distinctive part of the name must match exactly (a redirect
+  from a title built from the name counts), the description's head noun must not say it is something else ("District
+  of…", "Town in…"), and point features must lie near the authored position. Tests: `tools/atlas-build/test/gazetteer.test.mjs`.
+
+### 10.2 Progression safety (do not break)
+
+- `content/sources/v1-lock.json` snapshots every version 1 place with its level and fog unit. The compiler keeps those
+  fixed and warns loudly if a version 1 place goes missing; the pipeline test checks it.
+- Version 2 places carry `added: 2`. `explore.ts`: survey finds timed before `ATLAS_V2_AT` (2026-09-26 00:00 UTC)
+  follow the version 1 order, so an existing history uncovers exactly the places it did; later finds use the full
+  order (new places near base camp come first). `developmentOf` and the ship/developed rule count a version 2 place
+  only once it is discovered, so no state loses a level to new data. Tests in `src/atlas/atlas.test.ts` ("data versions").
+- Expeditions are unchanged. **Open design question for the user:** only 45 World places lie on an expedition and the
+  free survey is India-only, so most World places can never be discovered (their notes stay locked, the map still shows
+  them). Options: more World expeditions, or let the survey reach the World sheet after the release date.
+
+### 10.3 App
+
+- Every place is on the map; undiscovered ones are muted (symbols at 50% opacity, names by colour mixing — opacity on
+  HTML names gave each its own paint layer and made re-layout ~10× slower). Layers menu (`LayersMenu` in
+  AtlasScreen): style, "Places not yet discovered", "Protected areas & disputed regions", category chips
+  (`features/atlas/groups.ts`), persisted in `settings.atlasLayers` (defaulted in `seed.ts`, survives backups).
+- Overlay (`sheet.ts` loads `{sheet}-overlay.json`, optional): extra river courses + labels, `areas` (park / water /
+  region / land). Parks draw from 1.7× zoom (`.atlas-near`), water always, disputed regions dashed crimson; the selected
+  place's outline, course or region is highlighted; taps inside an outline open its place.
+- New kinds `strategic` (borders, corridors, disputed/conflict areas) and `facility` (nuclear, space, defence sites).
+- Place card: designation chips; "Past papers" (no sources paragraph, no heuristic line); undiscovered places also show
+  past papers and "Show on the map"; `PlaceSources` = one collapsed "Sources (n) · 27.39° N, 88.83° E" row.
+- Gazetteer: searches both sheets (other-sheet results badged), names, aliases, states/countries, kinds, designations
+  ("ramsar", "tiger reserve"); precomputed index; picking any place flies to it (switching sheet first).
+- Camera (`features/atlas/camera.ts`, tested): van Wijk–Nuij zoom-and-pan path for every camera move (fly-to, fit,
+  zoom buttons, double-tap), duration from path length; mouse-wheel notches ease towards an accumulated target around
+  the cursor (`isWheelNotch`), trackpad scroll/pinch apply directly; double-click/tap zooms in, Shift+double-click and
+  two-finger tap zoom out; pinch release has zoom momentum; arrow/+/- keys; hover lifts symbols (desktop); a tap on open
+  map waits 260 ms for a possible double tap (places open at once); names and symbols are counter-scaled (`--inv`) while
+  zooming so they keep their size, off on low-power devices; names/symbols fade in; no re-layout while a finger is down.
+- India ↔ World switch cross-fades; the previous sheet stays until the next is ready.
+
+### 10.4 Status and follow-ups
+
+See §8 (M9) for what was verified and the measurements.
+
+## 11. Tars — rebrand and premium UI/UX pass (M10, 2026-09-26)
+
+### 11.1 The request (condensed)
+
+Rename Lodestar → Tars everywhere (UI, titles, meta/OG/Twitter, manifest, icons, package, README, code) and make the
+app feel premium and bug-free, following the existing stack: (1) capture subject, tags and all metadata when a task
+is created (fast quick add that expands to the full field set); (2) dialogs that fit their content – sticky header and
+footer, body scrolls only when needed, never sideways; (3) no unwanted scrollbars; focus view and home fit any
+screen (dvh/svh, safe areas); (4) timer audio must pause/resume/stop with the timer and clean up; (5) collapsible,
+persisted sidebar and a Fullscreen-API toggle for the Atlas; (6) rebrand incl. Vercel project rename (manual);
+(7) a premium timer screen (tabular digits, continuous ring, distinct idle/running/paused, tactile controls,
+completion moment, in-session calm, seamless timer/stopwatch switch); (8) a consistent motion system respecting
+reduced motion; (9) extras as time allows (palette, shortcuts, NL quick add, undo, skeletons, a11y, streak, offline).
+
+### 11.2 What changed (by file)
+
+- **Dialogs** `ui/Sheet.tsx`: flex column capped to the viewport (`100dvh − safe top` on phones, `min(88dvh, 900px)`
+  on wider screens); `header` prop for custom title rows; pinned footer (`footer` prop, or `<SheetFooter>` from deep
+  inside the content via a portal slot); `<SheetActions>` wraps instead of overflowing; body `overflow-x: hidden`;
+  focus trap; a shared layer stack (`pushLayer`/`isTopLayer`) so Escape closes only the top dialog/popover/palette.
+  Every editor dialog moved its buttons to the footer (secondary actions as icon buttons at the start).
+- **Scroll** `ui/scrollLock.ts` (counted, pads the removed scrollbar), `html { overflow-x: clip }`, themed scrollbars.
+  Focus screen: `lg:h-dvh` with the today panel scrolling inside itself; on phones the timer fills the first screen
+  (`100svh` minus tab bar and safe areas). Immersive mode locks page scroll.
+- **Audio** `audio/follow.ts` (+ `followAction.ts`, tested): subscribes to the timer store, so every path moves the
+  sound; `useAudio.stop()` (quick fade, voices released → restarts from the top); `pagehide` stops sound; chime nodes
+  are released; `MusicDock` follows the timer through the IFrame API (pause / stopVideo / resume if it paused it) and
+  the soundscape and YouTube never play together. The old React effect in `App.tsx` (pause never paused; stop from
+  paused never stopped) is gone.
+- **Tasks** `planner/quickAdd.ts` (`#tag`, `+project`, `~45m/~1h30m`, `inferSubject`), `planner/tasks.ts`
+  (`normalizeTags`, `tagUsage`, `restoreTask`, `#Name` → existing project for compatibility), `data/repo.ts`
+  (`restore`), `features/tasks/fields.tsx` (SubjectPicker with search/create/colours, TagInput, PriorityPicker,
+  DateQuick, DeadlineField, EstimateField, ProfilePicker, ProjectPicker, FieldRow), `QuickAdd.tsx` (two tiers),
+  `TaskSheet.tsx` (same fields, delete → Undo), `TaskItem.tsx` (subject + tags), tag filter, CSV `tags` column,
+  `focusOnTask` applies the task's profile.
+- **Timer** `features/focus/FocusScreen.tsx`, `TimerDial.tsx` (rAF ring written to the SVG, `useSmoothProgress`, bloom),
+  `timer/store.ts` (`phaseEnded`), `SessionCompleteSheet` (waits for the bloom), `ImmersiveFocus` (fullscreen sync),
+  CSS `.dial[data-state]`, `.ripple`, `.timer-main`.
+- **Shell** `app/Shell.tsx` (collapsible sidebar, tooltips, streak/offline), `app/App.tsx` (`ShellSync` → `data-sidebar`,
+  `data-chrome`, `data-session` on `<html>`; enter-only screen transitions; skeleton; offline toasts),
+  `app/CommandPalette.tsx`, `app/ShortcutsSheet.tsx`, `app/shortcuts.ts`, `ui/Popover.tsx`, `ui/motion.ts`,
+  `services/fullscreen.ts` (`onFullscreenExit`, `useIsFullscreen`), Atlas `useAtlasFullscreen` in `AtlasScreen.tsx`.
+- **Brand** `ui/Logo.tsx`, `assets/icon.svg`, `public/favicon.svg`, all PNGs + `public/og-image.png` via
+  `scripts/generate-icons.mjs`, `index.html` meta (canonical/OG/Twitter use `%SITE_URL%`, see `vite.config.ts`),
+  manifest, package names, native strings, `lib/storage.ts` (key migration, tested), backup `app: 'tars'`.
+
+### 11.3 Deliberately still "lodestar" (do not rename)
+
+| Identifier | Where | Why |
+| --- | --- | --- |
+| IndexedDB name `lodestar` | `data/db.ts` `DB_NAME` | every install's data lives there; a new name = empty app |
+| PWA manifest `id: 'lodestar-study'` | `vite.config.ts` | the installed app's identity; keeping it lets installs pick up the new name/icons |
+| `app.lodestar.study` | `capacitor.config.ts`, Android `applicationId`/package, iOS bundle id | store identity; changing it publishes a different app |
+| `lodestar://` scheme | Android manifest, iOS plist, `App.tsx` | accepted alongside `tars://` for links/shortcuts made before |
+| legacy keys / backups / SW message | `lib/storage.ts`, `data/backup.ts`, `App.tsx` | old values are read once and moved; old backups import |
+
+### 11.4 Notes and follow-ups
+
+- **Manual:** rename the Vercel project (Settings → General → Project Name, e.g. `tars-study`). The canonical/OG URLs
+  follow `VERCEL_PROJECT_PRODUCTION_URL` automatically; the old `*.vercel.app` link stops working unless a redirect or
+  custom domain is set up. `.vercel/project.json` (local CLI link) keeps working by project id.
+- Store listings/app ids for Android/iOS are unchanged (see 11.3); regenerate launcher assets with
+  `scripts/generate-icons.mjs` after any mark change.
+- Screen transitions are enter-only: once, in dev right after an edit, `AnimatePresence mode="wait"` left the Settings
+  screen showing under the Atlas route. Not reproducible since; the exit animation was removed so it cannot recur.
+- The progress ring keeps moving under reduced motion (it is information, not decoration); decorative animations
+  (halo, breathing ring, blink, ripple) collapse.
+- Not done: drag-and-drop for subjects (tasks and subtasks already reorder); real-device checks (iOS Safari
+  full-screen fallback, Android WebView) – only headless Chromium was used.

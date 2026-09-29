@@ -22,3 +22,9 @@ ios/App/App/config.xml
 
 # User-supplied PYQ source PDFs (copyrighted; transcribed into tools/atlas-build/content/pyq)
 pyq-sources/
+
+# Vercel CLI project link
+.vercel
+
+.vercel
+.env*

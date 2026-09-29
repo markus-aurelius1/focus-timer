@@ -4,13 +4,14 @@
  *
  *   node screens.mjs [baseUrl] [filter]     e.g. node screens.mjs http://localhost:4173/ focus
  */
+import { fileURLToPath } from 'node:url'
 import { mkdirSync } from 'node:fs'
 import { chromium } from 'playwright-core'
 import { prepare } from './lib.mjs'
 
 const base = process.argv[2] ?? 'http://localhost:4173/'
 const filter = process.argv[3] ?? ''
-const out = new URL('./out/screens/', import.meta.url).pathname
+const out = fileURLToPath(new URL('./out/screens/', import.meta.url))
 mkdirSync(out, { recursive: true })
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
@@ -38,9 +39,9 @@ for (const [vp, viewport, dpr] of viewports) {
     await shot('focus-immersive')
     await page.keyboard.press('Escape')
     await page.waitForTimeout(600)
-    await page.getByRole('button', { name: /^stop$/i }).click()
+    await page.getByRole('button', { name: /stop the timer/i }).click()
     await page.waitForTimeout(500)
-    const discard = page.getByRole('button', { name: /discard session/i })
+    const discard = page.getByRole('button', { name: /discard and reset/i })
     if (await discard.isVisible().catch(() => false)) await discard.click()
     for (const r of ['tasks', 'calendar', 'insights', 'atlas', 'settings']) {
       await page.goto(base + '#/' + r)

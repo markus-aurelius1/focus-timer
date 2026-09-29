@@ -48,7 +48,7 @@ export function Onboarding() {
         <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-accent-soft">
           <LogoMark className="size-8 text-accent" />
         </motion.div>
-        <h2 className="font-display text-[30px] leading-tight font-medium tracking-tight">Welcome to Lodestar</h2>
+        <h2 className="font-display text-[30px] leading-tight font-medium tracking-tight">Welcome to Tars</h2>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-2">A calm place to plan your study, focus deeply, and see your effort add up. Everything stays on this device and works offline.</p>
 
         <ol className="mt-6 space-y-3">

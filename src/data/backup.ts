@@ -4,12 +4,14 @@ import { normalizeSettings } from './seed'
 import { applyChanges, type MergeReport } from './sync'
 import { SYNC_TABLES, type Entity, type Settings, type SyncTable, type Tombstone } from './types'
 
-export const BACKUP_APP = 'lodestar'
+export const BACKUP_APP = 'tars'
+/** Backups made before the app was renamed from Lodestar to Tars. */
+const LEGACY_BACKUP_APPS = ['lodestar']
 /** v2: Atlas (recalls, expeditions); v1 backups still import – their sky-theme unlocks are ignored. */
 export const BACKUP_VERSION = 2
 
 export interface BackupFile {
-  app: typeof BACKUP_APP
+  app: string
   version: number
   exportedAt: string
   settings: Settings | null
@@ -40,11 +42,11 @@ export function parseBackup(text: string): BackupFile {
     throw new BackupError('This file is not valid JSON.')
   }
   const b = data as Partial<BackupFile>
-  if (!b || typeof b !== 'object' || b.app !== BACKUP_APP || typeof b.tables !== 'object' || !b.tables) {
-    throw new BackupError('This does not look like a Lodestar backup.')
+  if (!b || typeof b !== 'object' || typeof b.app !== 'string' || ![BACKUP_APP, ...LEGACY_BACKUP_APPS].includes(b.app) || typeof b.tables !== 'object' || !b.tables) {
+    throw new BackupError('This does not look like a Tars backup.')
   }
   if (typeof b.version !== 'number' || b.version > BACKUP_VERSION) {
-    throw new BackupError('This backup was made by a newer version of Lodestar. Update the app and try again.')
+    throw new BackupError('This backup was made by a newer version of Tars. Update the app and try again.')
   }
   for (const [name, rows] of Object.entries(b.tables)) {
     if (!SYNC_TABLES.includes(name as SyncTable)) continue

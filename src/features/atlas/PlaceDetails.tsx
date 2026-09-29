@@ -1,4 +1,5 @@
 import { BookmarkPlus, ChevronRight, Crosshair, GraduationCap, Lock, MapPin } from 'lucide-react'
+import { PlaceSources } from './PlaceSources'
 import type { ReactNode } from 'react'
 import { placeSubtitle } from '@/atlas/data'
 import { MASTERY_LABEL, type PlaceMastery } from '@/atlas/mastery'
@@ -12,7 +13,7 @@ import { toast } from '@/ui/toast'
 import { PastPapers } from './PastPapers'
 import { MASTERY_COLOUR } from './style'
 import { KIND_NAME } from './symbols'
-import { breadcrumb, masteryFn, PlaceIcon } from './util'
+import { breadcrumb, masteryFn, PlaceIcon, TAG_LABEL } from './util'
 import type { MapTarget } from './AtlasMap'
 
 const REL_LABEL: Record<keyof PlaceRelations, string> = {
@@ -47,6 +48,8 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow }: { ex: E
   const level = masteryFn(ex)(p.id)
   const m = ex.mastery.get(p.id)
   const crumbs = breadcrumb(atlas, p)
+  // Designations first (Ramsar, tiger reserve…), then study tags; the capital star is already the symbol.
+  const tags = (p.tags ?? []).filter((t) => TAG_LABEL[t] && t !== 'national')
 
   const rels: Array<{ label: string; items: ReactNode }> = []
   for (const [key, v] of Object.entries(p.rel ?? {}) as Array<[keyof PlaceRelations, unknown]>) {
@@ -93,6 +96,16 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow }: { ex: E
           {p.aka?.length ? <p className="mt-0.5 text-[13px] text-ink-3 italic">Also {p.aka.join(', ')}</p> : null}
         </div>
       </div>
+
+      {tags.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Designations">
+          {tags.map((t) => (
+            <li key={t} className={cn('rounded-full px-2.5 py-0.5 text-[12px] font-bold', t === 'current-affairs' || t === 'strategic' ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-ink-2')}>
+              {TAG_LABEL[t]}
+            </li>
+          ))}
+        </ul>
+      )}
 
       <nav aria-label="Where" className="mt-3 flex flex-wrap items-center gap-1 text-[12px] font-semibold text-ink-3">
         {crumbs.map((c, i) => (
@@ -161,10 +174,17 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow }: { ex: E
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-[13px] font-semibold text-ink-2">Found by free survey outward from your base camp.</p>
+            <p className="mt-3 text-[13px] font-semibold text-ink-2">{p.sheet === 'india' ? 'Found by free survey outward from your base camp.' : 'World places are found on World expeditions; this one is not on a route yet.'}</p>
           )}
         </div>
       )}
+      {!discovered && <PastPapers place={p} />}
+      {!discovered && onShow && (
+        <Button className="mt-4 w-full" variant="ghost" icon={<Crosshair className="size-4" />} onClick={() => onShow(p)}>
+          Show on the map
+        </Button>
+      )}
+      <PlaceSources place={p} />
     </div>
   )
 }

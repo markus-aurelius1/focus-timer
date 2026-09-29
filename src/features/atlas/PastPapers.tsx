@@ -1,6 +1,7 @@
 /**
  * A place's record in previous-year papers and its study priority, with the
  * reasons behind it. Renders nothing until the gazetteer carries PYQ data.
+ * The papers it cites are listed with the place's other sources (PlaceSources).
  */
 import type { PriorityBand, Place } from '@/atlas/types'
 import { cn } from '@/lib/cn'
@@ -51,24 +52,6 @@ export function PastPapers({ place: p }: { place: Place }) {
           ))}
         </ul>
       )}
-      {pyq && pyq.sources.length > 0 && (
-        <p className="mt-2.5 text-[12px] leading-snug text-ink-3">
-          Sources:{' '}
-          {pyq.sources.map((s, i) => (
-            <span key={s.url}>
-              {i > 0 && ' · '}
-              {/^https?:/.test(s.url) ? (
-                <a href={s.url} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-ink-2">
-                  {s.title}
-                </a>
-              ) : (
-                s.title
-              )}
-            </span>
-          ))}
-        </p>
-      )}
-      {y && <p className="mt-2 text-[11.5px] leading-snug text-ink-3">A study heuristic from past papers and the syllabus, not a prediction of future questions.</p>}
     </section>
   )
 }

@@ -1,7 +1,8 @@
 import { App as CapApp } from '@capacitor/app'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { installAudio, useAudio } from '@/audio/store'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { installSoundFollow, setSoundFollowsTimer } from '@/audio/follow'
+import { installAudio } from '@/audio/store'
 import { db } from '@/data/db'
 import { useLookups, useProfiles, useSettings, useTask } from '@/data/hooks'
 import { ensureSeed } from '@/data/seed'
@@ -30,7 +31,12 @@ import { SoundSheet } from '@/features/audio/SoundSheet'
 import { MusicDock } from '@/features/audio/MusicDock'
 import { Onboarding } from '@/features/onboarding/Onboarding'
 import { consumeParams, navigate, useRoute, type RouteName } from './router'
+import { useOnline } from '@/lib/useOnline'
+import { T } from '@/ui/motion'
+import { CommandPalette } from './CommandPalette'
 import { BottomNav, SideNav, TimerPill } from './Shell'
+import { ShortcutsSheet } from './ShortcutsSheet'
+import { useGlobalShortcuts } from './shortcuts'
 import { useApplyTheme } from './theme'
 import { useUi } from './ui-store'
 
@@ -52,6 +58,7 @@ function useBoot(): BootState {
         void navigator.storage?.persist?.().catch(() => {})
         bootTimer()
         installAudio()
+        installSoundFollow()
         if (!cancelled) setState('ready')
       } catch (err) {
         console.error('[boot]', err)
@@ -75,7 +82,7 @@ export function App() {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 p-8 text-center">
         <LogoMark className="size-10 text-accent" />
-        <p className="font-display text-xl">Lodestar couldn’t open its local database.</p>
+        <p className="font-display text-xl">Tars couldn’t open its local database.</p>
         <p className="max-w-sm text-sm text-ink-2">Private browsing modes sometimes block storage. Try a normal window, or check that site data is allowed.</p>
       </div>
     )
@@ -97,22 +104,34 @@ export function App() {
 function Main() {
   const route = useRoute()
   const immersive = useUi((s) => s.immersive)
+  useGlobalShortcuts()
+  // A new screen starts at the top, not at the previous screen's scroll position.
+  const firstScreen = useRef(true)
+  useLayoutEffect(() => {
+    if (firstScreen.current) {
+      firstScreen.current = false
+      return
+    }
+    window.scrollTo(0, 0)
+  }, [route.name])
+  // Focus and the Atlas size themselves to the viewport; other screens scroll the page.
+  const fitted = route.name === 'atlas'
   return (
     <>
       <RuntimeSync />
+      <ShellSync route={route.name} />
       <DeepLinks />
       <TitleSync />
       <SideNav route={route.name} />
-      <div className="lg:pl-60">
-        <main className={cn('mx-auto min-h-dvh w-full', route.name === 'atlas' ? 'min-h-0' : 'pb-[calc(84px+env(safe-area-inset-bottom))] lg:pb-10')}>
-          {/* A new screen starts at the top, not at the previous screen's scroll position. */}
-          <AnimatePresence mode="wait" initial={false} onExitComplete={() => window.scrollTo(0, 0)}>
-            <motion.div key={route.name} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
-              <Suspense fallback={<div className="h-[60dvh]" />}>
-                <Screen name={route.name} />
-              </Suspense>
-            </motion.div>
-          </AnimatePresence>
+      <div className="shell-offset">
+        <main className={cn('mx-auto w-full', fitted ? 'min-h-0' : 'min-h-dvh pb-[calc(84px+env(safe-area-inset-bottom))]', !fitted && (route.name === 'focus' ? 'lg:pb-0' : 'lg:pb-10'))}>
+          {/* Enter-only transition: the old screen leaves at once (nothing can hold it on
+              screen), the new one rises in from the top of the page. */}
+          <motion.div key={route.name} initial={firstScreen.current ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: T.base }}>
+            <Suspense fallback={<ScreenSkeleton />}>
+              <Screen name={route.name} />
+            </Suspense>
+          </motion.div>
         </main>
       </div>
       <BottomNav route={route.name} />
@@ -125,9 +144,62 @@ function Main() {
       <ProfileSheet />
       <Onboarding />
       <AnimatePresence>{immersive && <ImmersiveFocus key="immersive" />}</AnimatePresence>
+      <CommandPalette />
+      <ShortcutsSheet />
       <ConfirmHost />
       <Toaster />
     </>
+  )
+}
+
+/**
+ * Mirrors shell state onto <html> for CSS: the sidebar width, hidden chrome for
+ * the full-screen Atlas, and the calm "in session" look while focus runs.
+ */
+function ShellSync({ route }: { route: RouteName }) {
+  const collapsed = useUi((s) => s.sidebarCollapsed)
+  const atlasFullscreen = useUi((s) => s.atlasFullscreen)
+  const inSession = useTimer((s) => s.timer.status === 'running' && s.timer.phase === 'focus')
+  useEffect(() => {
+    const root = document.documentElement.dataset
+    if (collapsed) root.sidebar = 'collapsed'
+    else delete root.sidebar
+  }, [collapsed])
+  useEffect(() => {
+    const root = document.documentElement.dataset
+    if (atlasFullscreen && route === 'atlas') root.chrome = 'hidden'
+    else delete root.chrome
+  }, [atlasFullscreen, route])
+  useEffect(() => {
+    const root = document.documentElement.dataset
+    if (inSession && route === 'focus') root.session = 'active'
+    else delete root.session
+  }, [inSession, route])
+  // Say when the connection comes and goes – nothing is lost either way.
+  const online = useOnline()
+  const first = useRef(true)
+  useEffect(() => {
+    if (first.current) {
+      first.current = false
+      return
+    }
+    toast(online ? { title: 'Back online', tone: 'success' } : { title: 'You’re offline', body: 'Tars keeps working – everything is saved on this device.' })
+  }, [online])
+  return null
+}
+
+/** Placeholder while a screen's code loads (first visit only). */
+function ScreenSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-3xl px-4 pt-6 sm:px-6" aria-busy="true" aria-label="Loading">
+      <div className="skeleton h-3 w-32" />
+      <div className="skeleton mt-3 h-8 w-48" />
+      <div className="mt-8 space-y-3">
+        <div className="skeleton h-20" />
+        <div className="skeleton h-20" />
+        <div className="skeleton h-20 opacity-70" />
+      </div>
+    </div>
   )
 }
 
@@ -165,6 +237,7 @@ function RuntimeSync() {
     })
     configureReminders({ notifications: settings.notifications, use24h: settings.use24h })
     setHapticsEnabled(settings.haptics)
+    setSoundFollowsTimer(settings.ambientFollowsTimer)
   }, [settings])
 
   useEffect(() => {
@@ -182,19 +255,7 @@ function RuntimeSync() {
     void keepAwake(settings.keepAwake && timer.status === 'running')
   }, [settings.keepAwake, timer.status])
 
-  // Soundscape follows the timer: resume when focus starts, fade out for breaks.
-  const prev = useRef<{ phase: string; status: string } | null>(null)
-  useEffect(() => {
-    const before = prev.current
-    prev.current = { phase: timer.phase, status: timer.status }
-    if (!before || !settings.ambientFollowsTimer) return
-    const audio = useAudio.getState()
-    if (!Object.keys(audio.layers).length) return
-    const focusRunning = timer.phase === 'focus' && timer.status === 'running'
-    const wasFocusRunning = before.phase === 'focus' && before.status === 'running'
-    if (focusRunning && !wasFocusRunning) audio.play()
-    else if (!focusRunning && wasFocusRunning && (timer.phase !== 'focus' || timer.status === 'idle')) audio.pause()
-  }, [timer.phase, timer.status, settings.ambientFollowsTimer])
+  // Sound follows the timer through a store subscription – see audio/follow.ts.
 
   // Optional: go immersive the moment a focus session starts.
   const prevStatus = useRef(timer.status)
@@ -212,7 +273,8 @@ function RuntimeSync() {
     const stop = startReminders((r) => navigate(r))
     onNotificationTap((r) => navigate(r))
     const onMessage = (e: MessageEvent) => {
-      if (e.data?.type === 'lodestar:navigate' && typeof e.data.route === 'string') navigate(e.data.route)
+      // 'lodestar:navigate' comes from a service worker installed before the rename to Tars.
+      if ((e.data?.type === 'tars:navigate' || e.data?.type === 'lodestar:navigate') && typeof e.data.route === 'string') navigate(e.data.route)
     }
     navigator.serviceWorker?.addEventListener('message', onMessage)
     return () => {
@@ -229,9 +291,10 @@ function RuntimeSync() {
       if (location.hash && !location.hash.startsWith('#/focus')) navigate('#/focus')
       else void CapApp.minimizeApp()
     })
-    // lodestar://focus?start=1 → #/focus?start=1 (launcher shortcuts, links, widgets).
+    // tars://focus?start=1 → #/focus?start=1 (launcher shortcuts, links, widgets).
+    // The pre-rename lodestar:// scheme stays registered for shortcuts pinned before.
     const openDeepLink = (link: string) => {
-      const m = link.match(/^lodestar:\/\/(.*)$/i)
+      const m = link.match(/^(?:tars|lodestar):\/\/(.*)$/i)
       if (m) navigate(`#/${m[1]}`)
     }
     const url = CapApp.addListener('appUrlOpen', ({ url }) => openDeepLink(url))
@@ -262,7 +325,7 @@ function useSwUpdates() {
           })
         },
         onOfflineReady() {
-          toast({ title: 'Ready to work offline', body: 'Lodestar is installed on this device.', tone: 'success' })
+          toast({ title: 'Ready to work offline', body: 'Tars is installed on this device.', tone: 'success' })
         },
       })
     })
@@ -319,12 +382,12 @@ function TitleSync() {
   const now = useNow(active)
   useEffect(() => {
     if (!active) {
-      document.title = 'Lodestar — Study & Focus'
+      document.title = 'Tars — Study & Focus'
       return
     }
     const rem = remainingMs(timer, now)
-    const t = formatClock((rem ?? elapsedMs(timer, now)) / 1000)
-    document.title = `${timer.status === 'paused' ? '❚❚ ' : ''}${t} · ${PHASE_LABEL[timer.phase]} — Lodestar`
+    const t = rem === null ? formatClock(elapsedMs(timer, now) / 1000) : formatClock(Math.ceil(rem / 1000))
+    document.title = `${timer.status === 'paused' ? '❚❚ ' : ''}${t} · ${PHASE_LABEL[timer.phase]} — Tars`
   }, [timer, now, active])
   return null
 }

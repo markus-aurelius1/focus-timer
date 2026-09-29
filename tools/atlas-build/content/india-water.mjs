@@ -53,12 +53,12 @@ export default [
   P('confluence', 'Nimmu', 34.19, 77.33, { lvl: 2, st: 'ladakh', rel: { onRiver: ['river.indus', 'river.zanskar'] }, f: ['The Zanskar joins the Indus west of Leh.'] }),
   P('confluence', 'Sadiya', 27.83, 95.65, { lvl: 2, st: 'assam', rel: { onRiver: ['river.brahmaputra', 'river.siang', 'river.dibang', 'river.lohit'] }, f: ['Near here the Siang, Dibang and Lohit unite as the Brahmaputra.'] }),
   P('confluence', 'Kaleshwaram', 18.81, 79.91, { lvl: 3, st: 'telangana', rel: { onRiver: ['river.godavari'] }, f: ['The Pranhita joins the Godavari; site of the Kaleshwaram lift irrigation project.'] }),
-  P('confluence', 'Koodli', 13.87, 75.72, { lvl: 3, st: 'karnataka', rel: { onRiver: ['river.tungabhadra'] }, f: ['The Tunga and Bhadra meet to form the Tungabhadra.'] }),
+  P('confluence', 'Koodli', 14.0061, 75.6742, { lvl: 3, st: 'karnataka', rel: { onRiver: ['river.tungabhadra'] }, f: ['The Tunga and Bhadra meet to form the Tungabhadra.'] }),
   P('confluence', 'Pachnada', 26.43, 79.24, { lvl: 3, st: 'uttar-pradesh', rel: { onRiver: ['river.yamuna', 'river.chambal'] }, f: ['Five rivers meet: the Yamuna, Chambal, Sind, Kwari and Pahuj.'] }),
 
   // ── Waterfalls ──────────────────────────────────────────────────────────
   P('waterfall', 'Jog Falls', 14.229, 74.812, { aka: ['Gersoppa Falls'], lvl: 1, st: 'karnataka', el: 253, rel: { onRiver: ['river.sharavathi'] }, f: ['The Sharavathi plunges 253 m in four streams: Raja, Rani, Roarer and Rocket.'] }),
-  P('waterfall', 'Kunchikal Falls', 13.53, 75.05, { lvl: 3, st: 'karnataka', f: ['Often cited as India’s highest waterfall (about 455 m), on the Varahi.'] }),
+  P('waterfall', 'Kunchikal Falls', 13.6947, 75.0181, { lvl: 3, st: 'karnataka', f: ['Often cited as India’s highest waterfall (about 455 m), on the Varahi.'] }),
   P('waterfall', 'Nohkalikai Falls', 25.27, 91.69, { lvl: 2, st: 'meghalaya', f: ['India’s tallest plunge waterfall (about 340 m), near Sohra.'] }),
   P('waterfall', 'Dudhsagar Falls', 15.318, 74.314, { lvl: 2, st: 'goa', rel: { onRiver: ['river.mandovi'] }, f: ['Four-tiered falls on the Mandovi on the Goa–Karnataka border.'] }),
   P('waterfall', 'Athirappilly Falls', 10.285, 76.57, { lvl: 2, st: 'kerala', f: ['The largest waterfall of Kerala, on the Chalakudy river.'] }),

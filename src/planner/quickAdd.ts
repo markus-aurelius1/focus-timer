@@ -1,17 +1,19 @@
 /**
  * Natural-language quick add:
- *   "Essay draft fri due mon !high #History @Essays ~3 every week"
+ *   "Physics revision tomorrow 5pm !high @Physics #exam ~2 every week"
  *
  *   !1 !2 !3 / !low !med !high   → priority
- *   #project                     → project (matched by name)
- *   @label                       → label / subject
- *   ~3  or 3p                    → estimated pomodoros
+ *   @subject                     → subject (label), created if new
+ *   #tag                         → tag (a project of exactly that name files it there instead)
+ *   +project                     → project, created if new
+ *   ~3 / 3p / 3 pomos            → estimated sessions
+ *   ~45m / ~1h / ~1h30m / ~1.5h  → estimated time (turned into sessions of the current length)
  *   today, tomorrow, mon…sun, next week, in 3 days, sep 30, 30/9 → planned day
  *   due <date>                   → deadline
  *   at 5pm / 17:30               → due time
  *   daily, weekly, every mon, every 2 weeks, monthly…              → repeat
  */
-import type { Priority, RecurrenceRule } from '@/data/types'
+import type { Label, Priority, RecurrenceRule } from '@/data/types'
 import { addDaysKey, dayKey, parseDayKey, startOfWeekKey, weekdayOf, type DayKey } from '@/lib/time'
 
 export interface QuickAddResult {
@@ -19,13 +21,23 @@ export interface QuickAddResult {
   priority?: Priority
   projectName?: string
   labelName?: string
+  /** Tags as typed (without '#'); normalised when the task is saved. */
+  tags: string[]
+  /** Estimated sessions. */
   estimate?: number
+  /** Estimated time in minutes, when it was given as a duration. */
+  estimateMinutes?: number
   plannedFor?: DayKey
   dueDate?: DayKey
   dueTime?: string
   recurrence?: RecurrenceRule
   /** Recognised fragments, for showing chips while typing. */
-  tokens: Array<{ kind: 'priority' | 'project' | 'label' | 'estimate' | 'date' | 'due' | 'time' | 'repeat'; text: string }>
+  tokens: Array<{ kind: 'priority' | 'project' | 'label' | 'tag' | 'estimate' | 'date' | 'due' | 'time' | 'repeat'; text: string }>
+}
+
+export interface QuickAddOptions {
+  /** Length of one focus session in minutes, to turn "~1h" into sessions (default 25). */
+  sessionMinutes?: number
 }
 
 const WEEKDAYS: Record<string, number> = {
@@ -125,8 +137,17 @@ function parseTimeAt(s: string): { time: string; length: number } | null {
 
 const PRIORITY_WORDS: Record<string, Priority> = { '1': 3, '2': 2, '3': 1, high: 3, hi: 3, med: 2, medium: 2, low: 1, '!!': 3, '!': 2 }
 
-export function parseQuickAdd(input: string, today: DayKey): QuickAddResult {
-  const result: QuickAddResult = { title: '', tokens: [] }
+/** "45m", "1h", "1h30m", "1.5h", "90min" → minutes (null if not a duration). */
+function parseMinutes(s: string): number | null {
+  const m = s.match(/^(?:(\d{1,2}(?:\.\d)?)\s?h(?:rs?|ours?)?)?\s?(?:(\d{1,3})\s?m(?:ins?|inutes?)?)?$/i)
+  if (!m || (!m[1] && !m[2])) return null
+  const total = Math.round(Number(m[1] ?? 0) * 60 + Number(m[2] ?? 0))
+  return total > 0 && total <= 24 * 60 ? total : null
+}
+
+export function parseQuickAdd(input: string, today: DayKey, opts: QuickAddOptions = {}): QuickAddResult {
+  const sessionMinutes = Math.max(1, opts.sessionMinutes ?? 25)
+  const result: QuickAddResult = { title: '', tags: [], tokens: [] }
   const kept: string[] = []
   let i = 0
   const s = input
@@ -148,6 +169,12 @@ export function parseQuickAdd(input: string, today: DayKey): QuickAddResult {
         continue
       }
       if ((m = rest.match(/^#([\p{L}\p{N}_-]+)/u))) {
+        if (!result.tags.some((t) => t.toLowerCase() === m![1].toLowerCase())) result.tags.push(m[1])
+        result.tokens.push({ kind: 'tag', text: m[0] })
+        i += m[0].length
+        continue
+      }
+      if ((m = rest.match(/^\+(\p{L}[\p{L}\p{N}_-]*)/u))) {
         result.projectName = m[1].replace(/[_-]/g, ' ')
         result.tokens.push({ kind: 'project', text: m[0] })
         i += m[0].length
@@ -159,8 +186,20 @@ export function parseQuickAdd(input: string, today: DayKey): QuickAddResult {
         i += m[0].length
         continue
       }
-      if ((m = rest.match(/^(?:~(\d{1,2})|(\d{1,2})p|(\d{1,2})\s?pomos?)(?=\s|$)/i))) {
-        result.estimate = Number(m[1] ?? m[2] ?? m[3])
+      if ((m = rest.match(/^~(\S+)(?=\s|$)/))) {
+        const minutes = /^\d{1,2}$/.test(m[1]) ? null : parseMinutes(m[1])
+        if (/^\d{1,2}$/.test(m[1]) || minutes !== null) {
+          if (minutes !== null) {
+            result.estimateMinutes = minutes
+            result.estimate = Math.max(1, Math.round(minutes / sessionMinutes))
+          } else result.estimate = Number(m[1])
+          result.tokens.push({ kind: 'estimate', text: m[0] })
+          i += m[0].length
+          continue
+        }
+      }
+      if ((m = rest.match(/^(?:(\d{1,2})p|(\d{1,2})\s?pomos?)(?=\s|$)/i))) {
+        result.estimate = Number(m[1] ?? m[2])
         result.tokens.push({ kind: 'estimate', text: m[0] })
         i += m[0].length
         continue
@@ -219,4 +258,34 @@ export function parseQuickAdd(input: string, today: DayKey): QuickAddResult {
         : today
   }
   return result
+}
+
+const words = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+
+/**
+ * The subject a title names, if exactly one does: "Physics revision" → Physics.
+ * Whole words only; the longest name wins when one contains another
+ * ("Organic Chemistry" over "Chemistry"); two unrelated matches → none.
+ */
+export function inferSubject<L extends Pick<Label, 'id' | 'name' | 'archived'>>(title: string, labels: L[]): L | undefined {
+  const t = words(title)
+  if (!t.length) return undefined
+  const text = ` ${t.join(' ')} `
+  const hits = labels
+    .filter((l) => !l.archived && l.name.trim().length >= 3)
+    .map((l) => ({ l, w: words(l.name) }))
+    .filter(({ w }) => w.length && text.includes(` ${w.join(' ')} `))
+    .sort((a, b) => b.w.join(' ').length - a.w.join(' ').length)
+  if (!hits.length) return undefined
+  const best = hits[0]
+  const bestText = ` ${best.w.join(' ')} `
+  // Every other hit must be part of the best one (e.g. "Chemistry" inside "Organic Chemistry").
+  if (hits.slice(1).some((h) => !bestText.includes(` ${h.w.join(' ')} `))) return undefined
+  return best.l
 }

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Lodestar</string>
+        <string>Tars</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -27,6 +27,7 @@
 			<string>app.lodestar.study</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>tars</string>
 				<string>lodestar</string>
 			</array>
 		</dict>

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useAudio } from '@/audio/store'
 import type { Playlist } from '@/data/types'
 
 interface MusicStore {
@@ -12,7 +13,11 @@ interface MusicStore {
 export const useMusic = create<MusicStore>((set) => ({
   current: null,
   minimized: false,
-  play: (current) => set({ current, minimized: false }),
+  play: (current) => {
+    // One thing plays at a time: the video replaces the soundscape.
+    if (useAudio.getState().playing) useAudio.getState().pause()
+    set({ current, minimized: false })
+  },
   close: () => set({ current: null, minimized: false }),
   setMinimized: (minimized) => set({ minimized }),
 }))

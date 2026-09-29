@@ -19,6 +19,12 @@ import type { Expedition, Place } from './types'
 export const GATE_SHARE = 0.6
 export const SURVEY_MINUTES = 25
 const DEFAULT_CAMP = 'delhi'
+/**
+ * Release of atlas data version 2 (the expanded gazetteer). Survey finds made
+ * before it follow the version 1 order, so a history always uncovers the same
+ * places it did then; later finds may also reach places added in version 2.
+ */
+export const ATLAS_V2_AT = Date.UTC(2026, 8, 26)
 
 export type DiscoveryVia = 'expedition' | 'survey'
 
@@ -220,19 +226,22 @@ export function explore({ atlas, sessions, runs, baseCamp, familiarAt }: Explore
 
   // 3. Free survey: outward from base camp, state by state.
   const order = surveyOrder(atlas, camp)
+  const legacy = order.filter((p) => !p.added)
   const surveyMinutes = surveyChunks.reduce((a, c) => a + c.minutes, 0)
   const found = Math.floor(surveyMinutes / SURVEY_MINUTES + 1e-9)
-  let k = 0
-  let nextSurvey: Place | null = null
-  for (const p of order) {
-    if (discovered.has(p.id)) continue
-    if (k >= found) {
-      nextSurvey = p
-      break
-    }
-    k++
-    discovered.set(p.id, { at: crossing(surveyChunks, k * SURVEY_MINUTES) ?? Date.now(), via: 'survey' })
+  const cursor = { legacy: 0, all: 0 }
+  const nextIn = (list: Place[], key: 'legacy' | 'all') => {
+    while (cursor[key] < list.length && discovered.has(list[cursor[key]].id)) cursor[key]++
+    return list[cursor[key]] ?? null
   }
+  let k = 0
+  for (; k < found; k++) {
+    const at = crossing(surveyChunks, (k + 1) * SURVEY_MINUTES) ?? Date.now()
+    const p = (at < ATLAS_V2_AT ? nextIn(legacy, 'legacy') : null) ?? nextIn(order, 'all')
+    if (!p) break
+    discovered.set(p.id, { at, via: 'survey' })
+  }
+  const nextSurvey = nextIn(order, 'all')
 
   // 4. Fog: base camp, India on the world sheet, and every unit with a discovery.
   const explored = new Set<string>([camp, 'IND'])

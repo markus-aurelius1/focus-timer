@@ -1,5 +1,5 @@
 {
-  "name": "lodestar-perf",
+  "name": "tars-perf",
   "private": true,
   "type": "module",
   "description": "Atlas interaction profiling and smoke tests (headless Chromium). Not part of the app build.",

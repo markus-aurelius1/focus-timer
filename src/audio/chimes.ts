@@ -72,6 +72,8 @@ export function playChime(id: string, volume = 0.7, kind: 'focusEnd' | 'breakEnd
   const out = ctx.createGain()
   out.gain.value = Math.min(1, volume) * 0.8
   out.connect(ctx.destination)
+  // Every motif has rung out after a few seconds; release the node.
+  setTimeout(() => out.disconnect(), 6000)
   const t = ctx.currentTime + 0.05
   // Rising motif when focus ends (reward), falling when a break ends (back to work).
   const up = kind !== 'breakEnd'

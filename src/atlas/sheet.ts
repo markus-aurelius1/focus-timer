@@ -22,6 +22,14 @@ export interface MapLine {
   rank: number
   d: string
   coords: Array<Array<[number, number]>>
+  /** Drawn from the overlay (a course the base sheet does not have). */
+  overlay?: boolean
+  canal?: boolean
+}
+
+/** An outline from the overlay: a protected area, a lake or wetland, a disputed region or a physical region. */
+export interface AreaFeature extends MapFeature {
+  kind: 'park' | 'water' | 'region' | 'land'
 }
 
 export interface Sheet {
@@ -35,6 +43,8 @@ export interface Sheet {
   rivers: MapLine[]
   regions: MapFeature[]
   marine: MapFeature[]
+  /** Overlay outlines (parks, wetlands, disputed and physical regions), keyed `area:<id>` by places. */
+  areas: AreaFeature[]
   lines: Record<'indiaBorder' | 'indiaCoast' | 'coasts' | 'intlBorders' | 'graticule' | 'stateBorders', string>
   labels: MapLabel[]
   /** State/country adjacency (by index into `states` / `countries`). */
@@ -82,7 +92,7 @@ function bboxOf(g: Polygon | MultiPolygon): [number, number, number, number] {
   return [x0, y0, x1, y1]
 }
 
-type Props = { id?: string; name?: string; rank?: number }
+type Props = { id?: string; name?: string; rank?: number; kind?: AreaFeature['kind']; canal?: boolean }
 
 function polygons(topo: Topology, key: string): MapFeature[] {
   const obj = topo.objects[key] as GeometryCollection<Props> | undefined
@@ -101,17 +111,32 @@ function multiLine(topo: Topology, key: string): string {
   return geoms.map((g) => (g ? linePath(g.coordinates) : '')).join('')
 }
 
-export function decodeSheet(file: SheetFile, base: string): Sheet {
-  const topo = file.topology
-  const states = polygons(topo, 'states')
-  const riversObj = topo.objects.rivers as GeometryCollection<Props>
-  const riverFc = feature(topo, riversObj) as unknown as { features: Array<Feature<MultiLineString | { type: 'LineString'; coordinates: number[][] }, Props>> }
-  const rivers: MapLine[] = riverFc.features
+function riverLines(topo: Topology, overlay: boolean): MapLine[] {
+  const obj = topo.objects.rivers as GeometryCollection<Props> | undefined
+  if (!obj) return []
+  const fc = feature(topo, obj) as unknown as { features: Array<Feature<MultiLineString | { type: 'LineString'; coordinates: number[][] }, Props>> }
+  return fc.features
     .filter((f) => f.geometry)
     .map((f) => {
       const coords = (f.geometry.type === 'LineString' ? [f.geometry.coordinates] : (f.geometry as MultiLineString).coordinates) as Array<Array<[number, number]>>
-      return { id: f.properties.id ?? '', name: f.properties.name ?? '', rank: f.properties.rank ?? 5, d: linePath(coords), coords }
+      return { id: f.properties.id ?? '', name: f.properties.name ?? '', rank: f.properties.rank ?? 5, d: linePath(coords), coords, ...(overlay ? { overlay: true } : {}), ...(f.properties.canal ? { canal: true } : {}) }
     })
+}
+
+/** Courses, outlines and labels that the overlay adds to a sheet. */
+export interface OverlayFile {
+  version: number
+  sheet: SheetId
+  rivers: Topology
+  areas: Topology
+  labels: MapLabel[]
+}
+
+export function decodeSheet(file: SheetFile, base: string, overlay?: OverlayFile | null): Sheet {
+  const topo = file.topology
+  const states = polygons(topo, 'states')
+  const rivers: MapLine[] = [...riverLines(topo, false), ...(overlay ? riverLines(overlay.rivers, true) : [])]
+  const areas: AreaFeature[] = overlay ? polygons(overlay.areas, 'areas').map((f, i) => ({ ...f, kind: areaKinds(overlay.areas)[i] ?? 'land' })) : []
 
   const stateNeighbours = new Map<string, string[]>()
   let stateBorders = ''
@@ -139,6 +164,7 @@ export function decodeSheet(file: SheetFile, base: string): Sheet {
     rivers,
     regions: polygons(file.shapes, 'regions'),
     marine: polygons(file.shapes, 'marine'),
+    areas,
     lines: {
       indiaBorder: multiLine(file.lines, 'indiaBorder'),
       indiaCoast: multiLine(file.lines, 'indiaCoast'),
@@ -147,12 +173,18 @@ export function decodeSheet(file: SheetFile, base: string): Sheet {
       graticule: multiLine(file.lines, 'graticule'),
       stateBorders,
     },
-    labels: file.labels,
+    labels: overlay ? [...file.labels, ...overlay.labels] : file.labels,
     stateNeighbours,
     reliefUrl: `${base}atlas/v1/${file.sheet}-relief.webp`,
     shadeUrl: `${base}atlas/v1/${file.sheet}-shade.webp`,
     focus,
   }
+}
+
+/** Kinds of the overlay's areas, in geometry order (kept beside `polygons`, which drops properties it doesn't know). */
+function areaKinds(topo: Topology): Array<AreaFeature['kind']> {
+  const obj = topo.objects.areas as GeometryCollection<Props> | undefined
+  return obj ? obj.geometries.filter((g) => g.type !== null).map((g) => (g.properties as Props | undefined)?.kind ?? 'land') : []
 }
 
 const cache = new Map<SheetId, Promise<Sheet>>()
@@ -161,12 +193,15 @@ export function loadSheet(id: SheetId): Promise<Sheet> {
   const hit = cache.get(id)
   if (hit) return hit
   const base = import.meta.env.BASE_URL
-  const p = fetch(`${base}atlas/v1/${id}.json`)
-    .then((r) => {
-      if (!r.ok) throw new Error(`Atlas sheet ${id}: ${r.status}`)
-      return r.json() as Promise<SheetFile>
-    })
-    .then((file) => decodeSheet(file, base))
+  const sheetFile = fetch(`${base}atlas/v1/${id}.json`).then((r) => {
+    if (!r.ok) throw new Error(`Atlas sheet ${id}: ${r.status}`)
+    return r.json() as Promise<SheetFile>
+  })
+  // The overlay is optional: the map still works (with fewer outlines) without it.
+  const overlayFile = fetch(`${base}atlas/v1/${id}-overlay.json`)
+    .then((r) => (r.ok ? (r.json() as Promise<OverlayFile>) : null))
+    .catch(() => null)
+  const p = Promise.all([sheetFile, overlayFile]).then(([file, overlay]) => decodeSheet(file, base, overlay))
   cache.set(id, p)
   p.catch(() => cache.delete(id))
   return p

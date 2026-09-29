@@ -5,7 +5,7 @@
  */
 import { feature, neighbors } from 'topojson-client'
 import { SHEETS, sheetFrame } from './sheets.mjs'
-import { CONTENT, EXPEDITIONS, PREFIX, placeId } from './content.mjs'
+import { CONTENT, ENRICH, EXPEDITIONS, LINKS, PREFIX, placeId, V1_LOCK } from './content.mjs'
 import { pointInPolygon, slug } from './geo.mjs'
 import { STATES } from '../content/states.mjs'
 
@@ -69,7 +69,36 @@ function nearPolygon(p, g, tol) {
 
 const rings = (g) => (g.type === 'Polygon' ? g.coordinates : g.type === 'MultiPolygon' ? g.coordinates.flat() : [])
 
-export function compilePlaces(sheetData) {
+const wikiUrl = (title) => `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_')).replace(/%2C/g, ',').replace(/%3A/g, ':').replace(/%28/g, '(').replace(/%29/g, ')')}`
+const SHAPE = { river: 'line', lake: 'area', region: 'area', marine: 'area', area: 'area' }
+/** Curation reasons that are also useful tags in the app. */
+const WHY_TAG = { 'current-affairs': 'current-affairs', strategic: 'strategic' }
+
+/**
+ * Provenance and version-2 enrichment for a place: its Wikipedia and Wikidata
+ * pages, designations found in official lists, and the list sources.
+ */
+function withSources(place, raw) {
+  const src = [...(raw.src ? [].concat(raw.src) : [])]
+  const link = LINKS[place.id]
+  if (link) {
+    if (!src.some((s) => /wikipedia\.org/.test(s.url))) src.unshift({ title: `Wikipedia: ${link.title}`, url: wikiUrl(link.title) })
+    if (link.qid && !src.some((s) => /wikidata\.org/.test(s.url))) src.push({ title: `Wikidata: ${link.qid}`, url: `https://www.wikidata.org/wiki/${link.qid}` })
+  }
+  const e = ENRICH[place.id]
+  if (e) {
+    place.tags = [...new Set([...(place.tags ?? []), ...e.tags])]
+    for (const f of e.facts) if (!place.facts.includes(f)) place.facts.push(f)
+    for (const s of e.src) if (!src.some((x) => x.url === s.url)) src.push(s)
+    for (const w of e.why ?? []) if (WHY_TAG[w]) place.tags = [...new Set([...(place.tags ?? []), WHY_TAG[w]])]
+  }
+  if (raw.why && WHY_TAG[raw.why]) place.tags = [...new Set([...(place.tags ?? []), WHY_TAG[raw.why]])]
+  if (!place.tags?.length) delete place.tags
+  const wikidata = raw.qid ?? link?.qid
+  return { ...place, ...(wikidata ? { wikidata } : {}), ...(src.length ? { sources: src } : {}), ...(raw.added ? { added: raw.added } : {}) }
+}
+
+export function compilePlaces(sheetData, overlays = {}) {
   const warnings = []
   const warn = (m) => warnings.push(m)
   const places = []
@@ -81,7 +110,9 @@ export function compilePlaces(sheetData) {
     const { projection, width, height } = sheetFrame(SHEETS[sheetId])
     const states = polys(data.topology, 'states')
     const countries = polys(data.topology, 'countries')
-    const rivers = lines(data.topology, 'rivers')
+    const ov = overlays[sheetId]
+    const rivers = [...lines(data.topology, 'rivers'), ...(ov ? lines(ov.data.rivers, 'rivers') : [])]
+    const areas = ov ? feature(ov.data.areas, ov.data.areas.objects.areas).features.filter((f) => f.geometry) : []
     const lakes = polys(data.topology, 'lakes')
     const regions = polys(data.shapes, 'regions')
     const marine = polys(data.shapes, 'marine')
@@ -115,6 +146,18 @@ export function compilePlaces(sheetData) {
         if (!list || !has(list, gid)) {
           warn(`${id}: geometry ${geom} not on the sheet`)
           geom = undefined
+        }
+      }
+      // Courses and outlines from the overlay, for places the base sheet does not draw.
+      if (!geom && ov?.geomOf.has(id)) geom = ov.geomOf.get(id)
+      // A new place whose sourced point falls outside its own outline (a coarse coordinate) moves to the outline's label point.
+      let moved = null
+      if (raw.added && geom?.startsWith('area:')) {
+        const a = areas.find((f) => f.properties.id === geom.slice(5))
+        if (a && !pointInPolygon([x, y], a.geometry) && a.properties.lx !== undefined) {
+          ;[x, y] = [a.properties.lx, a.properties.ly]
+          const [lon, lat] = projection.invert([x, y])
+          moved = { lon: Math.round(lon * 1e4) / 1e4, lat: Math.round(lat * 1e4) / 1e4 }
         }
       }
       if (raw.kind === 'river') {
@@ -175,8 +218,8 @@ export function compilePlaces(sheetData) {
         sheet: sheetId,
         x: Math.round(x * 10) / 10,
         y: Math.round(y * 10) / 10,
-        lon: raw.lon,
-        lat: raw.lat,
+        lon: moved?.lon ?? raw.lon,
+        lat: moved?.lat ?? raw.lat,
         ...(geom ? { geom } : {}),
         ...(st?.length ? { states: st } : {}),
         ...(co?.length ? { countries: co } : {}),
@@ -190,14 +233,30 @@ export function compilePlaces(sheetData) {
         ...(raw.sub ? { subtitle: raw.sub } : {}),
         ...(raw.src ? { sources: [].concat(raw.src) } : {}),
       }
-      if (!place.facts.length) warn(`${id}: no facts`)
-      places.push(place)
-      byId.set(id, place)
+      // Version 1 places keep the level and fog unit they had (they decide exploration order).
+      const locked = V1_LOCK?.places[id]
+      if (locked) {
+        if (place.level !== locked[0]) warn(`${id}: level ${place.level} differs from version 1 (${locked[0]}); keeping ${locked[0]}`)
+        place.level = locked[0]
+        if (locked[1] && place.unit !== locked[1]) {
+          warn(`${id}: fog unit ${place.unit} differs from version 1 (${locked[1]}); keeping ${locked[1]}`)
+          place.unit = locked[1]
+        }
+      } else if (V1_LOCK && !raw.added) warn(`${id}: new place without \`added\` (version 2 places come from content/generated)`)
+      if (place.geom) place.shape = SHAPE[place.geom.split(':')[0]] ?? 'point'
+      const final = withSources(place, raw)
+      const gsrc = ov?.sources.get(id)
+      if (gsrc && !(final.sources ?? []).some((x) => x.url === gsrc.url)) final.sources = [...(final.sources ?? []), { ...gsrc, title: `${gsrc.title} (outline or course)` }]
+      if (!final.facts.length) warn(`${id}: no facts`)
+      places.push(final)
+      byId.set(id, final)
       const sk = `${sheetId}:${slug(raw.name)}`
       bySlug.set(sk, [...(bySlug.get(sk) ?? []), id])
       bySlug.set(`${sheetId}:${key}`, [...new Set([...(bySlug.get(`${sheetId}:${key}`) ?? []), id])])
     }
   }
+
+  if (V1_LOCK) for (const id of Object.keys(V1_LOCK.places)) if (!byId.has(id)) warn(`VERSION 1 PLACE MISSING: ${id} (user progress refers to it)`)
 
   // ── relations ───────────────────────────────────────────────────────────
   const resolve = (sheetId, ref, from) => {

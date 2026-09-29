@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, Reorder, useDragControls } from 'motion/react'
-import { Archive, ArrowLeft, CalendarCheck2, CheckCheck, ChevronDown, FolderPlus, Inbox, MoreHorizontal, Pencil, Plus, Settings2 } from 'lucide-react'
+import { Archive, ArrowLeft, CalendarCheck2, CheckCheck, ChevronDown, FolderPlus, Inbox, MoreHorizontal, Pencil, Plus, Settings2, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { navigate, useRoute } from '@/app/router'
 import { useUi } from '@/app/ui-store'
@@ -10,13 +10,13 @@ import { PALETTE } from '@/data/seed'
 import type { Label, Project, Task } from '@/data/types'
 import { cn } from '@/lib/cn'
 import { addDaysKey, dayKey, diffDays, formatDuration, longDate, relativeDayLabel, todayKey, type DayKey } from '@/lib/time'
-import { byPriorityThenOrder, compareTasks, groupUpcoming, isInbox, isOverdue, isToday } from '@/planner/tasks'
+import { byPriorityThenOrder, compareTasks, groupUpcoming, isInbox, isOverdue, isToday, tagUsage } from '@/planner/tasks'
 import { labelScope } from '@/stats/aggregate'
 import { Button, Card, Field, IconButton, Select, TextArea, TextInput } from '@/ui/controls'
 import { ColorPicker } from '@/ui/ColorPicker'
 import { confirmDialog, EmptyState } from '@/ui/feedback'
 import { Menu } from '@/ui/Menu'
-import { Sheet } from '@/ui/Sheet'
+import { Sheet, SheetActions, SheetFooter } from '@/ui/Sheet'
 import { flattenLabels } from '@/features/shared/labels'
 import { useTaskSessions } from '@/features/shared/useTaskSessions'
 import { useTodayProgress } from '@/features/shared/useProgress'
@@ -43,8 +43,13 @@ export function TasksScreen() {
   const allTasks = useTasks()
   const quickAddOpen = useUi((s) => s.quickAddOpen)
 
+  const tags = useMemo(() => tagUsage(allTasks), [allTasks])
   const tasks = useMemo(() => {
     if (!labelFilter) return allTasks
+    if (labelFilter.startsWith('tag:')) {
+      const tag = labelFilter.slice(4)
+      return allTasks.filter((t) => t.tags?.includes(tag))
+    }
     const scope = labelScope(labels, labelFilter)
     return allTasks.filter((t) => t.labelId && scope.has(t.labelId))
   }, [allTasks, labelFilter, labels])
@@ -54,19 +59,32 @@ export function TasksScreen() {
   return (
     <div className="pt-safe mx-auto w-full max-w-3xl px-4 sm:px-6">
       <header className="flex items-end justify-between gap-3 pt-5 pb-3">
-        <div>
-          <p className="text-xs font-bold tracking-[0.12em] text-ink-3 uppercase">{longDate(todayKey())}</p>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold tracking-[0.12em] text-ink-3 uppercase">{longDate(todayKey())}</p>
           <h1 className="font-display text-[32px] leading-tight font-medium tracking-tight">Plan</h1>
         </div>
         <div className="flex items-center gap-1">
-          {view !== 'habits' && labels.length > 0 && (
-            <Select compact value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className="max-w-40" aria-label="Filter by subject">
-              <option value="">All subjects</option>
-              {flattenLabels(labels).map(({ label, path }) => (
-                <option key={label.id} value={label.id}>
-                  {path}
-                </option>
-              ))}
+          {view !== 'habits' && (labels.length > 0 || tags.length > 0) && (
+            <Select compact value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className="max-w-36 sm:max-w-44" aria-label="Filter by subject or tag">
+              <option value="">All tasks</option>
+              {labels.length > 0 && (
+                <optgroup label="Subjects">
+                  {flattenLabels(labels).map(({ label, path }) => (
+                    <option key={label.id} value={label.id}>
+                      {path}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {tags.length > 0 && (
+                <optgroup label="Tags">
+                  {tags.map((t) => (
+                    <option key={t} value={`tag:${t}`}>
+                      #{t}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </Select>
           )}
           <IconButton label="Settings" className="lg:hidden" onClick={() => navigate('#/settings')}>
@@ -541,17 +559,24 @@ export function ProjectSheet({ project, onClose }: { project: Project | 'new' | 
         <Field label="Notes">
           <TextArea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Outcome, deadline, links…" />
         </Field>
-        <div className="flex gap-2">
-          {project && project !== 'new' && (
-            <Button variant="danger" onClick={() => void del()}>
-              Delete
-            </Button>
-          )}
-          <Button block variant="primary" onClick={() => void save()}>
+      </div>
+      <SheetFooter>
+        <SheetActions
+          start={
+            project &&
+            project !== 'new' && (
+              <IconButton label="Delete project" onClick={() => void del()} className="text-danger hover:bg-danger/10 hover:text-danger">
+                <Trash2 className="size-4.5" />
+              </IconButton>
+            )
+          }
+        >
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={() => void save()}>
             {project === 'new' ? 'Create project' : 'Save'}
           </Button>
-        </div>
-      </div>
+        </SheetActions>
+      </SheetFooter>
     </Sheet>
   )
 }

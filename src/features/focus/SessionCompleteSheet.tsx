@@ -36,12 +36,20 @@ export function SessionCompleteSheet() {
   const taskSessions = useLiveQuery(() => (session?.taskId ? db.sessions.where('taskId').equals(session.taskId).count() : 0), [session?.taskId])
   const { label } = useLookups()
   const [note, setNote] = useState('')
+  // Let the dial's completion moment play before the card slides up.
+  const [shownFor, setShownFor] = useState<string | null>(null)
+  useEffect(() => {
+    if (!last) return
+    const wait = last.fresh && Date.now() - last.at < 3000 ? 1700 : 0
+    const t = setTimeout(() => setShownFor(last.id), wait)
+    return () => clearTimeout(t)
+  }, [last])
 
   useEffect(() => {
     if (session) setNote(session.note)
   }, [session?.id])
 
-  const open = !!last && !!session
+  const open = !!last && !!session && shownFor === last.id
   const close = () => {
     if (session && note !== session.note) void patch('sessions', session.id, { note })
     dismiss()

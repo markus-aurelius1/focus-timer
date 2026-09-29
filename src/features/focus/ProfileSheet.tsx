@@ -2,12 +2,12 @@ import { Check, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { db } from '@/data/db'
 import { updateSettings, useProfiles, useSettings } from '@/data/hooks'
-import { create, nextOrder, patch, remove } from '@/data/repo'
+import { create, nextOrder, patch, remove, restore } from '@/data/repo'
 import type { TimerMode, TimerProfile } from '@/data/types'
 import { cn } from '@/lib/cn'
-import { Button, Field, Segmented, Stepper, TextInput, Toggle } from '@/ui/controls'
-import { confirmDialog } from '@/ui/feedback'
-import { Sheet } from '@/ui/Sheet'
+import { Button, Field, IconButton, Segmented, Stepper, TextInput, Toggle } from '@/ui/controls'
+import { Sheet, SheetActions, SheetFooter } from '@/ui/Sheet'
+import { toast } from '@/ui/toast'
 import { useUi } from '@/app/ui-store'
 import { useTimer } from '@/timer/store'
 
@@ -145,11 +145,25 @@ function ProfileEditor({ profile, canDelete, onDone }: { profile: TimerProfile |
 
   const del = async () => {
     if (!profile) return
-    if (!(await confirmDialog({ title: `Delete “${profile.name}”?`, body: 'Sessions recorded with it are kept.', confirmLabel: 'Delete', danger: true }))) return
+    const wasActive = (await db.settings.get('settings'))?.activeProfileId === profile.id
     await remove('profiles', profile.id)
-    const first = await db.profiles.orderBy('order').first()
-    await updateSettings({ activeProfileId: first?.id ?? null })
+    if (wasActive) {
+      const first = await db.profiles.orderBy('order').first()
+      await updateSettings({ activeProfileId: first?.id ?? null })
+    }
     onDone(null)
+    // Sessions recorded with it are kept either way; Undo brings the profile back as it was.
+    toast({
+      title: 'Profile deleted',
+      body: profile.name,
+      action: {
+        label: 'Undo',
+        run: async () => {
+          await restore('profiles', profile)
+          if (wasActive) await updateSettings({ activeProfileId: profile.id })
+        },
+      },
+    })
   }
 
   return (
@@ -181,19 +195,23 @@ function ProfileEditor({ profile, canDelete, onDone }: { profile: TimerProfile |
           </>
         )}
       </div>
-      <div className="flex gap-2">
-        {profile && canDelete && (
-          <Button variant="danger" onClick={() => void del()} icon={<Trash2 className="size-4" />}>
-            Delete
+      <SheetFooter>
+        <SheetActions
+          start={
+            profile &&
+            canDelete && (
+              <IconButton label={`Delete ${profile.name}`} onClick={() => void del()} className="text-danger hover:bg-danger/10 hover:text-danger">
+                <Trash2 className="size-4.5" />
+              </IconButton>
+            )
+          }
+        >
+          <Button onClick={() => onDone(null)}>Cancel</Button>
+          <Button variant="primary" onClick={() => void save()}>
+            Save
           </Button>
-        )}
-        <Button block onClick={() => onDone(null)}>
-          Cancel
-        </Button>
-        <Button block variant="primary" onClick={() => void save()}>
-          Save
-        </Button>
-      </div>
+        </SheetActions>
+      </SheetFooter>
     </div>
   )
 }

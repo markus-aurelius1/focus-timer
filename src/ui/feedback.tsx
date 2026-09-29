@@ -4,7 +4,8 @@ import type { ReactNode } from 'react'
 import { create } from 'zustand'
 import { cn } from '@/lib/cn'
 import { Button } from './controls'
-import { Sheet } from './Sheet'
+import { T } from './motion'
+import { Sheet, SheetActions } from './Sheet'
 import { useToasts } from './toast'
 
 export function Toaster() {
@@ -19,8 +20,8 @@ export function Toaster() {
             initial={{ opacity: 0, y: -16, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 36 }}
-            className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-line bg-surface px-4 py-3 shadow-lift"
+            transition={T.item}
+            className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-line bg-surface px-4 py-3 shadow-dialog"
             role="status"
           >
             <span className={cn('mt-0.5 shrink-0', t.tone === 'success' && 'text-success', t.tone === 'warning' && 'text-danger', t.tone === 'celebrate' && 'text-accent', t.tone === 'default' && 'text-ink-2')}>
@@ -75,16 +76,21 @@ export function ConfirmHost() {
     useConfirmStore.setState({ req: null })
   }
   return (
-    <Sheet open={!!req} onClose={() => close(false)} title={req?.title} size="sm">
+    <Sheet
+      open={!!req}
+      onClose={() => close(false)}
+      title={req?.title}
+      size="sm"
+      footer={
+        <SheetActions>
+          <Button onClick={() => close(false)}>Cancel</Button>
+          <Button variant={req?.danger ? 'danger' : 'primary'} onClick={() => close(true)} data-autofocus>
+            {req?.confirmLabel ?? 'Confirm'}
+          </Button>
+        </SheetActions>
+      }
+    >
       {req?.body && <div className="text-[15px] leading-relaxed text-ink-2">{req.body}</div>}
-      <div className="mt-5 flex gap-2">
-        <Button block onClick={() => close(false)}>
-          Cancel
-        </Button>
-        <Button block variant={req?.danger ? 'danger' : 'primary'} onClick={() => close(true)} data-autofocus>
-          {req?.confirmLabel ?? 'Confirm'}
-        </Button>
-      </div>
     </Sheet>
   )
 }

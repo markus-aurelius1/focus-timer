@@ -67,7 +67,8 @@ export const DEVELOPMENT_HINT: Record<Development, string> = {
 
 /** How far a state (or country) has developed – driven by mastery of its places. */
 export function developmentOf(ex: Exploration, unit: string) {
-  const places = ex.atlas.inUnit.get(unit) ?? []
+  // Places added in later data versions count once discovered, so a state never loses its level to new data.
+  const places = (ex.atlas.inUnit.get(unit) ?? []).filter((p) => !p.added || ex.state.discovered.has(p.id))
   const total = places.length
   let discovered = 0
   let familiar = 0
@@ -97,4 +98,17 @@ export const labelKey = (geom: string) => geom
 export function minutesText(m: number): string {
   const r = Math.max(1, Math.ceil(m))
   return r >= 90 ? `${Math.floor(r / 60)} h ${r % 60 ? `${r % 60} min` : ''}`.trim() : `${r} min`
+}
+
+/** Designations and study tags, as shown on place cards and matched by search. */
+export const TAG_LABEL: Record<string, string> = {
+  ramsar: 'Ramsar site',
+  'tiger-reserve': 'Tiger reserve',
+  biosphere: 'Biosphere reserve',
+  'national-park': 'National park',
+  'world-heritage': 'World Heritage Site',
+  montreux: 'Montreux Record',
+  national: 'National capital',
+  'current-affairs': 'In the news',
+  strategic: 'Strategic',
 }

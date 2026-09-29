@@ -5,10 +5,10 @@ import { create, nextOrder, patch, remove } from '@/data/repo'
 import type { Goal, GoalPeriod } from '@/data/types'
 import { formatDuration, todayKey } from '@/lib/time'
 import { goalProgress } from '@/stats/aggregate'
-import { Button, Field, Segmented, Select, Stepper, TextInput } from '@/ui/controls'
+import { Button, Field, IconButton, Segmented, Select, Stepper, TextInput } from '@/ui/controls'
 import { confirmDialog, EmptyState } from '@/ui/feedback'
 import { Ring } from '@/ui/Ring'
-import { Sheet } from '@/ui/Sheet'
+import { Sheet, SheetActions, SheetFooter } from '@/ui/Sheet'
 import { flattenLabels } from '@/features/shared/labels'
 
 const PERIOD_NAME: Record<GoalPeriod, string> = { day: 'Today', week: 'This week', month: 'This month' }
@@ -151,17 +151,24 @@ function GoalSheet({ goal, onClose }: { goal: Goal | 'new' | null; onClose: () =
         <Field label="Name">
           <TextInput value={title} onChange={(e) => setTitle(e.target.value)} placeholder={autoTitle()} />
         </Field>
-        <div className="flex gap-2">
-          {goal && goal !== 'new' && (
-            <Button variant="danger" icon={<Trash2 className="size-4" />} onClick={() => void del()}>
-              Delete
-            </Button>
-          )}
-          <Button block variant="primary" onClick={() => void save()}>
+      </div>
+      <SheetFooter>
+        <SheetActions
+          start={
+            goal &&
+            goal !== 'new' && (
+              <IconButton label="Delete goal" onClick={() => void del()} className="text-danger hover:bg-danger/10 hover:text-danger">
+                <Trash2 className="size-4.5" />
+              </IconButton>
+            )
+          }
+        >
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={() => void save()}>
             Save goal
           </Button>
-        </div>
-      </div>
+        </SheetActions>
+      </SheetFooter>
     </Sheet>
   )
 }

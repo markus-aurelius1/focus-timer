@@ -7,10 +7,10 @@ import { weekdayOf } from '@/lib/time'
 import { RECURRENCE_PRESETS } from '@/planner/recurrence'
 import { useTimer } from '@/timer/store'
 import { navigate } from '@/app/router'
-import { Button, Field, Segmented, Select, TextArea, TextInput, Toggle } from '@/ui/controls'
+import { Button, Field, IconButton, Segmented, Select, TextArea, TextInput, Toggle } from '@/ui/controls'
 import { ColorPicker } from '@/ui/ColorPicker'
 import { confirmDialog } from '@/ui/feedback'
-import { Sheet } from '@/ui/Sheet'
+import { Sheet, SheetActions } from '@/ui/Sheet'
 import { flattenLabels } from '@/features/shared/labels'
 import { REMINDER_OPTIONS } from './calendarModel'
 
@@ -96,21 +96,24 @@ export function EventSheet({ draft, onClose }: { draft: EventDraft | null; onClo
       onClose={onClose}
       title={isNew ? 'New calendar item' : 'Edit calendar item'}
       footer={
-        <div className="flex gap-2">
-          {!isNew && (
-            <Button variant="danger" onClick={() => void del()} icon={<Trash2 className="size-4" />}>
-              Delete
-            </Button>
-          )}
+        <SheetActions
+          start={
+            !isNew && (
+              <IconButton label="Delete" onClick={() => void del()} className="text-danger hover:bg-danger/10 hover:text-danger">
+                <Trash2 className="size-4.5" />
+              </IconButton>
+            )
+          }
+        >
           {!isNew && ev.kind === 'block' && (
             <Button onClick={startNow} icon={<Play className="size-4 fill-current" />}>
-              Start
+              Start now
             </Button>
           )}
-          <Button block variant="primary" onClick={() => void save()}>
-            {isNew ? 'Add' : 'Save'}
+          <Button variant="primary" onClick={() => void save()}>
+            {isNew ? 'Add to calendar' : 'Save'}
           </Button>
-        </div>
+        </SheetActions>
       }
     >
       <div className="space-y-5">

@@ -1,44 +1,30 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Reorder, useDragControls } from 'motion/react'
-import { AlarmClock, CalendarClock, CalendarPlus, Check, Copy, Flag, GripVertical, Hash, Play, Plus, Repeat2, Tag, Timer, Trash2, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { AlarmClock, CalendarClock, CalendarPlus, Check, Clock3, Copy, Flag, FolderOpen, GripVertical, Hash, Play, Plus, Repeat2, Tag, Timer, Trash2, X } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useUi } from '@/app/ui-store'
 import { navigate } from '@/app/router'
 import { db } from '@/data/db'
-import { useLabels, useProfiles, useProjects, useSettings } from '@/data/hooks'
+import { useProfiles, useSettings } from '@/data/hooks'
 import { create, patch } from '@/data/repo'
-import type { Priority, RecurrenceRule, Subtask, Task } from '@/data/types'
+import type { RecurrenceRule, Subtask, Task } from '@/data/types'
 import { uid } from '@/lib/id'
 import { cn } from '@/lib/cn'
-import {
-  addDaysKey,
-  atTime,
-  dayKey,
-  formatDuration,
-  formatTimeOfDay,
-  hhmm,
-  relativeDayLabel,
-  startOfWeekKey,
-  todayKey,
-  weekdayOf,
-  weekdayShort,
-  type DayKey,
-} from '@/lib/time'
+import { addDaysKey, atTime, dayKey, formatDuration, formatTimeOfDay, hhmm, relativeDayLabel, todayKey, weekdayOf, weekdayShort, type DayKey } from '@/lib/time'
 import { describeRule, RECURRENCE_PRESETS } from '@/planner/recurrence'
-import { addTask, blankTask, completeTask, deleteTask, uncompleteTask } from '@/planner/tasks'
+import { addTask, blankTask, completeTask, deleteTask, restoreTask, uncompleteTask } from '@/planner/tasks'
 import { Button, Chip, IconButton, Select, Stepper, TextArea, TextInput } from '@/ui/controls'
-import { confirmDialog } from '@/ui/feedback'
-import { Sheet } from '@/ui/Sheet'
+import { Sheet, SheetActions } from '@/ui/Sheet'
 import { toast } from '@/ui/toast'
-import { flattenLabels } from '@/features/shared/labels'
 import { focusOnTask } from '@/features/shared/focusOnTask'
-import { PRIORITY_COLOR, PRIORITY_NAME, TaskCheck } from './TaskItem'
+import { DateQuick, DeadlineField, EstimateField, FieldRow, PriorityPicker, ProfilePicker, ProjectPicker, SubjectPicker, TagInput } from './fields'
+import { TaskCheck } from './TaskItem'
 
 type Draft = Omit<Task, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
 
-const EDITABLE = ['title', 'notes', 'projectId', 'labelId', 'priority', 'plannedFor', 'dueDate', 'dueTime', 'reminderAt', 'estimatedPomodoros', 'subtasks', 'recurrence'] as const
+const EDITABLE = ['title', 'notes', 'projectId', 'labelId', 'tags', 'profileId', 'priority', 'plannedFor', 'dueDate', 'dueTime', 'reminderAt', 'estimatedPomodoros', 'subtasks', 'recurrence'] as const
 type Editable = Pick<Task, (typeof EDITABLE)[number]>
-const pickEditable = (t: Draft | Task): Editable => Object.fromEntries(EDITABLE.map((k) => [k, t[k]])) as Editable
+const pickEditable = (t: Draft | Task): Editable => Object.fromEntries(EDITABLE.map((k) => [k, t[k] ?? (k === 'tags' ? [] : k === 'profileId' ? null : t[k])])) as Editable
 
 /** Create or edit a task. Existing tasks save automatically when the sheet closes. */
 export function TaskSheet() {
@@ -59,9 +45,16 @@ export function TaskSheet() {
     if (loadedFor.current === key) return
     if (state.id) {
       if (!existing) return
-      setDraft({ ...existing })
+      setDraft({ ...existing, tags: existing.tags ?? [], profileId: existing.profileId ?? null })
     } else {
-      setDraft({ ...blankTask({ plannedFor: state.draft?.plannedFor ?? null, projectId: state.draft?.projectId ?? null, labelId: state.draft?.labelId ?? null }) })
+      setDraft({
+        ...blankTask({
+          title: state.draft?.title ?? '',
+          plannedFor: state.draft?.plannedFor ?? null,
+          projectId: state.draft?.projectId ?? null,
+          labelId: state.draft?.labelId ?? null,
+        }),
+      })
     }
     loadedFor.current = key
   }, [state, existing])
@@ -85,6 +78,12 @@ export function TaskSheet() {
     if (!isNew) void save()
     close()
   }
+  const onAdd = async () => {
+    if (!draft?.title.trim()) return
+    await save()
+    close()
+    toast({ title: 'Task added', body: draft.title.trim(), tone: 'success' })
+  }
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => (d ? { ...d, [key]: value } : d))
 
@@ -93,191 +92,112 @@ export function TaskSheet() {
       open={!!state && !!draft}
       onClose={onClose}
       size="lg"
-      bare
+      label={isNew ? 'New task' : 'Edit task'}
+      header={draft && <TitleRow draft={draft} existing={isNew ? undefined : existing} onTitle={(v) => set('title', v)} onEnter={isNew ? () => void onAdd() : undefined} onClose={onClose} />}
+      footer={
+        draft &&
+        (isNew ? (
+          <SheetActions>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button variant="primary" onClick={() => void onAdd()} disabled={!draft.title.trim()} icon={<Plus className="size-4" />}>
+              Add task
+            </Button>
+          </SheetActions>
+        ) : (
+          existing && <ExistingActions task={{ ...existing, ...pickEditable(draft) }} onClose={onClose} />
+        ))
+      }
     >
-      {draft && (
-        <TaskEditor
-          draft={draft}
-          set={set}
-          setDraft={setDraft}
-          existing={existing}
-          isNew={isNew}
-          onClose={onClose}
-          onAdd={async () => {
-            await save()
-            close()
-          }}
-        />
-      )}
+      {draft && <TaskFields draft={draft} set={set} setDraft={setDraft} existing={isNew ? undefined : existing} />}
     </Sheet>
   )
 }
 
-function TaskEditor({
+function TitleRow({ draft, existing, onTitle, onEnter, onClose }: { draft: Draft; existing?: Task; onTitle: (v: string) => void; onEnter?: () => void; onClose: () => void }) {
+  return (
+    <div className="flex items-start gap-3 px-5 pt-2 pb-2 sm:px-6 sm:pt-5">
+      {existing && (
+        <div className="pt-2.5">
+          <TaskCheck task={existing} />
+        </div>
+      )}
+      <TextArea
+        data-autofocus={existing ? undefined : true}
+        value={draft.title}
+        onChange={(e) => onTitle(e.target.value.replace(/\n/g, ''))}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            onEnter?.()
+          }
+        }}
+        aria-label="Task title"
+        placeholder="What needs doing?"
+        rows={1}
+        // Inline, so the shared field styles (border, min height, resize) can't win over this borderless title.
+        style={{ resize: 'none', minHeight: 0, borderColor: 'transparent', boxShadow: 'none' }}
+        className="max-h-40 min-h-0 flex-1 resize-none border-transparent bg-transparent px-1 py-1.5 font-display text-[22px] leading-snug font-medium [field-sizing:content] focus:border-transparent focus:ring-0 focus-visible:outline-none"
+      />
+      <IconButton label="Close" size="sm" onClick={onClose} className="mt-1.5">
+        <X className="size-4.5" />
+      </IconButton>
+    </div>
+  )
+}
+
+function TaskFields({
   draft,
   set,
   setDraft,
   existing,
-  isNew,
-  onClose,
-  onAdd,
 }: {
   draft: Draft
   set: <K extends keyof Draft>(key: K, value: Draft[K]) => void
   setDraft: (fn: (d: Draft | null) => Draft | null) => void
   existing: Task | undefined
-  isNew: boolean
-  onClose: () => void
-  onAdd: () => void
 }) {
-  const projects = useProjects()
-  const labels = useLabels()
-  const tree = useMemo(() => flattenLabels(labels), [labels])
   const today = todayKey()
-
+  const id = useId()
   return (
-    <div className="flex max-h-[92dvh] flex-col">
-      <div className="flex items-start gap-3 px-5 pt-2 pb-2 sm:pt-5">
-        {existing && !isNew ? (
-          <div className="pt-2.5">
-            <TaskCheck task={existing} />
-          </div>
-        ) : null}
-        <TextArea
-          data-autofocus={isNew ? true : undefined}
-          value={draft.title}
-          onChange={(e) => set('title', e.target.value.replace(/\n/g, ''))}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              if (isNew) onAdd()
-            }
-          }}
-          placeholder="What needs doing?"
-          rows={1}
-          className="min-h-0 flex-1 resize-none border-transparent bg-transparent px-1 py-1.5 font-display text-[22px] leading-snug font-medium focus:border-transparent focus:ring-0"
-        />
-        <IconButton label="Close" size="sm" onClick={onClose} className="mt-1.5">
-          <X className="size-4.5" />
-        </IconButton>
+    <div className="space-y-5">
+      <TextArea value={draft.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Notes, links, what “done” looks like…" rows={2} className="text-[15px]" aria-label="Notes" />
+
+      <div className="divide-y divide-line rounded-2xl border border-line">
+        <FieldRow icon={<Tag />} label="Subject" htmlFor={`${id}-subject`}>
+          <SubjectPicker id={`${id}-subject`} value={draft.labelId} onChange={(v) => set('labelId', v)} />
+        </FieldRow>
+        <FieldRow icon={<Hash />} label="Tags" htmlFor={`${id}-tags`}>
+          <TagInput id={`${id}-tags`} value={draft.tags ?? []} onChange={(v) => set('tags', v)} />
+        </FieldRow>
+        <FieldRow icon={<Flag />} label="Priority">
+          <PriorityPicker value={draft.priority} onChange={(p) => set('priority', p)} />
+        </FieldRow>
+        <FieldRow icon={<CalendarClock />} label="Plan for" htmlFor={`${id}-plan`}>
+          <DateQuick id={`${id}-plan`} value={draft.plannedFor} onChange={(v) => set('plannedFor', v)} today={today} />
+        </FieldRow>
+        <FieldRow icon={<Flag />} label="Deadline" htmlFor={`${id}-due`}>
+          <DeadlineField id={`${id}-due`} date={draft.dueDate} time={draft.dueTime} onChange={(date, time) => setDraft((d) => (d ? { ...d, dueDate: date, dueTime: time } : d))} />
+        </FieldRow>
+        <FieldRow icon={<AlarmClock />} label="Reminder">
+          <ReminderPicker draft={draft} onChange={(v) => set('reminderAt', v)} />
+        </FieldRow>
+        <FieldRow icon={<Repeat2 />} label="Repeat">
+          <RepeatPicker rule={draft.recurrence} anchor={draft.plannedFor ?? draft.dueDate ?? today} onChange={(r) => setDraft((d) => (d ? { ...d, recurrence: r, plannedFor: r && !d.plannedFor && !d.dueDate ? today : d.plannedFor } : d))} />
+        </FieldRow>
+        <FieldRow icon={<Clock3 />} label="Estimate">
+          <EstimateField value={draft.estimatedPomodoros} onChange={(v) => set('estimatedPomodoros', v)} profileId={draft.profileId} />
+        </FieldRow>
+        <FieldRow icon={<Timer />} label="Timer" htmlFor={`${id}-profile`}>
+          <ProfilePicker id={`${id}-profile`} value={draft.profileId ?? null} onChange={(v) => set('profileId', v)} />
+        </FieldRow>
+        <FieldRow icon={<FolderOpen />} label="Project" htmlFor={`${id}-project`}>
+          <ProjectPicker id={`${id}-project`} value={draft.projectId} onChange={(v) => set('projectId', v)} />
+        </FieldRow>
       </div>
 
-      <div className="scrollbar-thin min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-5">
-        <TextArea value={draft.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Notes, links, what “done” looks like…" rows={2} className="text-[15px]" />
+      <Subtasks items={draft.subtasks} onChange={(s) => set('subtasks', s)} />
 
-        <Subtasks items={draft.subtasks} onChange={(s) => set('subtasks', s)} />
-
-        <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
-          <PropRow icon={<CalendarClock className="size-4" />} label="Plan for">
-            <DateQuick value={draft.plannedFor} onChange={(v) => set('plannedFor', v)} today={today} />
-          </PropRow>
-          <PropRow icon={<Flag className="size-4" />} label="Deadline">
-            <div className="flex flex-wrap items-center gap-2">
-              <input type="date" value={draft.dueDate ?? ''} onChange={(e) => set('dueDate', e.target.value || null)} className="rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-sm" aria-label="Deadline date" />
-              {draft.dueDate && (
-                <>
-                  <input type="time" value={draft.dueTime ?? ''} onChange={(e) => set('dueTime', e.target.value || null)} className="rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-sm" aria-label="Deadline time" />
-                  <button type="button" className="text-xs font-bold text-ink-3 hover:text-ink" onClick={() => setDraft((d) => (d ? { ...d, dueDate: null, dueTime: null } : d))}>
-                    Clear
-                  </button>
-                </>
-              )}
-            </div>
-          </PropRow>
-          <PropRow icon={<AlarmClock className="size-4" />} label="Reminder">
-            <ReminderPicker draft={draft} onChange={(v) => set('reminderAt', v)} />
-          </PropRow>
-          <PropRow icon={<Repeat2 className="size-4" />} label="Repeat">
-            <RepeatPicker rule={draft.recurrence} anchor={draft.plannedFor ?? draft.dueDate ?? today} onChange={(r) => setDraft((d) => (d ? { ...d, recurrence: r, plannedFor: r && !d.plannedFor && !d.dueDate ? today : d.plannedFor } : d))} />
-          </PropRow>
-          <PropRow icon={<Hash className="size-4" />} label="Project">
-            <Select value={draft.projectId ?? ''} onChange={(e) => set('projectId', e.target.value || null)} className="py-1.5 text-sm" aria-label="Project">
-              <option value="">Inbox (no project)</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </Select>
-          </PropRow>
-          <PropRow icon={<Tag className="size-4" />} label="Subject">
-            <Select value={draft.labelId ?? ''} onChange={(e) => set('labelId', e.target.value || null)} className="py-1.5 text-sm" aria-label="Subject">
-              <option value="">None</option>
-              {tree.map(({ label, path }) => (
-                <option key={label.id} value={label.id}>
-                  {path}
-                </option>
-              ))}
-            </Select>
-          </PropRow>
-          <PropRow icon={<Flag className="size-4" style={{ color: PRIORITY_COLOR[draft.priority] }} />} label="Priority">
-            <div className="flex gap-1.5">
-              {([0, 1, 2, 3] as Priority[]).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => set('priority', p)}
-                  className={cn('rounded-full border px-2.5 py-1 text-xs font-bold transition-colors', draft.priority === p ? 'border-transparent text-white' : 'border-line text-ink-2 hover:text-ink')}
-                  style={draft.priority === p ? { background: p ? PRIORITY_COLOR[p] : 'var(--ink-3)' } : undefined}
-                >
-                  {PRIORITY_NAME[p]}
-                </button>
-              ))}
-            </div>
-          </PropRow>
-          <PropRow icon={<Timer className="size-4" />} label="Estimate">
-            <Stepper label="Estimated sessions" value={draft.estimatedPomodoros} onChange={(v) => set('estimatedPomodoros', v)} min={0} max={40} suffix="sessions" />
-          </PropRow>
-        </div>
-
-        {existing && !isNew && <TaskActivity task={existing} />}
-      </div>
-
-      <div className="pb-safe flex shrink-0 items-center gap-2 border-t border-line px-5 py-3">
-        {isNew ? (
-          <>
-            <Button block onClick={onClose}>
-              Cancel
-            </Button>
-            <Button block variant="primary" onClick={onAdd} disabled={!draft.title.trim()}>
-              Add task
-            </Button>
-          </>
-        ) : (
-          existing && <ExistingActions task={{ ...existing, ...pickEditable(draft) }} onClose={onClose} />
-        )}
-      </div>
-    </div>
-  )
-}
-
-function PropRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
-  return (
-    <div className="flex min-h-13 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
-      <span className="flex w-24 shrink-0 items-center gap-2 text-sm font-semibold text-ink-2">
-        {icon}
-        {label}
-      </span>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
-  )
-}
-
-function DateQuick({ value, onChange, today }: { value: DayKey | null; onChange: (v: DayKey | null) => void; today: DayKey }) {
-  const options: Array<[string, DayKey]> = [
-    ['Today', today],
-    ['Tomorrow', addDaysKey(today, 1)],
-    ['Next week', addDaysKey(startOfWeekKey(today, 1), 7)],
-  ]
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {options.map(([label, key]) => (
-        <Chip key={label} active={value === key} onClick={() => onChange(value === key ? null : key)}>
-          {label}
-        </Chip>
-      ))}
-      <input type="date" value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} className="rounded-lg border border-line bg-surface-2 px-2 py-1 text-sm" aria-label="Plan for date" />
-      {value && !options.some(([, k]) => k === value) && <span className="text-xs font-semibold text-ink-2">{relativeDayLabel(value, today)}</span>}
+      {existing && <TaskActivity task={existing} />}
     </div>
   )
 }
@@ -313,7 +233,7 @@ function ReminderPicker({ draft, onChange }: { draft: Draft; onChange: (v: numbe
         type="datetime-local"
         value={localValue}
         onChange={(e) => onChange(e.target.value ? new Date(e.target.value).getTime() : null)}
-        className="rounded-lg border border-line bg-surface-2 px-2 py-1 text-sm"
+        className="h-8 max-w-full min-w-0 rounded-lg border border-line bg-surface-2 px-2 text-sm"
         aria-label="Reminder time"
       />
     </div>
@@ -471,10 +391,9 @@ function TaskActivity({ task }: { task: Task }) {
 function ExistingActions({ task, onClose }: { task: Task; onClose: () => void }) {
   const [scheduling, setScheduling] = useState(false)
   const del = async () => {
-    if (!(await confirmDialog({ title: 'Delete this task?', body: 'Focus sessions already logged against it are kept in your history.', confirmLabel: 'Delete', danger: true }))) return
     useUi.getState().closeTask()
-    await deleteTask(task)
-    toast({ title: 'Task deleted', body: task.title })
+    const deleted = await deleteTask(task)
+    toast({ title: 'Task deleted', body: task.title, action: { label: 'Undo', run: () => void restoreTask(deleted) } })
   }
   const duplicate = async () => {
     const copy = await addTask({ ...task, id: undefined, done: 0, completedAt: null, subtasks: task.subtasks.map((s) => ({ ...s, id: uid(), done: false })), title: `${task.title} (copy)` } as Partial<Task>)
@@ -482,42 +401,48 @@ function ExistingActions({ task, onClose }: { task: Task; onClose: () => void })
   }
   return (
     <>
-      <IconButton label="Delete task" onClick={() => void del()}>
-        <Trash2 className="size-4.5" />
-      </IconButton>
-      <IconButton label="Duplicate" onClick={() => void duplicate()}>
-        <Copy className="size-4.5" />
-      </IconButton>
-      <IconButton label="Schedule a focus block" onClick={() => setScheduling(true)}>
-        <CalendarPlus className="size-4.5" />
-      </IconButton>
-      <div className="flex-1" />
-      {task.done ? (
-        <Button onClick={() => void uncompleteTask(task)}>Reopen</Button>
-      ) : (
-        <>
-          <Button
-            icon={<Check className="size-4" />}
-            onClick={async () => {
-              onClose()
-              await completeTask(task)
-              toast({ title: 'Completed', body: task.title, tone: 'success' })
-            }}
-          >
-            Done
-          </Button>
-          <Button
-            variant="primary"
-            icon={<Play className="size-4 fill-current" />}
-            onClick={() => {
-              onClose()
-              void focusOnTask(task)
-            }}
-          >
-            Focus
-          </Button>
-        </>
-      )}
+      <SheetActions
+        start={
+          <>
+            <IconButton label="Delete task" onClick={() => void del()} className="hover:bg-danger/10 hover:text-danger">
+              <Trash2 className="size-4.5" />
+            </IconButton>
+            <IconButton label="Duplicate" onClick={() => void duplicate()}>
+              <Copy className="size-4.5" />
+            </IconButton>
+            <IconButton label="Schedule a focus block" onClick={() => setScheduling(true)}>
+              <CalendarPlus className="size-4.5" />
+            </IconButton>
+          </>
+        }
+      >
+        {task.done ? (
+          <Button onClick={() => void uncompleteTask(task)}>Reopen</Button>
+        ) : (
+          <>
+            <Button
+              icon={<Check className="size-4" />}
+              onClick={async () => {
+                onClose()
+                await completeTask(task)
+                toast({ title: 'Completed', body: task.title, tone: 'success' })
+              }}
+            >
+              Done
+            </Button>
+            <Button
+              variant="primary"
+              icon={<Play className="size-4 fill-current" />}
+              onClick={() => {
+                onClose()
+                void focusOnTask(task)
+              }}
+            >
+              Focus
+            </Button>
+          </>
+        )}
+      </SheetActions>
       <ScheduleBlockSheet task={task} open={scheduling} onClose={() => setScheduling(false)} />
     </>
   )
@@ -565,7 +490,21 @@ export function ScheduleBlockSheet({ task, open, onClose }: { task: Task; open: 
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Schedule a focus block" subtitle={task.title} size="sm">
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Schedule a focus block"
+      subtitle={task.title}
+      size="sm"
+      footer={
+        <SheetActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={() => void save()}>
+            Add to calendar
+          </Button>
+        </SheetActions>
+      }
+    >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <label className="space-y-1.5">
@@ -584,9 +523,6 @@ export function ScheduleBlockSheet({ task, open, onClose }: { task: Task; open: 
         <p className="text-[13px] text-ink-2">
           Ends at {endOf(start, minutes)} · about {Math.max(1, Math.round(minutes / per))} session{Math.round(minutes / per) === 1 ? '' : 's'}. You’ll get a reminder 5 minutes before, and can start the timer straight from the block.
         </p>
-        <Button block variant="primary" onClick={() => void save()}>
-          Add to calendar
-        </Button>
       </div>
     </Sheet>
   )

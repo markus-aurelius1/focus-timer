@@ -36,6 +36,8 @@ export interface PlacedSymbol {
   mastery: MasteryLevel
   isNew: boolean
   selected: boolean
+  /** Not yet discovered: named later, after discovered places, in a quieter tone. */
+  muted?: boolean
 }
 
 interface Box {
@@ -308,7 +310,7 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
   for (const s of input.places) {
     const p = s.place
     if (!inView(s.x, s.y, 10)) continue
-    const minZoom = s.selected || s.isNew ? 0 : p.kind === 'capital' ? 0 : p.level === 1 ? 1.5 : p.level === 2 ? 2.2 : 3.1
+    const minZoom = s.selected || s.isNew ? 0 : (p.kind === 'capital' ? 0 : p.level === 1 ? 1.5 : p.level === 2 ? 2.2 : 3.1) + (s.muted ? 0.4 : 0)
     // The symbol itself reserves space so names don't cover it.
     cands.push({ label: { key: `sym:${p.id}`, text: '', style: 'place', x: s.x, y: s.y, anchor: 'middle', size: 0 }, box: { x0: s.x - 8, y0: s.y - 8, x1: s.x + 8, y1: s.y + 8 }, priority: 150 + (s.selected ? 100 : 0) })
     if (z < minZoom) continue
@@ -326,9 +328,9 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
     ]
     const boxes = options.map(([x, y, a]) => textBox(x, y, w, size, a))
     cands.push({
-      label: { key: `place:${p.id}`, text, style, x: options[0][0], y: options[0][1], anchor: 'start', size, placeId: p.id },
+      label: { key: `place:${p.id}`, text, style, x: options[0][0], y: options[0][1], anchor: 'start', size, placeId: p.id, muted: s.muted && !s.selected },
       box: boxes,
-      priority: (s.selected ? 400 : s.isNew ? 180 : 0) + (p.level === 1 ? 85 : p.level === 2 ? 55 : 30) + (p.kind === 'capital' ? 20 : 0),
+      priority: (s.selected ? 400 : s.isNew ? 180 : 0) + (p.level === 1 ? 85 : p.level === 2 ? 55 : 30) + (p.kind === 'capital' ? 20 : 0) - (s.muted && !s.selected ? 45 : 0),
     })
   }
 

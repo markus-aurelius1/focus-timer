@@ -1,4 +1,4 @@
-import { ChevronRight, Plus } from 'lucide-react'
+import { Archive, ArchiveRestore, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { db } from '@/data/db'
 import { useLabels } from '@/data/hooks'
@@ -6,10 +6,10 @@ import { create, patch, remove } from '@/data/repo'
 import { PALETTE } from '@/data/seed'
 import type { Label, LabelKind } from '@/data/types'
 import { labelScope } from '@/stats/aggregate'
-import { Button, Field, Select, TextInput } from '@/ui/controls'
+import { Button, Field, IconButton, Select, TextInput } from '@/ui/controls'
 import { ColorPicker } from '@/ui/ColorPicker'
 import { confirmDialog } from '@/ui/feedback'
-import { Sheet } from '@/ui/Sheet'
+import { Sheet, SheetActions, SheetFooter } from '@/ui/Sheet'
 import { flattenLabels, LABEL_KIND_NAME } from '@/features/shared/labels'
 
 /** Exam → Subject → Topic, or any flat set of labels. Structure is optional. */
@@ -115,27 +115,34 @@ function LabelSheet({ target, labels, onClose }: { target: Label | { parentId: s
         <Field label="Colour">
           <ColorPicker value={color} onChange={setColor} />
         </Field>
-        <div className="flex gap-2">
-          {existing && (
-            <>
-              <Button variant="danger" onClick={() => void del()}>
-                Delete
-              </Button>
-              <Button
-                onClick={async () => {
-                  await patch('labels', existing.id, { archived: !existing.archived })
-                  onClose()
-                }}
-              >
-                {existing.archived ? 'Restore' : 'Archive'}
-              </Button>
-            </>
-          )}
-          <Button block variant="primary" onClick={() => void save()}>
+      </div>
+      <SheetFooter>
+        <SheetActions
+          start={
+            existing && (
+              <>
+                <IconButton label="Delete label" onClick={() => void del()} className="text-danger hover:bg-danger/10 hover:text-danger">
+                <Trash2 className="size-4.5" />
+              </IconButton>
+                <IconButton
+                  label={existing.archived ? 'Restore label' : 'Archive label'}
+                  onClick={async () => {
+                    await patch('labels', existing.id, { archived: !existing.archived })
+                    onClose()
+                  }}
+                >
+                  {existing.archived ? <ArchiveRestore className="size-4.5" /> : <Archive className="size-4.5" />}
+                </IconButton>
+              </>
+            )
+          }
+        >
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={() => void save()}>
             Save
           </Button>
-        </div>
-      </div>
+        </SheetActions>
+      </SheetFooter>
     </Sheet>
   )
 }

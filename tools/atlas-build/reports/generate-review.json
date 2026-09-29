@@ -1,0 +1,2418 @@
+{
+  "unresolved": [
+    {
+      "sheet": "india",
+      "kind": "river",
+      "title": "Don River (India)",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "peak",
+      "title": "Kun (mountain)",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "peak",
+      "title": "Shillong Peak",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "pass",
+      "title": "Thang La",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "pass",
+      "title": "Bomdi La",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "glacier",
+      "title": "Dokriani Glacier",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "glacier",
+      "title": "Pensilungpa Glacier",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "lake",
+      "title": "Didwana Lake",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "dam",
+      "title": "Obra Dam",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "port",
+      "title": "Azhikkal Port",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "island",
+      "title": "Pitti Island",
+      "why": "disambiguation"
+    },
+    {
+      "sheet": "india",
+      "kind": "waterfall",
+      "title": "Tirathgarh Falls",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "waterfall",
+      "title": "Rakim Kund Falls",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "waterfall",
+      "title": "Chulia Falls",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "plateau",
+      "title": "Hazaribagh Plateau",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "plateau",
+      "title": "Ranchi Plateau",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "plateau",
+      "title": "Pat region",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "range",
+      "title": "Mussoorie Range",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "range",
+      "title": "Rajpipla hills",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "range",
+      "title": "Palkonda Range",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "range",
+      "title": "Gawilgarh Hills",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "strategic",
+      "title": "Yangtse, Arunachal Pradesh",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "city",
+      "title": "Devipatan",
+      "why": "no article"
+    },
+    {
+      "sheet": "india",
+      "kind": "city",
+      "title": "Deva Sharif",
+      "why": "no article"
+    }
+  ],
+  "noCoords": [
+    {
+      "sheet": "india",
+      "title": "Korapuzha"
+    },
+    {
+      "sheet": "india",
+      "title": "Noyyal River"
+    },
+    {
+      "sheet": "india",
+      "title": "Shahpurkandi dam project"
+    },
+    {
+      "sheet": "india",
+      "title": "International Container Transshipment Port, Galathea Bay"
+    },
+    {
+      "sheet": "india",
+      "title": "Magod Falls"
+    },
+    {
+      "sheet": "india",
+      "title": "Rayalaseema"
+    },
+    {
+      "sheet": "india",
+      "title": "Hadoti"
+    },
+    {
+      "sheet": "india",
+      "title": "Purvanchal"
+    },
+    {
+      "sheet": "india",
+      "title": "Western Coastal Plains"
+    },
+    {
+      "sheet": "india",
+      "title": "Line of Actual Control"
+    },
+    {
+      "sheet": "india",
+      "title": "McMahon Line"
+    },
+    {
+      "sheet": "india",
+      "title": "Great Nicobar Island Development Project"
+    },
+    {
+      "sheet": "world",
+      "title": "Andean Volcanic Belt"
+    },
+    {
+      "sheet": "world",
+      "title": "Northern Sea Route"
+    },
+    {
+      "sheet": "world",
+      "title": "Istanbul Canal"
+    },
+    {
+      "sheet": "world",
+      "title": "Wallace Line"
+    },
+    {
+      "sheet": "world",
+      "title": "Ring of Fire"
+    },
+    {
+      "sheet": "world",
+      "title": "Piracy in the Persian Gulf"
+    },
+    {
+      "sheet": "world",
+      "title": "China–Pakistan Economic Corridor"
+    },
+    {
+      "sheet": "world",
+      "title": "International North–South Transport Corridor"
+    },
+    {
+      "sheet": "world",
+      "title": "India–Middle East–Europe Economic Corridor"
+    },
+    {
+      "sheet": "india",
+      "title": "Kanwar Taal or Kabar Taal Lake"
+    },
+    {
+      "sheet": "india",
+      "title": "Nalsarovar Bird Sanctuary"
+    },
+    {
+      "sheet": "india",
+      "title": "Hokera Wetland"
+    },
+    {
+      "sheet": "india",
+      "title": "Sakhya Sagar"
+    },
+    {
+      "sheet": "india",
+      "title": "Vembannur Wetland Complex"
+    },
+    {
+      "sheet": "india",
+      "title": "Ankasamudra Bird Conservation Reserve"
+    },
+    {
+      "sheet": "india",
+      "title": "Gogabeel Lake"
+    },
+    {
+      "sheet": "india",
+      "title": "Glaw Lake"
+    },
+    {
+      "sheet": "india",
+      "title": "Cold Desert (biosphere reserve)"
+    }
+  ],
+  "merged": [
+    {
+      "candidate": "Rihand",
+      "into": "in.dam.rihand-dam",
+      "by": "name"
+    },
+    {
+      "candidate": "Spiti",
+      "into": "in.valley.spiti-valley",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Chenab",
+      "into": "in.river.chenab",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Chenab",
+      "into": "in.river.chenab",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Parbati",
+      "into": "in.river.parbati",
+      "by": "name"
+    },
+    {
+      "candidate": "Gomti",
+      "into": "in.river.gomti",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Imphal",
+      "into": "in.valley.imphal-valley",
+      "by": "name"
+    },
+    {
+      "candidate": "Nubra",
+      "into": "in.valley.nubra-valley",
+      "by": "name"
+    },
+    {
+      "candidate": "Kedarnath",
+      "into": "in.monument.kedarnath",
+      "by": "name"
+    },
+    {
+      "candidate": "Thal Ghat",
+      "into": "in.pass.thal-ghat",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Rihand Dam",
+      "into": "in.dam.rihand-dam",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kabini River",
+      "into": "in.river.kabini",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Omkareshwar Dam",
+      "into": "in.monument.omkareshwar",
+      "by": "name"
+    },
+    {
+      "candidate": "Teesta River",
+      "into": "in.river.teesta",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Coco Islands",
+      "into": "in.strait.coco-channel",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pamban Island",
+      "into": "in.island.rameswaram",
+      "by": "name"
+    },
+    {
+      "candidate": "Kathiawar",
+      "into": "in.region.kathiawar-peninsula",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Mikir Hills",
+      "into": "in.range.karbi-anglong-hills",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pilibhit",
+      "into": "in.park.pilibhit-tiger-reserve",
+      "by": "name"
+    },
+    {
+      "candidate": "Palani",
+      "into": "in.range.palani-hills",
+      "by": "name"
+    },
+    {
+      "candidate": "Brahmaputra",
+      "into": "in.river.siang",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Tonle Sap",
+      "into": "w.lake.tonle-sap",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Lake Geneva",
+      "into": "w.city.geneva",
+      "by": "name"
+    },
+    {
+      "candidate": "Karakoram",
+      "into": "in.range.karakoram",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Arakan Mountains",
+      "into": "in.range.arakan-yoma",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Toubkal",
+      "into": "w.peak.toubkal",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Mount Kailash",
+      "into": "in.peak.mount-kailash",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "K2",
+      "into": "in.peak.k2",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Mount Everest",
+      "into": "in.peak.mount-everest",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Mount Vesuvius",
+      "into": "w.volcano.mount-vesuvius",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Barren Island",
+      "into": "in.volcano.barren-island",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Andaman Islands",
+      "into": "in.island.andaman-islands",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Arabian Sea",
+      "into": "in.sea.arabian-sea",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Andaman Sea",
+      "into": "in.sea.andaman-sea",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Laccadive Sea",
+      "into": "in.sea.lakshadweep-sea",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Bay of Bengal",
+      "into": "in.sea.bay-of-bengal",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Java Sea",
+      "into": "w.island.java",
+      "by": "name"
+    },
+    {
+      "candidate": "Timor Sea",
+      "into": "w.island.timor",
+      "by": "name"
+    },
+    {
+      "candidate": "Gulf of Riga",
+      "into": "w.capital.riga",
+      "by": "name"
+    },
+    {
+      "candidate": "Gulf of Panama",
+      "into": "w.canal.panama-canal",
+      "by": "name"
+    },
+    {
+      "candidate": "Gulf of Bothnia",
+      "into": "w.gulf.gulf-of-bothnia",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Gulf of Khambhāt",
+      "into": "in.gulf.gulf-of-khambhat",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Gulf of Mannar",
+      "into": "in.gulf.gulf-of-mannar",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Tokyo Bay",
+      "into": "w.capital.tokyo",
+      "by": "name"
+    },
+    {
+      "candidate": "Bay of Kiel",
+      "into": "w.canal.kiel-canal",
+      "by": "name"
+    },
+    {
+      "candidate": "Strait of Sicily",
+      "into": "w.island.sicily",
+      "by": "name"
+    },
+    {
+      "candidate": "Palk Strait",
+      "into": "in.strait.palk-strait",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Ten Degree Channel",
+      "into": "in.strait.ten-degree-channel",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Nine Degree Channel",
+      "into": "in.strait.nine-degree-channel",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Maliku Kandu",
+      "into": "in.strait.eight-degree-channel",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Singapore Strait",
+      "into": "w.capital.singapore",
+      "by": "name"
+    },
+    {
+      "candidate": "Denmark Strait",
+      "into": "w.strait.denmark-strait",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Mozambique Channel",
+      "into": "w.strait.mozambique-channel",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Rub' al Khali",
+      "into": "w.desert.arabian-desert",
+      "by": "name"
+    },
+    {
+      "candidate": "Thar Desert",
+      "into": "in.desert.thar-desert",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Deccan Plateau",
+      "into": "in.plateau.deccan-plateau",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Patagonian Desert",
+      "into": "w.desert.patagonian-desert",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pampas",
+      "into": "w.grassland.pampas",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Po Valley",
+      "into": "w.river.po",
+      "by": "name"
+    },
+    {
+      "candidate": "Indo-Gangetic Plain",
+      "into": "in.plain.indo-gangetic-plain",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Irrawaddy Delta",
+      "into": "w.river.irrawaddy",
+      "by": "name"
+    },
+    {
+      "candidate": "Lena River",
+      "into": "w.river.lena",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Okavango Delta",
+      "into": "w.region.okavango-delta",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Crimea",
+      "into": "w.region.crimea",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Caucasus",
+      "into": "w.range.caucasus",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Donbas",
+      "into": "w.region.donbas",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Grand Banks of Newfoundland",
+      "into": "w.region.grand-banks",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Llanos",
+      "into": "w.grassland.llanos",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kanyakumari",
+      "into": "in.cape.kanyakumari",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Malabar Coast",
+      "into": "in.coast.malabar-coast",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Coromandel Coast",
+      "into": "in.coast.coromandel-coast",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Sunda Trench",
+      "into": "w.sea.sunda-trench",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Serengeti National Park",
+      "into": "w.grassland.serengeti",
+      "by": "name"
+    },
+    {
+      "candidate": "Iguazú National Park",
+      "into": "w.waterfall.iguazu-falls",
+      "by": "name"
+    },
+    {
+      "candidate": "Kinabalu Park",
+      "into": "w.peak.mount-kinabalu",
+      "by": "name"
+    },
+    {
+      "candidate": "Sundarbans",
+      "into": "in.delta.sundarbans-delta",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Lake Baikal",
+      "into": "w.lake.lake-baikal",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Socotra",
+      "into": "w.island.socotra",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Great Barrier Reef",
+      "into": "w.region.great-barrier-reef",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Gwadar Port",
+      "into": "in.port.gwadar",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Gibraltar",
+      "into": "w.strait.strait-of-gibraltar",
+      "by": "name"
+    },
+    {
+      "candidate": "Svalbard",
+      "into": "w.island.svalbard",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Greenland",
+      "into": "w.island.greenland",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Diego Garcia",
+      "into": "w.island.diego-garcia",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Hambantota International Port",
+      "into": "in.port.hambantota",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Taiwan Strait",
+      "into": "w.strait.taiwan-strait",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Mindanao",
+      "into": "w.island.mindanao",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Falkland Islands",
+      "into": "w.island.falkland-islands",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Strait of Hormuz",
+      "into": "w.strait.strait-of-hormuz",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bab al-Mandab Strait",
+      "into": "w.strait.bab-el-mandeb",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Mumbai",
+      "into": "in.capital.mumbai",
+      "by": "wikidata (other sheet)"
+    },
+    {
+      "candidate": "Manila",
+      "into": "w.capital.manila",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kolleru Lake",
+      "into": "in.lake.kolleru-lake",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Deepor Beel",
+      "into": "in.wetland.deepor-beel",
+      "by": "name"
+    },
+    {
+      "candidate": "Sultanpur National Park",
+      "into": "in.wetland.sultanpur-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pong Dam Lake",
+      "into": "in.dam.pong-dam",
+      "by": "name"
+    },
+    {
+      "candidate": "Chandra Taal",
+      "into": "in.lake.chandra-taal",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Renuka Lake",
+      "into": "in.lake.renuka-lake",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Ashtamudi Lake",
+      "into": "in.lake.ashtamudi-lake",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Loktak Lake",
+      "into": "in.lake.loktak-lake",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "East Kolkata Wetlands",
+      "into": "in.wetland.east-kolkata-wetlands",
+      "by": "name"
+    },
+    {
+      "candidate": "Nawabganj Bird Sanctuary",
+      "into": "in.wetland.nawabganj-bird-sanctuary",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Parvati Arga Bird Sanctuary",
+      "into": "in.wetland.parvati-arga",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Keoladeo National Park",
+      "into": "in.park.keoladeo-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Rudrasagar Lake",
+      "into": "in.wetland.rudrasagar-lake",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Samaspur Bird Sanctuary",
+      "into": "in.wetland.samaspur-bird-sanctuary",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sambhar Lake",
+      "into": "in.lake.sambhar-lake",
+      "by": "name"
+    },
+    {
+      "candidate": "Sandi Bird Sanctuary",
+      "into": "in.wetland.sandi-bird-sanctuary",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sarsai Nawar Wetland",
+      "into": "in.wetland.sarsai-nawar",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sasthamkotta Lake",
+      "into": "in.lake.sasthamkotta-lake",
+      "by": "name"
+    },
+    {
+      "candidate": "Haiderpur Wetland",
+      "into": "in.wetland.haiderpur-wetland",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sundarbans",
+      "into": "in.delta.sundarbans-delta",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Surinsar-Mansar Lakes",
+      "into": "in.wetland.surinsar-mansar-lakes",
+      "by": "name"
+    },
+    {
+      "candidate": "Vembanad - Kol Wetland",
+      "into": "in.lake.vembanad-lake",
+      "by": "name"
+    },
+    {
+      "candidate": "Wular Lake",
+      "into": "in.lake.wular-lake",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bhitarkanika Mangroves",
+      "into": "in.park.bhitarkanika-national-park",
+      "by": "hand"
+    },
+    {
+      "candidate": "Keetham Lake",
+      "into": "in.wetland.sur-sarovar",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Lonar Lake",
+      "into": "in.lake.lonar-lake",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Tso Kar",
+      "into": "in.lake.tso-kar",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Chilika Lake",
+      "into": "in.lake.chilika-lake",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bakhira Sanctuary",
+      "into": "in.wetland.bakhira-wildlife-sanctuary",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Harike Wetland",
+      "into": "in.wetland.harike-wetland",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Gulf of Mannar Marine National Park",
+      "into": "in.park.gulf-of-mannar-biosphere-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Hirakud Dam",
+      "into": "in.dam.hirakud-dam",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bandipur National Park",
+      "into": "in.park.bandipur-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Jim Corbett National Park",
+      "into": "in.park.jim-corbett-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kanha Tiger Reserve",
+      "into": "in.park.kanha-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Manas National Park",
+      "into": "in.park.manas-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Melghat Tiger Reserve",
+      "into": "in.park.melghat-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Palamau Tiger Reserve",
+      "into": "in.park.palamau-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Ranthambore National Park",
+      "into": "in.park.ranthambore-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Simlipal National Park",
+      "into": "in.park.similipal-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sundarbans National Park",
+      "into": "in.park.sundarbans-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Periyar National Park",
+      "into": "in.park.periyar-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sariska Tiger Reserve",
+      "into": "in.park.sariska-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Buxa Tiger Reserve",
+      "into": "in.park.buxa-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Indravati National Park",
+      "into": "in.park.indravati-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Namdapha National Park",
+      "into": "in.park.namdapha-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nagarjunsagar-Srisailam Tiger Reserve",
+      "into": "in.park.nagarjunasagar-srisailam-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Dudhwa National Park",
+      "into": "in.park.dudhwa-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kalakkad Mundanthurai Tiger Reserve",
+      "into": "in.park.kalakkad-mundanthurai-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Valmiki National Park",
+      "into": "in.park.valmiki-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pench Tiger Reserve",
+      "into": "in.park.pench-national-park",
+      "by": "name"
+    },
+    {
+      "candidate": "Tadoba Andhari Tiger Reserve",
+      "into": "in.park.tadoba-andhari-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bandhavgarh National Park",
+      "into": "in.park.bandhavgarh-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Panna National Park",
+      "into": "in.park.panna-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bhadra Wildlife Sanctuary",
+      "into": "in.dam.bhadra-dam",
+      "by": "name"
+    },
+    {
+      "candidate": "Pench Tiger Reserve",
+      "into": "in.park.pench-national-park",
+      "by": "name"
+    },
+    {
+      "candidate": "Pakke Tiger Reserve",
+      "into": "in.park.pakke-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nameri National Park",
+      "into": "in.park.nameri-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Satpura Tiger Reserve",
+      "into": "in.park.satpura-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Anamalai Tiger Reserve",
+      "into": "in.park.anamalai-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kaziranga National Park",
+      "into": "in.park.kaziranga-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Achanakmar Wildlife Sanctuary",
+      "into": "in.park.achanakmar-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Mudumalai National Park",
+      "into": "in.park.mudumalai-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nagarhole National Park",
+      "into": "in.park.nagarhole-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Biligiri Ranganatha Temple Tiger Reserve",
+      "into": "in.range.biligirirangan-hills",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pilibhit Tiger Reserve",
+      "into": "in.park.pilibhit-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Rajaji National Park",
+      "into": "in.park.rajaji-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Ranipur Wildlife Sanctuary",
+      "into": "in.park.ranipur-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Mahatma Gandhi Marine National Park",
+      "into": "in.park.mahatma-gandhi-marine-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Saddle Peak National Park",
+      "into": "in.peak.saddle-peak",
+      "by": "name"
+    },
+    {
+      "candidate": "Namdapha National Park",
+      "into": "in.park.namdapha-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Dibru-Saikhowa National Park",
+      "into": "in.park.dibru-saikhowa-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kaziranga National Park",
+      "into": "in.park.kaziranga-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Manas National Park",
+      "into": "in.park.manas-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nameri National Park",
+      "into": "in.park.nameri-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Valmiki National Park",
+      "into": "in.park.valmiki-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Indravati National Park",
+      "into": "in.park.indravati-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Blackbuck National Park",
+      "into": "in.park.velavadar-blackbuck-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Gir National Park",
+      "into": "in.park.gir-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Marine National Park",
+      "into": "in.park.gulf-of-kutch-marine",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sultanpur National Park",
+      "into": "in.wetland.sultanpur-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Great Himalayan National Park",
+      "into": "in.park.great-himalayan-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pin Valley National Park",
+      "into": "in.park.pin-valley-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Dachigam National Park",
+      "into": "in.park.dachigam-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bandipur National Park",
+      "into": "in.park.bandipur-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kudremukh National Park",
+      "into": "in.park.kudremukh-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nagarhole National Park",
+      "into": "in.park.nagarhole-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Eravikulam National Park",
+      "into": "in.park.eravikulam-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Periyar National Park",
+      "into": "in.park.periyar-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Silent Valley National Park",
+      "into": "in.park.silent-valley-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Hemis National Park",
+      "into": "in.park.hemis-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bandhavgarh National Park",
+      "into": "in.park.bandhavgarh-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kanha Tiger Reserve",
+      "into": "in.park.kanha-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kuno National Park",
+      "into": "in.park.kuno-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Panna National Park",
+      "into": "in.park.panna-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pench National Park",
+      "into": "in.park.pench-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Satpura Tiger Reserve",
+      "into": "in.park.satpura-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sanjay Gandhi National Park",
+      "into": "in.park.sanjay-gandhi-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Tadoba Andhari Tiger Reserve",
+      "into": "in.park.tadoba-andhari-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Keibul Lamjao National Park",
+      "into": "in.park.keibul-lamjao-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nokrek National Park",
+      "into": "in.park.nokrek-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Phawngpui National Park",
+      "into": "in.peak.phawngpui",
+      "by": "name"
+    },
+    {
+      "candidate": "Bhitarkanika National Park",
+      "into": "in.park.bhitarkanika-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Simlipal National Park",
+      "into": "in.park.similipal-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Desert National Park",
+      "into": "in.park.desert-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Keoladeo National Park",
+      "into": "in.park.keoladeo-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Ranthambore National Park",
+      "into": "in.park.ranthambore-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sariska Tiger Reserve",
+      "into": "in.park.sariska-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Khangchendzonga National Park",
+      "into": "in.park.khangchendzonga-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Anamalai Tiger Reserve",
+      "into": "in.park.anamalai-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Gulf of Mannar Marine National Park",
+      "into": "in.park.gulf-of-mannar-biosphere-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Mudumalai National Park",
+      "into": "in.park.mudumalai-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Dudhwa National Park",
+      "into": "in.park.dudhwa-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Gangotri National Park",
+      "into": "in.glacier.gangotri-glacier",
+      "by": "name"
+    },
+    {
+      "candidate": "Jim Corbett National Park",
+      "into": "in.park.jim-corbett-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nanda Devi National Park",
+      "into": "in.park.nanda-devi-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Rajaji National Park",
+      "into": "in.park.rajaji-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Valley of Flowers National Park",
+      "into": "in.park.valley-of-flowers",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Buxa Tiger Reserve",
+      "into": "in.park.buxa-tiger-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Singalila National Park",
+      "into": "in.park.singalila-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sundarbans National Park",
+      "into": "in.park.sundarbans-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nilgiri Biosphere Reserve",
+      "into": "in.park.nilgiri-biosphere-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nanda Devi National Park",
+      "into": "in.park.nanda-devi-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nokrek National Park",
+      "into": "in.park.nokrek-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Great Nicobar Biosphere Reserve",
+      "into": "in.island.great-nicobar",
+      "by": "name"
+    },
+    {
+      "candidate": "Gulf of Mannar Marine National Park",
+      "into": "in.park.gulf-of-mannar-biosphere-reserve",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Manas National Park",
+      "into": "in.park.manas-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sundarbans National Park",
+      "into": "in.park.sundarbans-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Simlipal National Park",
+      "into": "in.park.similipal-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Dibru-Saikhowa National Park",
+      "into": "in.park.dibru-saikhowa-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Khangchendzonga National Park",
+      "into": "in.park.khangchendzonga-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Seshachalam Hills Biosphere Reserve",
+      "into": "in.range.seshachalam-hills",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Panna National Park",
+      "into": "in.park.panna-national-park",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kigali",
+      "into": "w.capital.kigali",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bratislava",
+      "into": "w.capital.bratislava",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Dodoma",
+      "into": "w.capital.dodoma",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bern",
+      "into": "w.capital.bern",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pristina",
+      "into": "w.capital.pristina",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Banjul",
+      "into": "w.capital.banjul",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Port Louis",
+      "into": "w.capital.port-louis",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "St. John's",
+      "into": "w.capital.saint-johns",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Montevideo",
+      "into": "w.capital.montevideo",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Tunis",
+      "into": "w.capital.tunis",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Ashgabat",
+      "into": "w.capital.ashgabat",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Lusaka",
+      "into": "w.capital.lusaka",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Harare",
+      "into": "w.capital.harare",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Georgetown",
+      "into": "w.capital.georgetown",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Reykjavík",
+      "into": "w.capital.reykjavik",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kampala",
+      "into": "w.capital.kampala",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Niamey",
+      "into": "w.capital.niamey",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Dushanbe",
+      "into": "w.capital.dushanbe",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Asunción",
+      "into": "w.capital.asuncion",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Managua",
+      "into": "w.capital.managua",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Freetown",
+      "into": "w.capital.freetown",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Pretoria",
+      "into": "w.capital.pretoria",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Panama City",
+      "into": "w.canal.panama-canal",
+      "by": "name"
+    },
+    {
+      "candidate": "Rabat",
+      "into": "w.capital.rabat",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Colombo",
+      "into": "w.city.colombo",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Ulaanbaatar",
+      "into": "w.capital.ulaanbaatar",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Windhoek",
+      "into": "w.capital.windhoek",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Abuja",
+      "into": "w.capital.abuja",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bissau",
+      "into": "w.capital.bissau",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Amman",
+      "into": "w.capital.amman",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Riga",
+      "into": "w.capital.riga",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bishkek",
+      "into": "w.capital.bishkek",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "San José",
+      "into": "w.capital.san-jose",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "San Salvador",
+      "into": "w.capital.san-salvador",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Malabo",
+      "into": "w.capital.malabo",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Zagreb",
+      "into": "w.capital.zagreb",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Suva",
+      "into": "w.capital.suva",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bamako",
+      "into": "w.capital.bamako",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Beirut",
+      "into": "w.capital.beirut",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Tbilisi",
+      "into": "w.capital.tbilisi",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Astana",
+      "into": "w.capital.astana",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Vientiane",
+      "into": "w.capital.vientiane",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Brazzaville",
+      "into": "w.capital.brazzaville",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Ottawa",
+      "into": "w.capital.ottawa",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Belgrade",
+      "into": "w.capital.belgrade",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Belmopan",
+      "into": "w.capital.belmopan",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Baku",
+      "into": "w.capital.baku",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Phnom Penh",
+      "into": "w.capital.phnom-penh",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sofia",
+      "into": "w.capital.sofia",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Canberra",
+      "into": "w.capital.canberra",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Victoria",
+      "into": "w.capital.victoria-seychelles",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Valletta",
+      "into": "w.capital.valletta",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Malé",
+      "into": "w.capital.male",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nassau",
+      "into": "w.capital.nassau",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nicosia",
+      "into": "w.capital.nicosia",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Hanoi",
+      "into": "w.capital.hanoi",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Ankara",
+      "into": "w.capital.ankara",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Budapest",
+      "into": "w.capital.budapest",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Sanaa",
+      "into": "w.capital.sanaa",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Lisbon",
+      "into": "w.capital.lisbon",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Khartoum",
+      "into": "w.capital.khartoum",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Oslo",
+      "into": "w.capital.oslo",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Warsaw",
+      "into": "w.capital.warsaw",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Dublin",
+      "into": "w.capital.dublin",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kuala Lumpur",
+      "into": "w.capital.kuala-lumpur",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Havana",
+      "into": "w.capital.havana",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Santo Domingo",
+      "into": "w.capital.santo-domingo",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Accra",
+      "into": "w.capital.accra",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Helsinki",
+      "into": "w.capital.helsinki",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Copenhagen",
+      "into": "w.capital.copenhagen",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Brasília",
+      "into": "w.capital.brasilia",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Algiers",
+      "into": "w.capital.algiers",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Yangon",
+      "into": "w.city.yangon",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Caracas",
+      "into": "w.capital.caracas",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kyiv",
+      "into": "w.capital.kyiv",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Tashkent",
+      "into": "w.capital.tashkent",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Madrid",
+      "into": "w.capital.madrid",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bangkok",
+      "into": "w.capital.bangkok",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Lima",
+      "into": "w.capital.lima",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Amsterdam",
+      "into": "w.capital.amsterdam",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Seoul",
+      "into": "w.capital.seoul",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Manila",
+      "into": "w.capital.manila",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Berlin",
+      "into": "w.capital.berlin",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Kinshasa",
+      "into": "w.capital.kinshasa",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "New Delhi",
+      "into": "w.capital.new-delhi",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Baghdad",
+      "into": "w.capital.baghdad",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Addis Ababa",
+      "into": "w.capital.addis-ababa",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Tehran",
+      "into": "w.capital.tehran",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Buenos Aires",
+      "into": "w.capital.buenos-aires",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Vienna",
+      "into": "w.capital.vienna",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Taipei",
+      "into": "w.capital.taipei",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Washington",
+      "into": "w.capital.washington",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "London",
+      "into": "w.capital.london",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Riyadh",
+      "into": "w.capital.riyadh",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Moscow",
+      "into": "w.capital.moscow",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Mexico City",
+      "into": "w.capital.mexico-city",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Rome",
+      "into": "w.capital.rome",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Beijing",
+      "into": "w.capital.beijing",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Nairobi",
+      "into": "w.capital.nairobi",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Jakarta",
+      "into": "w.capital.jakarta",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Bogotá",
+      "into": "w.capital.bogota",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Cairo",
+      "into": "w.capital.cairo",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Tokyo",
+      "into": "w.capital.tokyo",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Paris",
+      "into": "w.capital.paris",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Santiago",
+      "into": "w.capital.santiago",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Singapore",
+      "into": "w.capital.singapore",
+      "by": "wikidata"
+    },
+    {
+      "candidate": "Wellington",
+      "into": "w.capital.wellington",
+      "by": "wikidata"
+    }
+  ],
+  "duplicates": [
+    {
+      "candidate": "Saltoro Mountains",
+      "kept": "Saltoro Mountains"
+    },
+    {
+      "candidate": "Lake Turkana",
+      "kept": "Lake Turkana"
+    },
+    {
+      "candidate": "Dogger Bank",
+      "kept": "Dogger Bank"
+    },
+    {
+      "candidate": "Plitvice Lakes National Park",
+      "kept": "Plitvice Lakes National Park"
+    },
+    {
+      "candidate": "Aldabra",
+      "kept": "Aldabra"
+    },
+    {
+      "candidate": "Tubbataha Reef",
+      "kept": "Tubbataha Reef"
+    },
+    {
+      "candidate": "Golan Heights",
+      "kept": "Golan Heights"
+    },
+    {
+      "candidate": "Bougainville Island",
+      "kept": "Bougainville Island"
+    },
+    {
+      "candidate": "New Caledonia",
+      "kept": "New Caledonia"
+    },
+    {
+      "candidate": "Osaka",
+      "kept": "Osaka"
+    },
+    {
+      "candidate": "Tawa Reservoir",
+      "kept": "Tawa Reservoir"
+    },
+    {
+      "candidate": "Orang National Park",
+      "kept": "Orang National Park"
+    },
+    {
+      "candidate": "Guru Ghasidas - Tamor Pingla Tiger Reserve",
+      "kept": "Guru Ghasidas - Tamor Pingla Tiger Reserve"
+    },
+    {
+      "candidate": "Kali Tiger Reserve",
+      "kept": "Kali Tiger Reserve"
+    },
+    {
+      "candidate": "Madhav National Park",
+      "kept": "Madhav National Park"
+    },
+    {
+      "candidate": "Sanjay National Park",
+      "kept": "Sanjay National Park"
+    },
+    {
+      "candidate": "Navegaon National Park",
+      "kept": "Navegaon National Park"
+    },
+    {
+      "candidate": "Mukundara Hills National Park",
+      "kept": "Mukundara Hills National Park"
+    },
+    {
+      "candidate": "Doha",
+      "kept": "Doha"
+    },
+    {
+      "candidate": "Bujumbura",
+      "kept": "Bujumbura"
+    },
+    {
+      "candidate": "Damascus",
+      "kept": "Damascus"
+    },
+    {
+      "candidate": "Pyongyang",
+      "kept": "Pyongyang"
+    },
+    {
+      "candidate": "Dar es Salaam",
+      "kept": "Dar es Salaam"
+    },
+    {
+      "candidate": "Dakar",
+      "kept": "Dakar"
+    },
+    {
+      "candidate": "Johannesburg",
+      "kept": "Johannesburg"
+    },
+    {
+      "candidate": "Cape Town",
+      "kept": "Cape Town"
+    }
+  ],
+  "coordConflicts": [
+    {
+      "title": "Teesta River",
+      "qid": "Q907883",
+      "wikidata": [
+        27.60142,
+        88.64743
+      ],
+      "wikipedia": [
+        25.50555556,
+        89.66583333
+      ],
+      "km": 254
+    },
+    {
+      "title": "Lake Volta",
+      "qid": "Q201679",
+      "wikidata": [
+        7.4,
+        0.2
+      ],
+      "wikipedia": [
+        6.5,
+        0
+      ],
+      "km": 102
+    },
+    {
+      "title": "Lake Turkana",
+      "qid": "Q182719",
+      "wikidata": [
+        4.05,
+        36.016666666667
+      ],
+      "wikipedia": [
+        3.58333333,
+        36.11666667
+      ],
+      "km": 53
+    },
+    {
+      "title": "Lake Turkana",
+      "qid": "Q182719",
+      "wikidata": [
+        4.05,
+        36.016666666667
+      ],
+      "wikipedia": [
+        3.58333333,
+        36.11666667
+      ],
+      "km": 53
+    },
+    {
+      "title": "Hainan",
+      "qid": "Q42200",
+      "wikidata": [
+        20.03342,
+        110.32398
+      ],
+      "wikipedia": [
+        19.2,
+        109.7
+      ],
+      "km": 113
+    },
+    {
+      "title": "Sakhalin",
+      "qid": "Q7792",
+      "wikidata": [
+        50.5,
+        143
+      ],
+      "wikipedia": [
+        51,
+        143
+      ],
+      "km": 56
+    },
+    {
+      "title": "Novaya Zemlya",
+      "qid": "Q80413",
+      "wikidata": [
+        73.9525,
+        56.348611
+      ],
+      "wikipedia": [
+        74.75,
+        57.95
+      ],
+      "km": 101
+    },
+    {
+      "title": "Baffin Island",
+      "qid": "Q81178",
+      "wikidata": [
+        69,
+        -73
+      ],
+      "wikipedia": [
+        68,
+        -70
+      ],
+      "km": 165
+    },
+    {
+      "title": "Victoria Island",
+      "qid": "Q158129",
+      "wikidata": [
+        71.451,
+        -113.7541
+      ],
+      "wikipedia": [
+        70.41666667,
+        -107.75
+      ],
+      "km": 246
+    },
+    {
+      "title": "Solomon Islands",
+      "qid": "Q685",
+      "wikidata": [
+        -9.4666666666667,
+        159.81666666667
+      ],
+      "wikipedia": [
+        -8,
+        159
+      ],
+      "km": 186
+    },
+    {
+      "title": "Tuvalu",
+      "qid": "Q672",
+      "wikidata": [
+        -7.475,
+        178.005556
+      ],
+      "wikipedia": [
+        -8.52083333,
+        179.19861111
+      ],
+      "km": 175
+    },
+    {
+      "title": "Tonga",
+      "qid": "Q678",
+      "wikidata": [
+        -20.587778,
+        -174.810278
+      ],
+      "wikipedia": [
+        -20,
+        -175
+      ],
+      "km": 68
+    },
+    {
+      "title": "Makassar Strait",
+      "qid": "Q194477",
+      "wikidata": [
+        -0.83333333333333,
+        118.16666666667
+      ],
+      "wikipedia": [
+        0,
+        118.5
+      ],
+      "km": 100
+    },
+    {
+      "title": "Luzon Strait",
+      "qid": "Q908741",
+      "wikidata": [
+        20,
+        121
+      ],
+      "wikipedia": [
+        21,
+        121
+      ],
+      "km": 111
+    },
+    {
+      "title": "Bashi Channel",
+      "qid": "Q715534",
+      "wikidata": [
+        21,
+        121
+      ],
+      "wikipedia": [
+        21.41666667,
+        121.5
+      ],
+      "km": 70
+    },
+    {
+      "title": "Hudson Strait",
+      "qid": "Q207702",
+      "wikidata": [
+        62.493333333333,
+        -71.961944444444
+      ],
+      "wikipedia": [
+        62,
+        -70
+      ],
+      "km": 115
+    },
+    {
+      "title": "Fram Strait",
+      "qid": "Q82344",
+      "wikidata": [
+        80,
+        0
+      ],
+      "wikipedia": [
+        78,
+        0
+      ],
+      "km": 222
+    },
+    {
+      "title": "Erie Canal",
+      "qid": "Q459578",
+      "wikidata": [
+        43.0222726,
+        -78.8808324
+      ],
+      "wikipedia": [
+        42.7834,
+        -73.6767
+      ],
+      "km": 425
+    },
+    {
+      "title": "Virunga National Park",
+      "qid": "Q223589",
+      "wikidata": [
+        -0.5,
+        29.5
+      ],
+      "wikipedia": [
+        -0.91666667,
+        29.16666667
+      ],
+      "km": 59
+    },
+    {
+      "title": "Canaima National Park",
+      "qid": "Q1244337",
+      "wikidata": [
+        5.3193393,
+        -61.7953505
+      ],
+      "wikipedia": [
+        6.16666667,
+        -62.5
+      ],
+      "km": 122
+    },
+    {
+      "title": "Virgin Komi Forests",
+      "qid": "Q593870",
+      "wikidata": [
+        65.06666667,
+        60.15
+      ],
+      "wikipedia": [
+        63.62583333,
+        58.9525
+      ],
+      "km": 170
+    },
+    {
+      "title": "Western Sahara",
+      "qid": "Q6250",
+      "wikidata": [
+        25,
+        -13
+      ],
+      "wikipedia": [
+        24,
+        -14
+      ],
+      "km": 150
+    },
+    {
+      "title": "Kordofan",
+      "qid": "Q867052",
+      "wikidata": [
+        13,
+        29.5
+      ],
+      "wikipedia": [
+        13,
+        28
+      ],
+      "km": 163
+    },
+    {
+      "title": "Mindanao",
+      "qid": "Q124873",
+      "wikidata": [
+        7.5,
+        125
+      ],
+      "wikipedia": [
+        8,
+        125
+      ],
+      "km": 56
+    },
+    {
+      "title": "Sirpur Lake",
+      "qid": "Q55633279",
+      "wikidata": [
+        22.700555555555553,
+        75.81277777777777
+      ],
+      "wikipedia": [
+        22.70055556,
+        78.81277778
+      ],
+      "km": 308
+    },
+    {
+      "title": "Sathyamangalam Tiger Reserve",
+      "qid": "Q2226064",
+      "wikidata": [
+        11,
+        77
+      ],
+      "wikipedia": [
+        11.64,
+        77.22611111
+      ],
+      "km": 75
+    },
+    {
+      "title": "Pin Valley National Park",
+      "qid": "Q14229383",
+      "wikidata": [
+        31.574166666667,
+        77.588888888889
+      ],
+      "wikipedia": [
+        32,
+        77.88
+      ],
+      "km": 55
+    },
+    {
+      "title": "Kudremukh National Park",
+      "qid": "Q123439915",
+      "wikidata": [
+        13.25,
+        75.2
+      ],
+      "wikipedia": [
+        13.25,
+        -75.2
+      ],
+      "km": 15619
+    },
+    {
+      "title": "Gangotri National Park",
+      "qid": "Q2281202",
+      "wikidata": [
+        31.088194444444444,
+        79.1455
+      ],
+      "wikipedia": [
+        31.63333333,
+        79.55
+      ],
+      "km": 72
+    }
+  ],
+  "outOfSheet": []
+}

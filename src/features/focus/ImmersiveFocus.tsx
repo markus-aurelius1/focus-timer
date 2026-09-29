@@ -8,11 +8,12 @@ import { useSheet } from '@/atlas/sheet'
 import { useExploration, type Exploration } from '@/atlas/useExploration'
 import { cn } from '@/lib/cn'
 import { formatClock, formatTimeOfDay } from '@/lib/time'
-import { exitFullscreen } from '@/services/fullscreen'
-import { elapsedMs, progress, remainingMs } from '@/timer/engine'
+import { exitFullscreen, onFullscreenExit } from '@/services/fullscreen'
+import { elapsedMs, remainingMs } from '@/timer/engine'
 import { PHASE_LABEL, useTimer } from '@/timer/store'
 import { useNow } from '@/timer/useNow'
-import { TimeDigits } from './TimerDial'
+import { lockScroll } from '@/ui/scrollLock'
+import { TimeDigits, useSmoothProgress } from './TimerDial'
 
 const GOLD = '#f2c46d'
 
@@ -40,7 +41,10 @@ export function ImmersiveFocus() {
   const rem = remainingMs(timer, now)
   const clock = rem === null ? formatClock(elapsedMs(timer, now) / 1000) : formatClock(Math.ceil(rem / 1000))
   const l = label(timer.context.labelId)
-  const p = timer.status === 'idle' ? 0 : progress(timer, now)
+  const bar = useRef<HTMLDivElement>(null)
+  useSmoothProgress(timer, (p) => {
+    if (bar.current) bar.current.style.transform = `scaleX(${p})`
+  })
   const chart = !!settings.immersiveChart && !!ex
   const status = timer.status === 'paused' ? 'Paused' : rem !== null && running ? `Until ${formatTimeOfDay(now + rem, settings.use24h)}` : timer.phase === 'focus' && rem === null ? 'Open focus' : PHASE_LABEL[timer.phase]
 
@@ -49,6 +53,16 @@ export function ImmersiveFocus() {
     clearTimeout(hideTimer.current)
     hideTimer.current = setTimeout(() => setControls(false), 3500)
   }
+  useEffect(() => {
+    // Nothing behind the full-screen view may scroll (or show a scrollbar),
+    // and leaving the browser's full screen (Escape, F11…) leaves immersive mode too.
+    const unlock = lockScroll()
+    const off = onFullscreenExit(() => useUi.getState().set({ immersive: false }))
+    return () => {
+      unlock()
+      off()
+    }
+  }, [])
   useEffect(() => {
     poke()
     const onKey = (e: KeyboardEvent) => {
@@ -102,13 +116,13 @@ export function ImmersiveFocus() {
           {l && <span className="size-2 rounded-full" style={{ background: l.color }} />}
           {[l?.name, task?.title].filter(Boolean).join(' · ') || PHASE_LABEL[timer.phase]}
         </p>
-        <span role="timer" className="timer-digits text-[clamp(76px,22vw,184px)] leading-none">
+        <span role="timer" className="timer-digits text-[clamp(76px,min(22vw,30vh),200px)] leading-none">
           <TimeDigits text={clock} />
         </span>
         <div className="mt-8 h-[2px] w-[min(280px,60vw)] overflow-hidden rounded-full bg-white/15">
-          <div className="h-full rounded-full" style={{ width: `${p * 100}%`, background: GOLD, transition: running ? 'width 1s linear' : 'width 300ms' }} />
+          <div ref={bar} className="h-full w-full origin-left rounded-full" style={{ background: GOLD, transform: 'scaleX(0)', opacity: timer.status === 'paused' ? 0.45 : 1, transition: 'opacity 320ms' }} />
         </div>
-        <p className="tabular mt-4 text-sm font-semibold tracking-wide text-white/60">{status}</p>
+        <p className={cn('tabular mt-4 text-sm font-semibold tracking-wide text-white/60', timer.status === 'paused' && 'animate-pulse')}>{status}</p>
         {timer.context.note && <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/60 italic">“{timer.context.note}”</p>}
       </div>
 

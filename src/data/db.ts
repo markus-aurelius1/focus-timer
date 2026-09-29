@@ -19,7 +19,14 @@ import type {
   Tombstone,
 } from './types'
 
-export class LodestarDB extends Dexie {
+/**
+ * The IndexedDB database name. It predates the rename to Tars; every existing
+ * install keeps its tasks, sessions and progress under it, so it must not change
+ * (a new name would start everyone with an empty app).
+ */
+export const DB_NAME = 'lodestar'
+
+export class TarsDB extends Dexie {
   labels!: EntityTable<Label, 'id'>
   projects!: EntityTable<Project, 'id'>
   tasks!: EntityTable<Task, 'id'>
@@ -38,7 +45,7 @@ export class LodestarDB extends Dexie {
   tombstones!: EntityTable<Tombstone, 'id'>
   reminderLog!: EntityTable<ReminderLog, 'id'>
 
-  constructor(name = 'lodestar') {
+  constructor(name = DB_NAME) {
     super(name)
     this.version(1).stores({
       labels: 'id, parentId, order, updatedAt',
@@ -81,4 +88,4 @@ export class LodestarDB extends Dexie {
   }
 }
 
-export const db = new LodestarDB()
+export const db = new TarsDB()

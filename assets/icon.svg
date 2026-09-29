@@ -1,30 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- The Tars mark: four slabs – four focus blocks to a cycle – standing together as a T. -->
   <defs>
-    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
-      <stop offset="0%" stop-color="#1d2440"/>
-      <stop offset="60%" stop-color="#0d1122"/>
+    <radialGradient id="bg" cx="50%" cy="34%" r="80%">
+      <stop offset="0%" stop-color="#1e2540"/>
+      <stop offset="58%" stop-color="#0e1223"/>
       <stop offset="100%" stop-color="#070913"/>
     </radialGradient>
-    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#f2c46d" stop-opacity="0.55"/>
-      <stop offset="45%" stop-color="#f2c46d" stop-opacity="0.12"/>
+    <radialGradient id="glow" cx="50%" cy="42%" r="50%">
+      <stop offset="0%" stop-color="#f2c46d" stop-opacity="0.32"/>
+      <stop offset="55%" stop-color="#f2c46d" stop-opacity="0.07"/>
       <stop offset="100%" stop-color="#f2c46d" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="star" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#ffe3a6"/>
-      <stop offset="100%" stop-color="#e9ae45"/>
+    <linearGradient id="slab" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe6ae"/>
+      <stop offset="100%" stop-color="#e6a940"/>
+    </linearGradient>
+    <linearGradient id="slab-short" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe6ae"/>
+      <stop offset="100%" stop-color="#efbc5c"/>
     </linearGradient>
   </defs>
   <rect width="1024" height="1024" fill="url(#bg)"/>
-  <circle cx="512" cy="512" r="330" fill="url(#glow)"/>
-  <g fill="#ffffff">
-    <circle cx="238" cy="262" r="6" opacity="0.7"/>
-    <circle cx="790" cy="220" r="5" opacity="0.6"/>
-    <circle cx="820" cy="760" r="7" opacity="0.5"/>
-    <circle cx="210" cy="780" r="4" opacity="0.5"/>
-    <circle cx="700" cy="860" r="3.5" opacity="0.4"/>
-    <circle cx="330" cy="150" r="3" opacity="0.4"/>
-  </g>
-  <path d="M512 182 L547 477 L842 512 L547 547 L512 842 L477 547 L182 512 L477 477 Z" fill="url(#star)"/>
-  <path d="M512 330 L530 494 L694 512 L530 530 L512 694 L494 530 L330 512 L494 494 Z" transform="rotate(45 512 512)" fill="#ffe3a6" opacity="0.5"/>
+  <circle cx="512" cy="470" r="380" fill="url(#glow)"/>
+  <rect x="218" y="250" width="120" height="184" rx="30" fill="url(#slab-short)"/>
+  <rect x="374" y="250" width="120" height="524" rx="30" fill="url(#slab)"/>
+  <rect x="530" y="250" width="120" height="524" rx="30" fill="url(#slab)"/>
+  <rect x="686" y="250" width="120" height="184" rx="30" fill="url(#slab-short)"/>
 </svg>

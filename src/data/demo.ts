@@ -22,7 +22,7 @@ export async function removeDemoData(): Promise<void> {
 }
 
 export async function generateDemoData(days = 120): Promise<void> {
-  const rand = seededRandom('lodestar-demo')
+  const rand = seededRandom('tars-demo')
   const now = Date.now()
   const stamp = { createdAt: now, updatedAt: now }
   const today = todayKey()

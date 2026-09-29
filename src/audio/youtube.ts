@@ -67,7 +67,7 @@ export function providerName(p: PlaylistProvider): string {
 }
 
 /** Send a command to an embedded player (IFrame API postMessage protocol). */
-export function playerCommand(frame: HTMLIFrameElement | null, func: 'playVideo' | 'pauseVideo') {
+export function playerCommand(frame: HTMLIFrameElement | null, func: 'playVideo' | 'pauseVideo' | 'stopVideo') {
   frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args: [] }), '*')
 }
 

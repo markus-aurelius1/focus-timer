@@ -8,12 +8,13 @@
  * Always profile a production build (`npm run build && npm run preview`):
  * React's dev build adds large per-element overhead that hides real costs.
  */
+import { fileURLToPath } from 'node:url'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { launch, prepare } from './lib.mjs'
 
 const label = process.argv[2] ?? 'run'
 const base = process.argv[3] ?? 'http://localhost:4173/'
-const out = new URL('./out/', import.meta.url).pathname
+const out = fileURLToPath(new URL('./out/', import.meta.url))
 mkdirSync(out, { recursive: true })
 
 const { browser, ctx, page } = await launch()
@@ -118,6 +119,22 @@ results.push(
       await page.waitForTimeout(12)
     }
     await page.waitForTimeout(400)
+  }),
+)
+results.push(
+  await measure('wheel-notches', async () => {
+    // A mouse wheel: whole 100 px notches, about ten a second, in and back out.
+    await page.mouse.move(cx, cy)
+    for (let i = 0; i < 8; i++) {
+      await page.mouse.wheel(0, -100)
+      await page.waitForTimeout(100)
+    }
+    await page.waitForTimeout(500)
+    for (let i = 0; i < 8; i++) {
+      await page.mouse.wheel(0, 100)
+      await page.waitForTimeout(100)
+    }
+    await page.waitForTimeout(500)
   }),
 )
 await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })

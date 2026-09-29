@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   baseCamp: null,
   breakReview: true,
   immersiveChart: false,
+  atlasLayers: { undiscovered: true, areas: true, groups: [] },
   onboarded: false,
 }
 

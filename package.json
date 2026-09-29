@@ -1,9 +1,9 @@
 {
-  "name": "lodestar",
+  "name": "tars",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Lodestar — a calm, local-first study planner, focus timer and progress tracker.",
+  "description": "Tars — a calm, local-first study planner, focus timer and progress tracker.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

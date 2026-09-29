@@ -1,0 +1,176 @@
+# AGENTS.md
+
+This file is read automatically by Codex (and other agents) at the start of
+every session in this repository. It is the durable source of truth for how
+to work on this project. Keep it accurate — if Codex makes the same mistake
+twice, that's a signal this file needs an update, not just a one-off
+correction.
+
+Read `CODEX_HANDOFF.md` next: it holds the architecture, the current state and
+the Output Quality Specs this file refers to.
+
+---
+
+## 1. Project summary
+
+Tars (called Lodestar until 2026-09-26) is a calm, local-first study app for UPSC / UPPCS aspirants. It combines a sleep- and reload-safe focus timer, a task planner with calendar and habits, analytics, and **The Atlas**: an offline atlas of India and the World (2,273 places) that focus minutes explore and spaced-recall questions master, with previous-year-question (PYQ) history and a study-priority score per place. It ships as an installable PWA (no account; IndexedDB only) plus Capacitor Android/iOS projects.
+
+## 2. Repo layout
+
+- `src/app` — shell, hash router (`#/focus`, `#/tasks`, `#/atlas`, `#/calendar`, `#/insights`, `#/settings`), theming, command palette, shortcuts
+- `src/data` — typed model (`types.ts`), Dexie schema (`db.ts`, DB name `lodestar`, schema v2), `repo.ts` (all writes; timestamps + tombstones), backup, CSV, sync, sample data (`demo.ts`)
+- `src/timer` — `engine.ts` (pure, timestamp-based; `reconcile(state, now)` replays sleep) + `store.ts` (effects, alerts, notification text)
+- `src/planner`, `src/stats`, `src/game` — quick-add grammar and recurrence; derived analytics; XP, ranks, challenges
+- `src/atlas` — gazetteer index, exploration, mastery/spaced review, recall question generators, living world
+- `src/audio`, `src/services`, `src/ui` — procedural sound (follows the timer), platform services, design-system primitives (`Sheet.tsx` for every dialog)
+- `src/features/<screen>` — screens; `features/atlas/AtlasMap.tsx` renders the bundled full-frame map and recall interactions
+- `public/atlas/v1/` — **generated** Atlas data (`places.json`, sheets, relief, overlays). Never hand-edit.
+- `tools/atlas-build/` — separate package: the offline data pipeline. Gazetteer content in `content/*.mjs`, v2 candidates in `content/candidates/`, generated v2 places in `content/generated/` (do not hand-edit), PYQ ledger in `content/pyq/`, review reports in `reports/`
+- `tools/perf/` — separate package: headless-Chromium smoke, UI audit, Atlas interaction checks, profiling
+- `scripts/generate-icons.mjs` — renders `assets/icon.svg` into every PNG + `public/og-image.png`
+- `android/`, `ios/` — Capacitor projects; `docs/HANDOFF.md` — older milestone log with measurements
+- `pyq-sources/` — the user's copyrighted PYQ PDFs; git- and Vercel-ignored, exists only on the user's machine
+
+## 3. Environment setup
+
+The repo path may contain a space; quote paths.
+
+- Install: `npm ci` (Node 22 as in CI; Node 24 works). Pipeline: `cd tools/atlas-build && npm install`. QA: `cd tools/perf && npm install && npx playwright-core install chromium` (or set `CHROMIUM_PATH`)
+- Run locally: `npm run dev` (http://localhost:5173); production build: `npm run build && npm run preview` (http://localhost:4173)
+- Test: `npm test` (Vitest, `src/**/*.test.ts`); `cd tools/atlas-build && npm test` (pipeline, `node --test`)
+- Lint / typecheck: no linter or formatter is configured; `npm run typecheck` (`tsc -b`)
+- Build: `npm run build` (typecheck + Vite + service worker → `dist/`). Atlas data: `cd tools/atlas-build && node build.mjs --places-only` (offline; full `node build.mjs` downloads sources)
+- QA against the **preview** build (never the dev server): `node tools/perf/smoke.mjs http://localhost:4173/`, `node tools/perf/atlas-check.mjs`, `node tools/perf/ui-audit.mjs`; `node tools/perf/features-check.mjs` runs against `npm run dev`
+- No environment variables are required. Optional: `BASE`, `SITE_URL`, `CHROMIUM_PATH`, `PLAYWRIGHT_FROM`
+
+Full command list: `CODEX_HANDOFF.md` §8.
+
+## 4. Engineering conventions
+
+- **Style** (match surrounding code; no formatter): no semicolons, single quotes, 2-space indent, long lines (~160–200 chars) are normal, `const` arrow helpers, early returns. Each module opens with a `/** … */` block saying what it does and why; comments give reasons, not mechanics.
+- **Files:** components `PascalCase.tsx` under `src/features/<screen>/`; pure logic in lower-case `.ts` with colocated `*.test.ts`; import via `@/…` (= `src/`).
+- **Data:** every record has a UUID `id`, `createdAt`, `updatedAt`; write only through `src/data/repo.ts` (deletes leave tombstones). XP, mastery, exploration, streaks, reminders and challenge progress are **derived from history** — never add a stored counter.
+- **Determinism:** user-visible randomness uses `seededRandom(hashString(...))` so every device shows the same questions, challenges and sample data.
+- **Timer:** `setInterval` is never the source of truth; time comes from stored timestamps.
+- **UI:** Tailwind v4 tokens (`bg-surface`, `text-ink-2`, `text-accent`…), themes Paper (light) / Night (`.dark`); Manrope for UI and all numbers (tabular), Fraunces only for headings; motion tokens 140/220/320 ms; respect reduced motion; dialogs via `ui/Sheet.tsx` with actions in the footer; Undo toasts instead of confirm dialogs; no glass/`backdrop-filter`.
+- **User-facing text** follows the house style in `CODEX_HANDOFF.md` §4.0 (sentence case, no exclamation marks, curly apostrophes, spaced en dash, `formatDuration` for durations).
+- **Atlas renderer:** no React state or SVG attribute writes per frame; point names are HTML; see `CODEX_HANDOFF.md` §7 for the specific regressions to avoid.
+- **Commits:** subject `<Area>: <what changed>`, sentence case, no trailing period (e.g. `Atlas data: PYQ ledger, alias matching and study-priority score`). Branches `claude/<name>` (or your own agent prefix); add commits on top.
+
+## 5. Constraints and do-not rules
+
+Ask the user before:
+- committing, pushing, opening PRs, or deploying;
+- adding a runtime dependency (the Atlas uses its bundled sheets; the app deliberately has no map, chart, date or UI-kit library);
+- changing the Dexie schema (needs a new `version()`, a migration and backup-import support);
+- removing or renaming a place id, removing a version 1 place, or touching `content/sources/v1-lock.json` or `ATLAS_V2_AT` in `src/atlas/explore.ts` — user progress depends on them;
+- rewriting generated (Wikipedia-verbatim) place facts, including to change their political framing — the policy is undecided;
+- running `gazetteer/generate.mjs` / `lists.mjs` / `link-existing.mjs` (network, and they rewrite generated data) — review the diff afterwards;
+- changing the World-discovery design (open question, see `CODEX_HANDOFF.md` §9).
+
+Never:
+- rename the legacy `lodestar` identifiers (IndexedDB name, PWA manifest `id: 'lodestar-study'`, app id `app.lodestar.study`, the `lodestar://` scheme, legacy storage keys, `app: 'lodestar'` backup import);
+- hand-edit `public/atlas/v1/*` or `tools/atlas-build/content/generated/*`;
+- invent PYQ years, exams, appearances, coordinates or place facts — every ledger entry needs a source, every position and fact comes from a cited source;
+- commit `pyq-sources/` or `.env*`;
+- rebase or force-push shared branches, or skip hooks;
+- reintroduce `AnimatePresence mode="wait"` around screens or per-frame React state in `AtlasMap.tsx`;
+- let `public/atlas/v1/places.json` exceed the 3 MiB workbox precache limit in `vite.config.ts` without raising it (the Atlas would silently stop working offline).
+
+## 6. What "done" means
+
+Before considering any task complete:
+- [ ] Relevant tests written/updated and passing (`npm test`; plus `cd tools/atlas-build && npm test` when the pipeline or content changed)
+- [ ] Typecheck clean (`npm run typecheck`) and `npm run build` succeeds
+- [ ] Behavior matches the request; for UI changes, checked on the preview build with the `tools/perf` scripts at phone and desktop sizes, light and dark
+- [ ] For Atlas content changes: `node build.mjs --places-only` rerun and `tools/atlas-build/reports/pyq-review.json` still shows `unmatched: 0, ambiguous: 0, invalid: 0`
+- [ ] Diff reviewed for regressions or risky patterns
+- [ ] `CODEX_HANDOFF.md` updated (see Section 7)
+- [ ] If the change touches a content-generating feature, output checked
+      against its spec in `CODEX_HANDOFF.md` Section 4 (Output Quality Specs)
+
+---
+
+## 7. Handoff Protocol (read before starting any task)
+
+Maintain a file named `CODEX_HANDOFF.md` in the project root. It exists so
+any agent — Codex, Claude Code, or a human — can pick up this project with
+zero prior context AND reproduce the same quality bar the project has been
+held to, not just working code.
+
+**Update rule:** After ANY change to this project — new features, bug fixes,
+refactors, dependency changes, config changes, or architecture/design
+decisions — update `CODEX_HANDOFF.md` before considering the task done. This
+is part of the change itself, not a separate follow-up step. Update the
+relevant section rather than rewriting the whole file.
+
+**Specifically:** if the change touches any feature that generates content
+for the user (notes, summaries, emails, reports, descriptions, or any other
+free-form output), Section 4 of `CODEX_HANDOFF.md` (Output Quality Specs)
+must be updated to reflect the current standard for that feature — not just
+that the feature exists or was modified. In this project that includes
+place facts, PYQ ledger entries, study-priority reasons, recall questions,
+expeditions, challenges, notifications/toasts, sample data, exports and
+brand assets.
+
+`CODEX_HANDOFF.md` exists (created 2026-09-27 from a full pass over the
+codebase). If it is ever missing, recreate it the same way, populating every
+section listed below.
+
+### Required sections of CODEX_HANDOFF.md
+
+1. **Project summary** — what this does, 2-3 sentences.
+2. **Tech stack** — languages, frameworks, key libraries, with versions.
+3. **Architecture overview** — folder structure, how major pieces connect,
+   data flow.
+4. **Output Quality Specs** — for every feature that produces content (not
+   just processes data), document the bar that content must hit:
+   - **What "good" looks like**: structure, length, tone, level of detail.
+     For notes specifically: bullet vs. prose, how much summarization vs.
+     verbatim capture, whether headers are used, target length relative to
+     input length.
+   - **What to avoid**: known failure modes already corrected for (e.g.
+     "don't just paraphrase the transcript — extract decisions and action
+     items separately").
+   - **Concrete example(s)** of acceptable output, pulled from real project
+     data where possible, not hypothetical.
+   - **Edge cases and how they're handled** (empty input, very long input,
+     ambiguous input, conflicting information).
+   - Any rubric, checklist, or informal scoring logic already in place.
+   - This section should be detailed enough that a new agent could generate
+     a new instance of that output and a reviewer couldn't tell it apart
+     from one made under original guidance.
+5. **Current state** — what works, what's in progress, what's known-broken.
+6. **Recent changes** — running log, newest first, one line each:
+   `date — what changed — why`. Keep the last ~10; trim older entries.
+7. **Conventions** — naming, style, patterns, anything non-obvious.
+8. **Environment setup** — exact commands to install, run, test, build.
+9. **Known issues / gotchas** — traps, flaky tests, workarounds in place.
+10. **Next steps / open TODOs** — priority order.
+
+### Style for CODEX_HANDOFF.md
+
+Write for an agent with no memory of prior sessions and no access to the
+reasoning that shaped the quality bar — only what's written down. Be
+concrete: real file paths, real command names, real examples, real version
+numbers. When describing a quality standard, show it, don't just assert it
+("notes should be concise" is useless; "notes should be under 150 words,
+structured as Summary → Key Points → Action Items, written in third person"
+is usable). No filler.
+
+### Approved-output examples
+
+When a human approves a generated output (a note, summary, etc.) as meeting
+the bar, save it into `/examples/<feature-name>/` and reference it from the
+relevant Output Quality Spec entry in `CODEX_HANDOFF.md`. Real approved
+examples are stronger ground truth than adjectives — prefer pointing to one
+over describing it. (None saved yet; the specs currently cite real data from
+`public/atlas/v1/places.json` and `tools/atlas-build/content/`.)
+
+---
+
+## 8. Review
+
+Run `/review` against the base branch before treating any non-trivial change
+as finished. If a `code_review.md` file exists in this repo, follow it during
+review.

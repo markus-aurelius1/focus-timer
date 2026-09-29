@@ -1,5 +1,5 @@
 import { db } from '@/data/db'
-import { create, nextOrder, patch, remove } from '@/data/repo'
+import { create, nextOrder, patch, remove, restore } from '@/data/repo'
 import type { Label, Project, Task } from '@/data/types'
 import { uid } from '@/lib/id'
 import { addDaysKey, atTime, diffDays, todayKey, type DayKey } from '@/lib/time'
@@ -78,6 +78,8 @@ export function blankTask(partial: Partial<Task> = {}): Omit<Task, 'id' | 'creat
     dueTime: null,
     reminderAt: null,
     estimatedPomodoros: 1,
+    tags: [],
+    profileId: null,
     subtasks: [],
     recurrence: null,
     seriesId: null,
@@ -88,10 +90,27 @@ export function blankTask(partial: Partial<Task> = {}): Omit<Task, 'id' | 'creat
   }
 }
 
+/** Tags are stored lower-case, trimmed, without '#', unique and in the order given. */
+export function normalizeTags(tags: Array<string | null | undefined>): string[] {
+  const out: string[] = []
+  for (const raw of tags) {
+    const t = (raw ?? '').trim().replace(/^#+/, '').replace(/\s+/g, '-').toLowerCase()
+    if (t && !out.includes(t)) out.push(t)
+  }
+  return out
+}
+
+/** Every tag in use, most used first – for autocomplete. */
+export function tagUsage(tasks: Array<Pick<Task, 'tags'>>): string[] {
+  const counts = new Map<string, number>()
+  for (const t of tasks) for (const tag of t.tags ?? []) counts.set(tag, (counts.get(tag) ?? 0) + 1)
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([tag]) => tag)
+}
+
 export async function addTask(partial: Partial<Task>): Promise<Task> {
   const order = partial.order ?? (await nextOrder('tasks'))
   const seriesId = partial.recurrence ? (partial.seriesId ?? uid()) : null
-  return create('tasks', { ...blankTask(partial), order, seriesId })
+  return create('tasks', { ...blankTask(partial), tags: normalizeTags(partial.tags ?? []), order, seriesId })
 }
 
 function findByName<T extends { name: string; archived: boolean }>(items: T[], name: string): T | undefined {
@@ -99,11 +118,24 @@ function findByName<T extends { name: string; archived: boolean }>(items: T[], n
   return items.find((i) => !i.archived && i.name.toLowerCase() === n) ?? items.find((i) => !i.archived && i.name.toLowerCase().startsWith(n))
 }
 
-/** Turn a parsed quick-add into a task, creating a project/label on the fly if needed. */
+/**
+ * Turn a parsed quick-add into a task, creating a project/label on the fly if
+ * needed. `#name` is a tag – unless a project of exactly that name exists
+ * (how projects were written before tags), then it files the task there.
+ */
 export async function addFromQuickAdd(parsed: QuickAddResult, defaults: Partial<Task> = {}): Promise<Task | null> {
   if (!parsed.title) return null
   let projectId = defaults.projectId ?? null
   let labelId = defaults.labelId ?? null
+  let tags = [...(defaults.tags ?? []), ...(parsed.tags ?? [])]
+  if (!parsed.projectName && !defaults.projectId && tags.length) {
+    const projects = (await db.projects.toArray()).filter((p) => !p.archived)
+    const match = tags.map((t) => projects.find((p) => p.name.toLowerCase() === t.replace(/[-_]/g, ' '))).find(Boolean)
+    if (match) {
+      projectId = match.id
+      tags = tags.filter((t) => t.replace(/[-_]/g, ' ') !== match.name.toLowerCase())
+    }
+  }
   if (parsed.projectName) {
     const projects = await db.projects.toArray()
     const found = findByName<Project>(projects, parsed.projectName)
@@ -146,11 +178,12 @@ export async function addFromQuickAdd(parsed: QuickAddResult, defaults: Partial<
     priority: parsed.priority ?? defaults.priority ?? 0,
     projectId,
     labelId,
+    tags,
     estimatedPomodoros: parsed.estimate ?? defaults.estimatedPomodoros ?? 1,
     plannedFor: parsed.plannedFor ?? defaults.plannedFor ?? null,
     dueDate: parsed.dueDate ?? defaults.dueDate ?? null,
-    dueTime: parsed.dueTime ?? null,
-    recurrence: parsed.recurrence ?? null,
+    dueTime: parsed.dueTime ?? defaults.dueTime ?? null,
+    recurrence: parsed.recurrence ?? defaults.recurrence ?? null,
   })
 }
 
@@ -195,11 +228,19 @@ export async function toggleTask(task: Task): Promise<Task | null> {
   return completeTask(task)
 }
 
-export async function deleteTask(task: Task): Promise<void> {
+/** Delete a task. Returns what `restoreTask` needs to undo it. */
+export async function deleteTask(task: Task): Promise<{ task: Task; blockIds: string[] }> {
   await remove('tasks', task.id)
   // Unlink scheduled blocks pointing at this task.
   const blocks = await db.events.where('taskId').equals(task.id).toArray()
   for (const b of blocks) await patch('events', b.id, { taskId: null })
+  return { task, blockIds: blocks.map((b) => b.id) }
+}
+
+/** Undo `deleteTask`: the task comes back as it was, with its calendar blocks relinked. */
+export async function restoreTask(deleted: { task: Task; blockIds: string[] }): Promise<void> {
+  await restore('tasks', deleted.task)
+  for (const id of deleted.blockIds) await patch('events', id, { taskId: deleted.task.id })
 }
 
 export async function planForDay(task: Task, day: DayKey | null): Promise<void> {

@@ -1,0 +1,14 @@
+# Only the web app's sources are needed to build on Vercel.
+node_modules
+dist
+# User-supplied PYQ PDFs are copyrighted: never uploaded.
+pyq-sources
+# Data pipeline and profiling tools (the built data is in public/), native shells, docs.
+tools
+android
+ios
+docs
+.github
+*.local
+coverage
+.claude

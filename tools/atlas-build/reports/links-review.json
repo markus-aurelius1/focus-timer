@@ -1,0 +1,271 @@
+{
+  "unresolved": [],
+  "far": [
+    {
+      "id": "in.pass.niti-pass",
+      "name": "Niti Pass",
+      "title": "Niti Valley",
+      "dist": 22,
+      "authored": [
+        30.97,
+        79.88
+      ],
+      "source": [
+        30.778,
+        79.841
+      ]
+    },
+    {
+      "id": "in.pass.palghat-gap",
+      "name": "Palghat Gap",
+      "title": "Palakkad Gap",
+      "dist": 23,
+      "authored": [
+        10.78,
+        76.68
+      ],
+      "source": [
+        10.71855,
+        76.881966
+      ]
+    },
+    {
+      "id": "in.valley.narmada-valley",
+      "name": "Narmada Valley",
+      "title": "Narmada River",
+      "dist": 450,
+      "authored": [
+        22.8,
+        77
+      ],
+      "source": [
+        21.65111111,
+        72.81194444
+      ]
+    },
+    {
+      "id": "in.island.nicobar-islands",
+      "name": "Nicobar Islands",
+      "title": "Nicobar Islands",
+      "dist": 128,
+      "authored": [
+        8.2,
+        93.5
+      ],
+      "source": [
+        7.08333333,
+        93.8
+      ]
+    },
+    {
+      "id": "in.confluence.koodli",
+      "name": "Koodli",
+      "title": "Koodli",
+      "dist": 16,
+      "authored": [
+        13.87,
+        75.72
+      ],
+      "source": [
+        14.00611111,
+        75.67416667
+      ]
+    },
+    {
+      "id": "in.waterfall.kunchikal-falls",
+      "name": "Kunchikal Falls",
+      "title": "Kunchikal Falls",
+      "dist": 19,
+      "authored": [
+        13.53,
+        75.05
+      ],
+      "source": [
+        13.6947,
+        75.01813
+      ]
+    },
+    {
+      "id": "in.city.chitrakoot",
+      "name": "Chitrakoot",
+      "title": "Chitrakoot, Madhya Pradesh",
+      "dist": 23,
+      "authored": [
+        25.2,
+        80.9
+      ],
+      "source": [
+        25,
+        80.83
+      ]
+    },
+    {
+      "id": "in.park.chandra-prabha-wildlife-sanctuary",
+      "name": "Chandra Prabha Wildlife Sanctuary",
+      "title": "Chandra Prabha Wildlife Sanctuary",
+      "dist": 69,
+      "authored": [
+        25.08,
+        83.25
+      ],
+      "source": [
+        25.7,
+        83.27
+      ]
+    },
+    {
+      "id": "in.park.desert-national-park",
+      "name": "Desert National Park",
+      "title": "Desert National Park",
+      "dist": 56,
+      "authored": [
+        26.5,
+        70.6
+      ],
+      "source": [
+        26,
+        70.5
+      ]
+    },
+    {
+      "id": "in.park.kudremukh-national-park",
+      "name": "Kudremukh National Park",
+      "title": "Kudremukh National Park",
+      "dist": 15627,
+      "authored": [
+        13.2,
+        75.25
+      ],
+      "source": [
+        13.25,
+        -75.2
+      ]
+    },
+    {
+      "id": "w.lake.caspian-sea",
+      "name": "Caspian Sea",
+      "title": "Caspian Sea",
+      "dist": 56,
+      "authored": [
+        41.5,
+        50.5
+      ],
+      "source": [
+        42,
+        50.5
+      ]
+    },
+    {
+      "id": "w.lake.lake-chad",
+      "name": "Lake Chad",
+      "title": "Lake Chad",
+      "dist": 52,
+      "authored": [
+        13.3,
+        14.1
+      ],
+      "source": [
+        13.099,
+        14.533
+      ]
+    },
+    {
+      "id": "w.lake.lake-balkhash",
+      "name": "Lake Balkhash",
+      "title": "Lake Balkhash",
+      "dist": 39,
+      "authored": [
+        46.5,
+        74.5
+      ],
+      "source": [
+        46.16666667,
+        74.33333333
+      ]
+    },
+    {
+      "id": "w.grassland.llanos",
+      "name": "Llanos",
+      "title": "Llanos",
+      "dist": 150,
+      "authored": [
+        7,
+        -69
+      ],
+      "source": [
+        6.82311,
+        -67.64928
+      ]
+    },
+    {
+      "id": "w.island.new-guinea",
+      "name": "New Guinea",
+      "title": "New Guinea",
+      "dist": 124,
+      "authored": [
+        -5.5,
+        141
+      ],
+      "source": [
+        -6,
+        142
+      ]
+    },
+    {
+      "id": "w.island.madagascar",
+      "name": "Madagascar",
+      "title": "Madagascar",
+      "dist": 116,
+      "authored": [
+        -19,
+        46.7
+      ],
+      "source": [
+        -20,
+        47
+      ]
+    },
+    {
+      "id": "w.island.great-britain",
+      "name": "Great Britain",
+      "title": "Great Britain",
+      "dist": 116,
+      "authored": [
+        53,
+        -1.5
+      ],
+      "source": [
+        54,
+        -2
+      ]
+    },
+    {
+      "id": "w.island.sri-lanka",
+      "name": "Sri Lanka",
+      "title": "Sri Lanka",
+      "dist": 95,
+      "authored": [
+        7.8,
+        80.7
+      ],
+      "source": [
+        7,
+        81
+      ]
+    },
+    {
+      "id": "w.island.maldives",
+      "name": "Maldives",
+      "title": "Maldives",
+      "dist": 114,
+      "authored": [
+        3.2,
+        73.2
+      ],
+      "source": [
+        4.18,
+        73.51
+      ]
+    }
+  ]
+}

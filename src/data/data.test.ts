@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import Dexie from 'dexie'
-import { db, LodestarDB } from './db'
+import { db, TarsDB } from './db'
 import { create, patch, remove } from './repo'
 import { ensureSeed } from './seed'
 import { changesSince, applyChanges } from './sync'
@@ -88,9 +88,9 @@ describe('data layer', () => {
 describe('Atlas migration (v1 → v2)', () => {
   it('drops sky-theme purchases, keeps challenge rewards and moves settings to the Atlas', async () => {
     db.close()
-    await Dexie.delete('lodestar-migrate')
-    // A database as the Sky version of Lodestar left it.
-    const old = new Dexie('lodestar-migrate')
+    await Dexie.delete('tars-migrate')
+    // A database as the Sky version of the app (then called Lodestar) left it.
+    const old = new Dexie('tars-migrate')
     old.version(1).stores({
       labels: 'id, parentId, order, updatedAt',
       sessions: 'id, date, startedAt, labelId, taskId, projectId, updatedAt',
@@ -104,7 +104,7 @@ describe('Atlas migration (v1 → v2)', () => {
     await old.table('settings').put({ id: 'settings', updatedAt: 5, theme: 'dark', skyTheme: 'aurora', onboarded: true })
     old.close()
 
-    const upgraded = new LodestarDB('lodestar-migrate')
+    const upgraded = new TarsDB('tars-migrate')
     await upgraded.open()
     expect(upgraded.tables.map((t) => t.name)).not.toContain('unlocks')
     expect(await upgraded.claims.get('c1')).toMatchObject({ reward: 25 })
@@ -113,11 +113,11 @@ describe('Atlas migration (v1 → v2)', () => {
     expect(s).toMatchObject({ theme: 'dark', atlasStyle: 'physical', baseCamp: null, breakReview: true, onboarded: true })
     expect(await upgraded.recalls.count()).toBe(0)
     upgraded.close()
-    await Dexie.delete('lodestar-migrate')
+    await Dexie.delete('tars-migrate')
     await db.open()
   })
 
-  it('imports a v1 backup, ignoring its sky-theme unlocks', async () => {
+  it('imports a v1 backup made before the rename to Tars, ignoring its sky-theme unlocks', async () => {
     const v1 = JSON.stringify({
       app: 'lodestar',
       version: 1,
@@ -135,6 +135,7 @@ describe('Atlas migration (v1 → v2)', () => {
     expect(s.skyTheme).toBeUndefined()
     expect(s.atlasStyle).toBe('physical')
     const b = await createBackup()
+    expect(b.app).toBe('tars')
     expect(b.version).toBe(2)
     expect(Object.keys(b.tables)).toEqual(expect.arrayContaining(['recalls', 'expeditions']))
   })

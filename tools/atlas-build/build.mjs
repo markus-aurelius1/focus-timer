@@ -13,6 +13,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildSheet } from './lib/sheetBuild.mjs'
 import { compilePlaces } from './lib/places.mjs'
+import { buildOverlay } from './lib/overlay.mjs'
 import { applyPyq, explainUnmatched } from './lib/pyq.mjs'
 import PYQ_LEDGER from './content/pyq/index.mjs'
 import PYQ_NOT_MAPPED from './content/pyq/not-mapped.mjs'
@@ -47,7 +48,26 @@ for (const id of ['india', 'world']) {
 // ── gazetteer ─────────────────────────────────────────────────────────────
 const sheetData = {}
 for (const id of ['india', 'world']) sheetData[id] = sheets[id]?.data ?? JSON.parse(readFileSync(join(OUT, `${id}.json`), 'utf8'))
-const { data: places, warnings } = compilePlaces(sheetData)
+
+// Pass 1 links places to what the base sheets draw; the overlay adds courses and
+// outlines for the rest (Natural Earth 1:10m, then OpenStreetMap by Wikidata id).
+const first = compilePlaces(sheetData)
+const overlays = {}
+if (!args.has('--no-overlay')) {
+  console.log('\n▸ overlay')
+  for (const id of ['india', 'world']) {
+    const onSheet = first.data.places.filter((p) => p.sheet === id)
+    const linked = new Set(onSheet.filter((p) => p.geom).map((p) => p.id))
+    const ov = await buildOverlay(id, onSheet.map((p) => ({ id: p.id, kind: p.kind, name: p.name, qid: p.wikidata, sub: p.subtitle, lvl: p.level, x: p.x, y: p.y })), sheetData[id], linked)
+    overlays[id] = ov
+    const json = JSON.stringify(ov.data)
+    writeFileSync(join(OUT, `${id}-overlay.json`), json)
+    console.log(`  ${id}-overlay.json ${(json.length / 1024).toFixed(0)} KB`)
+  }
+} else for (const id of ['india', 'world']) overlays[id] = null
+
+// Pass 2: the full gazetteer, linked to base and overlay geometry.
+const { data: places, warnings } = compilePlaces(sheetData, overlays)
 for (const w of warnings) console.warn('  ⚠ ' + w)
 
 // ── previous-year questions → exam history + study priority ───────────────
@@ -69,9 +89,10 @@ console.log(`\n▸ places.json ${(placesJson.length / 1024).toFixed(0)} KB — i
 
 writeFileSync(
   join(OUT, 'ATTRIBUTION.txt'),
-  `Lodestar Atlas data (version 1)
+  `Tars Atlas data (version 1)
 
-Countries, rivers, lakes, glaciers, physical regions and seas:
+Countries, rivers, lakes, glaciers, physical regions and seas (and, in the
+overlay, further river courses, lakes and regions matched by Wikidata id):
   Natural Earth (naturalearthdata.com) – public domain. India is drawn from
   Natural Earth's India point-of-view boundaries (ne_10m_admin_0_countries_ind).
 
@@ -82,8 +103,18 @@ Relief, hillshade and traced river courses:
   Derived from AWS Terrain Tiles (registry.opendata.aws/terrain-tiles), which
   combine SRTM, GMTED2010, ETOPO1 and other public elevation sources.
 
+Protected-area, wetland and disputed-region outlines, and river courses that
+Natural Earth does not have (the overlay files):
+  © OpenStreetMap contributors (openstreetmap.org/copyright), available under
+  the Open Database License (ODbL). Each place lists its OpenStreetMap element.
+
 Places, facts and expeditions:
-  Compiled for Lodestar from public reference sources.
+  Compiled for Tars from public reference sources. Every place links to
+  its Wikipedia article (CC BY-SA 4.0) and Wikidata item (CC0); places added in
+  data version 2 take their position from Wikidata and their facts verbatim
+  from the article's lead. Designated sites follow the official lists: Ramsar
+  Sites Information Service, National Tiger Conservation Authority, MoEFCC /
+  UNESCO Man and the Biosphere; national capitals follow Natural Earth.
   Places added from previous-year papers take their position and facts from
   Wikipedia (CC BY-SA 4.0) and, where noted, coordinates from Wikidata (CC0);
   each such place lists its pages under "sources".

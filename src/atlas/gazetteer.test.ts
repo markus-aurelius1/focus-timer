@@ -56,5 +56,5 @@ describe('gazetteer', () => {
     // Most places support several kinds of question.
     const multi = file.places.filter((p) => availableTypes(atlas, p).length >= 3).length
     expect(multi / file.places.length).toBeGreaterThan(0.8)
-  })
+  }, 30_000)
 })

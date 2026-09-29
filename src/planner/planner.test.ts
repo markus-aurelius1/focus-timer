@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { describeRule, nextOccurrence, occurrencesBetween, occursOn } from './recurrence'
-import { parseQuickAdd } from './quickAdd'
+import { inferSubject, parseQuickAdd } from './quickAdd'
 import { isInbox, isOverdue, isToday, isUpcoming, blankTask, groupUpcoming } from './tasks'
 import type { Task } from '@/data/types'
 
@@ -49,13 +49,35 @@ describe('recurrence', () => {
 
 describe('quick add', () => {
   it('extracts metadata and leaves a clean title', () => {
-    const r = parseQuickAdd('Essay draft tomorrow !high #History @Essays ~3', TODAY)
+    const r = parseQuickAdd('Essay draft tomorrow !high +History @Essays #exam ~3', TODAY)
     expect(r.title).toBe('Essay draft')
     expect(r.plannedFor).toBe('2026-09-25')
     expect(r.priority).toBe(3)
     expect(r.projectName).toBe('History')
     expect(r.labelName).toBe('Essays')
+    expect(r.tags).toEqual(['exam'])
     expect(r.estimate).toBe(3)
+  })
+
+  it('reads the example from the brief: date, time and a tag', () => {
+    const r = parseQuickAdd('Physics revision tomorrow 5pm #important', TODAY)
+    expect(r.title).toBe('Physics revision')
+    expect(r.plannedFor).toBe('2026-09-25')
+    expect(r.dueDate).toBe('2026-09-25')
+    expect(r.dueTime).toBe('17:00')
+    expect(r.tags).toEqual(['important'])
+  })
+
+  it('collects several tags once each', () => {
+    expect(parseQuickAdd('Read #ch4 #Revision #revision', TODAY).tags).toEqual(['ch4', 'Revision'])
+  })
+
+  it('turns a time estimate into sessions of the current length', () => {
+    expect(parseQuickAdd('Past paper ~1h30m', TODAY, { sessionMinutes: 45 })).toMatchObject({ title: 'Past paper', estimate: 2, estimateMinutes: 90 })
+    expect(parseQuickAdd('Notes ~45m', TODAY)).toMatchObject({ estimate: 2, estimateMinutes: 45 })
+    expect(parseQuickAdd('Essay ~1.5h', TODAY, { sessionMinutes: 50 })).toMatchObject({ estimate: 2, estimateMinutes: 90 })
+    expect(parseQuickAdd('Flashcards ~2', TODAY)).toMatchObject({ estimate: 2 })
+    expect(parseQuickAdd('Costs ~about', TODAY).title).toBe('Costs ~about')
   })
 
   it('distinguishes do-dates from deadlines and times', () => {
@@ -71,6 +93,20 @@ describe('quick add', () => {
     expect(r.title).toBe('Flashcards')
     expect(r.recurrence).toEqual({ freq: 'weekly', interval: 1, weekdays: [1, 3] })
     expect(r.plannedFor).toBe('2026-09-28')
+  })
+
+  it('infers the subject a title names', () => {
+    const labels = [
+      { id: 'p', name: 'Physics', archived: false },
+      { id: 'c', name: 'Chemistry', archived: false },
+      { id: 'oc', name: 'Organic Chemistry', archived: false },
+      { id: 'x', name: 'Old', archived: true },
+    ]
+    expect(inferSubject('Physics revision', labels)?.id).toBe('p')
+    expect(inferSubject('organic chemistry: alkenes', labels)?.id).toBe('oc')
+    expect(inferSubject('Physical exercise', labels)).toBeUndefined()
+    expect(inferSubject('Physics and Chemistry mock', labels)).toBeUndefined()
+    expect(inferSubject('Old notes', labels)).toBeUndefined()
   })
 
   it('does not treat a leading weekday as a date', () => {

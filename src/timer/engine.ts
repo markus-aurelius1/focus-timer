@@ -1,5 +1,5 @@
 /**
- * Lodestar timer engine – a pure state machine.
+ * Tars timer engine – a pure state machine.
  *
  * The timer is never driven by setInterval. Its state stores *timestamps*
  * (when the running segment began, how much time was banked before it) and

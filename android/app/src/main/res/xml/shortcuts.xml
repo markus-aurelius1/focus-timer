@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Static launcher shortcuts. They open lodestar:// deep links handled in src/app/App.tsx. -->
+<!-- Static launcher shortcuts. They open tars:// deep links handled in src/app/App.tsx.
+     targetPackage/targetClass are the app's store identity (unchanged by the rename). -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
         android:shortcutId="start_focus"
@@ -9,7 +10,7 @@
         android:shortcutLongLabel="@string/shortcut_focus_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="lodestar://focus?start=1"
+            android:data="tars://focus?start=1"
             android:targetPackage="app.lodestar.study"
             android:targetClass="app.lodestar.study.MainActivity" />
     </shortcut>
@@ -21,7 +22,7 @@
         android:shortcutLongLabel="@string/shortcut_today_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="lodestar://tasks?view=today"
+            android:data="tars://tasks?view=today"
             android:targetPackage="app.lodestar.study"
             android:targetClass="app.lodestar.study.MainActivity" />
     </shortcut>
@@ -33,7 +34,7 @@
         android:shortcutLongLabel="@string/shortcut_add_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="lodestar://tasks?add=1"
+            android:data="tars://tasks?add=1"
             android:targetPackage="app.lodestar.study"
             android:targetClass="app.lodestar.study.MainActivity" />
     </shortcut>

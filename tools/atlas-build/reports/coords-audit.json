@@ -1,0 +1,319 @@
+[
+ {
+  "id": "w.grassland.steppes",
+  "kind": "grassland",
+  "title": "Eurasian Steppe",
+  "authored": [
+   48,
+   65
+  ],
+  "wikidata": [
+   48.7,
+   70.5
+  ],
+  "wikipedia": null,
+  "km": 414,
+  "tol": 150
+ },
+ {
+  "id": "w.valley.great-rift-valley",
+  "kind": "valley",
+  "title": "Great Rift Valley",
+  "authored": [
+   -3,
+   36
+  ],
+  "wikidata": [
+   -0.1,
+   36.1
+  ],
+  "wikipedia": null,
+  "km": 323,
+  "tol": 150
+ },
+ {
+  "id": "in.valley.narmada-valley",
+  "kind": "valley",
+  "title": "Narmada River",
+  "authored": [
+   22.8,
+   77
+  ],
+  "wikidata": [
+   22.08,
+   74.9
+  ],
+  "wikipedia": [
+   21.65111111,
+   72.81194444
+  ],
+  "km": 230,
+  "tol": 150
+ },
+ {
+  "id": "w.island.new-guinea",
+  "kind": "island",
+  "title": "New Guinea",
+  "authored": [
+   -5.5,
+   141
+  ],
+  "wikidata": [
+   -5,
+   140
+  ],
+  "wikipedia": [
+   -6,
+   142
+  ],
+  "km": 124,
+  "tol": 120
+ },
+ {
+  "id": "w.grassland.llanos",
+  "kind": "grassland",
+  "title": "Llanos",
+  "authored": [
+   7,
+   -69
+  ],
+  "wikidata": [
+   6.823111111111111,
+   -67.64927777777778
+  ],
+  "wikipedia": [
+   6.82311,
+   -67.64928
+  ],
+  "km": 150,
+  "tol": 150
+ },
+ {
+  "id": "w.island.madagascar",
+  "kind": "island",
+  "title": "Madagascar",
+  "authored": [
+   -19,
+   46.7
+  ],
+  "wikidata": [
+   -20,
+   47
+  ],
+  "wikipedia": [
+   -20,
+   47
+  ],
+  "km": 116,
+  "tol": 120
+ },
+ {
+  "id": "in.waterfall.kunchikal-falls",
+  "kind": "waterfall",
+  "title": "Kunchikal Falls",
+  "authored": [
+   13.53,
+   75.05
+  ],
+  "wikidata": [
+   13.6947,
+   75.018130555556
+  ],
+  "wikipedia": [
+   13.6947,
+   75.01813
+  ],
+  "km": 19,
+  "tol": 20
+ },
+ {
+  "id": "w.island.maldives",
+  "kind": "island",
+  "title": "Maldives",
+  "authored": [
+   3.2,
+   73.2
+  ],
+  "wikidata": [
+   4.18,
+   73.51
+  ],
+  "wikipedia": [
+   4.18,
+   73.51
+  ],
+  "km": 114,
+  "tol": 120
+ },
+ {
+  "id": "w.lake.caspian-sea",
+  "kind": "lake",
+  "title": "Caspian Sea",
+  "authored": [
+   41.5,
+   50.5
+  ],
+  "wikidata": [
+   42,
+   50.5
+  ],
+  "wikipedia": [
+   42,
+   50.5
+  ],
+  "km": 56,
+  "tol": 60
+ },
+ {
+  "id": "w.island.great-britain",
+  "kind": "island",
+  "title": "Great Britain",
+  "authored": [
+   53,
+   -1.5
+  ],
+  "wikidata": [
+   53.833333333333,
+   -2.4166666666667
+  ],
+  "wikipedia": [
+   54,
+   -2
+  ],
+  "km": 111,
+  "tol": 120
+ },
+ {
+  "id": "in.pass.palghat-gap",
+  "kind": "pass",
+  "title": "Palakkad Gap",
+  "authored": [
+   10.78,
+   76.68
+  ],
+  "wikidata": [
+   10.71855,
+   76.881966
+  ],
+  "wikipedia": [
+   10.71855,
+   76.881966
+  ],
+  "km": 23,
+  "tol": 25
+ },
+ {
+  "id": "in.pass.niti-pass",
+  "kind": "pass",
+  "title": "Niti Valley",
+  "authored": [
+   30.97,
+   79.88
+  ],
+  "wikidata": [
+   30.778,
+   79.841
+  ],
+  "wikipedia": [
+   30.778,
+   79.841
+  ],
+  "km": 22,
+  "tol": 25
+ },
+ {
+  "id": "w.lake.lake-chad",
+  "kind": "lake",
+  "title": "Lake Chad",
+  "authored": [
+   13.3,
+   14.1
+  ],
+  "wikidata": [
+   13.097886246756108,
+   14.533807443844074
+  ],
+  "wikipedia": [
+   13.099,
+   14.533
+  ],
+  "km": 52,
+  "tol": 60
+ },
+ {
+  "id": "w.island.sri-lanka",
+  "kind": "island",
+  "title": "Sri Lanka",
+  "authored": [
+   7.8,
+   80.7
+  ],
+  "wikidata": [
+   7,
+   81
+  ],
+  "wikipedia": [
+   7,
+   81
+  ],
+  "km": 95,
+  "tol": 120
+ },
+ {
+  "id": "in.confluence.koodli",
+  "kind": "confluence",
+  "title": "Koodli",
+  "authored": [
+   13.87,
+   75.72
+  ],
+  "wikidata": [
+   14.006111111111,
+   75.674166666667
+  ],
+  "wikipedia": [
+   14.00611111,
+   75.67416667
+  ],
+  "km": 16,
+  "tol": 25
+ },
+ {
+  "id": "in.park.indravati-national-park",
+  "kind": "park",
+  "title": "Indravati National Park",
+  "authored": [
+   19,
+   80.7
+  ],
+  "wikidata": [
+   19.33333333,
+   81
+  ],
+  "wikipedia": [
+   19.205,
+   81.03138889
+  ],
+  "km": 42,
+  "tol": 80
+ },
+ {
+  "id": "in.glacier.siachen-glacier",
+  "kind": "glacier",
+  "title": "Siachen Glacier",
+  "authored": [
+   35.42,
+   77
+  ],
+  "wikidata": [
+   35.19861,
+   77.20139
+  ],
+  "wikipedia": [
+   35.19861,
+   77.20139
+  ],
+  "km": 31,
+  "tol": 60
+ }
+]

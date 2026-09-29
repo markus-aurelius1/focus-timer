@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import type { ThemePreference } from '@/data/types'
 import { isNative } from '@/lib/platform'
+import { KEYS, migrateLegacyKeys } from '@/lib/storage'
 import { useMediaQuery } from '@/ui/useMedia'
 
 export function useResolvedDark(pref: ThemePreference): boolean {
@@ -17,7 +18,8 @@ export function useApplyTheme(pref: ThemePreference, override?: 'dark' | null) {
     const color = dark ? '#0a0c14' : '#f4f0e7'
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
     try {
-      localStorage.setItem('lodestar.theme', pref)
+      migrateLegacyKeys()
+      localStorage.setItem(KEYS.theme, pref)
     } catch {
       /* ignore */
     }

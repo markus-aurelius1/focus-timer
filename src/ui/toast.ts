@@ -22,7 +22,8 @@ export const useToasts = create<ToastStore>((set) => ({
   toasts: [],
   push: (t) => {
     const id = uid()
-    const toastItem: Toast = { tone: 'default', duration: 4200, ...t, id }
+    // Toasts that offer an action (Undo, Reload…) stay a little longer.
+    const toastItem: Toast = { tone: 'default', duration: t.action ? 6500 : 4200, ...t, id }
     set((s) => ({ toasts: [...s.toasts.slice(-2), toastItem] }))
     if (toastItem.duration > 0) setTimeout(() => useToasts.getState().dismiss(id), toastItem.duration)
     return id
