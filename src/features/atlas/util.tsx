@@ -58,7 +58,7 @@ export const DEVELOPMENT_LABEL: Record<Development, string> = {
   flourishing: 'Flourishing',
 }
 export const DEVELOPMENT_HINT: Record<Development, string> = {
-  uncharted: 'Explore a place here to chart it',
+  uncharted: 'Travel or test a place here to chart it',
   charted: '30% of its places Familiar to settle it',
   settled: '60% Strong to develop it',
   developed: '80% Mastered to make it flourish',
@@ -67,8 +67,9 @@ export const DEVELOPMENT_HINT: Record<Development, string> = {
 
 /** How far a state (or country) has developed – driven by mastery of its places. */
 export function developmentOf(ex: Exploration, unit: string) {
-  // Places added in later data versions count once discovered, so a state never loses its level to new data.
-  const places = (ex.atlas.inUnit.get(unit) ?? []).filter((p) => !p.added || ex.state.discovered.has(p.id))
+  // Preserve the historical denominator for untouched later additions, while
+  // counting learning independently of focus-powered travel.
+  const places = (ex.atlas.inUnit.get(unit) ?? []).filter((p) => !p.added || ex.state.discovered.has(p.id) || ex.mastery.has(p.id))
   const total = places.length
   let discovered = 0
   let familiar = 0
@@ -76,14 +77,13 @@ export function developmentOf(ex: Exploration, unit: string) {
   let mastered = 0
   for (const p of places) {
     const d = ex.state.discovered.has(p.id)
-    if (!d) continue
-    discovered++
-    const lvl = levelOf(p.id, true, ex.mastery)
+    if (d) discovered++
+    const lvl = levelOf(p.id, d, ex.mastery)
     if (atLeast(lvl, 'familiar')) familiar++
     if (atLeast(lvl, 'strong')) strong++
     if (lvl === 'mastered') mastered++
   }
-  let level: Development = discovered || ex.state.explored.has(unit) ? 'charted' : 'uncharted'
+  let level: Development = discovered || familiar || ex.state.explored.has(unit) ? 'charted' : 'uncharted'
   if (total && familiar / total >= 0.3) level = 'settled'
   if (total && strong / total >= 0.6) level = 'developed'
   if (total && mastered / total >= 0.8) level = 'flourishing'
@@ -91,9 +91,6 @@ export function developmentOf(ex: Exploration, unit: string) {
 }
 
 export const masteryFn = (ex: Exploration) => (id: string): MasteryLevel => levelOf(id, ex.state.discovered.has(id), ex.mastery, true)
-
-/** Sheet label key for a place's linked geometry (`river:ganga`, `marine:palk-strait`…). */
-export const labelKey = (geom: string) => geom
 
 export function minutesText(m: number): string {
   const r = Math.max(1, Math.ceil(m))

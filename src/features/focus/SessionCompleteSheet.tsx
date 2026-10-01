@@ -1,3 +1,4 @@
+import { executeAction } from '@/tars/runtime'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { motion } from 'motion/react'
 import { Check, Coffee, MapPin, Star } from 'lucide-react'
@@ -5,7 +6,6 @@ import { useEffect, useState } from 'react'
 import { db } from '@/data/db'
 import { useLookups } from '@/data/hooks'
 import { patch } from '@/data/repo'
-import { navigate } from '@/app/router'
 import { discoveredBetween } from '@/atlas/explore'
 import { placeSubtitle } from '@/atlas/data'
 import { useExploration, type Exploration } from '@/atlas/useExploration'
@@ -16,7 +16,6 @@ import { formatDuration } from '@/lib/time'
 import { expeditionStatus } from '@/features/atlas/AtlasPanel'
 import { KIND_NAME } from '@/features/atlas/symbols'
 import { PlaceIcon } from '@/features/atlas/util'
-import { completeTask } from '@/planner/tasks'
 import { haptics } from '@/services/haptics'
 import { PHASE_LABEL, useTimer } from '@/timer/store'
 import { Button, TextArea } from '@/ui/controls'
@@ -29,7 +28,6 @@ export function SessionCompleteSheet() {
   const last = useTimer((s) => s.lastSession)
   const dismiss = useTimer((s) => s.dismissLastSession)
   const timer = useTimer((s) => s.timer)
-  const start = useTimer((s) => s.start)
   const ex = useExploration()
   const session = useLiveQuery(() => (last ? db.sessions.get(last.id) : undefined), [last?.id])
   const task = useLiveQuery(() => (session?.taskId ? db.tasks.get(session.taskId) : undefined), [session?.taskId])
@@ -67,7 +65,7 @@ export function SessionCompleteSheet() {
   }
 
   return (
-    <Sheet open={open} onClose={close} size="sm" bare>
+    <Sheet open={open} onClose={close} size="sm" bare label={session.completed ? 'Session complete' : 'Session saved'}>
       <div className="px-6 pt-4 pb-6 text-center sm:pt-8">
         <motion.div
           initial={{ scale: 0.4, opacity: 0, rotate: -30 }}
@@ -106,8 +104,8 @@ export function SessionCompleteSheet() {
               block
               icon={<Check className="size-4" />}
               onClick={async () => {
-                await completeTask(task)
-                toast({ title: 'Task complete', body: task.title, tone: 'success' })
+                const result = await executeAction('task.complete', { taskId: task.id })
+                if (result.ok) toast({ title: 'Task complete', body: task.title, tone: 'success' })
               }}
             >
               Mark “{task.title}” done{task.estimatedPomodoros > 0 && ` · ${taskSessions}/${task.estimatedPomodoros}`}
@@ -120,7 +118,7 @@ export function SessionCompleteSheet() {
               icon={<Coffee className="size-4" />}
               onClick={() => {
                 close()
-                start()
+                void executeAction('timer.start',{})
               }}
             >
               Start {PHASE_LABEL[timer.phase].toLowerCase()}
@@ -142,13 +140,15 @@ function Discoveries({ ex, session, onOpen }: { ex: Exploration; session: Sessio
   const status = expeditionStatus(ex)
   const go = (hash: string) => {
     onOpen()
-    navigate(hash)
+    const place = new URLSearchParams(hash.split('?')[1]).get('place')
+    void (place ? executeAction('atlas.openPlace', { placeId:place }) : executeAction('atlas.continueExpedition', {}))
   }
   return (
     <div className="mt-4 text-left">
+      {status && ex.state.activeRun && session.endedAt >= ex.state.activeRun.startedAt && <p className="mb-3 text-center text-xs font-semibold text-ink-2">{status.title} +{Math.round(session.duration / 60)}m · {ids.length} places reached</p>}
       {ids.length > 0 && (
         <>
-          <p className="mb-2 text-center text-xs font-bold tracking-[0.12em] text-ink-2 uppercase">{ids.length === 1 ? 'New discovery' : `${ids.length} new discoveries`}</p>
+          <p className="mb-2 text-center text-xs font-bold tracking-[0.12em] text-ink-2 uppercase">{ids.length === 1 ? '1 place reached' : `${ids.length} places reached`}</p>
           <ul className="space-y-2">
             {ids.slice(0, 3).map((id, i) => {
               const p = ex.atlas.byId.get(id)
@@ -160,7 +160,7 @@ function Discoveries({ ex, session, onOpen }: { ex: Exploration; session: Sessio
                       <PlaceIcon kind={p.kind} tags={p.tags} />
                     </span>
                     <span className="min-w-0">
-                      <span className="block font-display text-[17px] leading-tight font-medium">{p.name}</span>
+                      <span className="block text-[17px] leading-tight font-semibold">{p.name}</span>
                       <span className="block text-[12px] font-semibold text-ink-3">{placeSubtitle(p, ex.atlas, KIND_NAME[p.kind])}</span>
                       <span className="mt-1 line-clamp-2 block text-[13px] leading-snug text-ink-2">{p.facts[0]}</span>
                     </span>

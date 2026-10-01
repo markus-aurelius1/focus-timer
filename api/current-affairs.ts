@@ -1,0 +1,12 @@
+/** Vercel Node function; no arbitrary URL parameter, scheduler or server database. */
+import type { IncomingMessage, ServerResponse } from 'node:http'
+import { collectFeeds, FEED_CACHE_CONTROL } from '../src/current-affairs/gateway.ts'
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8')
+  if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); res.writeHead(405); res.end(JSON.stringify({ error: 'Method not allowed' })); return }
+  const data = await collectFeeds()
+  const available = data.sources.some(s => s.status !== 'failed')
+  res.setHeader('Cache-Control', available ? FEED_CACHE_CONTROL : 'no-store')
+  res.writeHead(available ? 200 : 503)
+  res.end(JSON.stringify(available ? data : { error: 'All publishers are unavailable', sources: data.sources }))
+}

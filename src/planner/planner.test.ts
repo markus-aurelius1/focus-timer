@@ -107,6 +107,7 @@ describe('quick add', () => {
     expect(inferSubject('Physical exercise', labels)).toBeUndefined()
     expect(inferSubject('Physics and Chemistry mock', labels)).toBeUndefined()
     expect(inferSubject('Old notes', labels)).toBeUndefined()
+    expect(inferSubject('Physics revision', [...labels, { id: 'p2', name: 'Physics', archived: false }])).toBeUndefined()
   })
 
   it('does not treat a leading weekday as a date', () => {

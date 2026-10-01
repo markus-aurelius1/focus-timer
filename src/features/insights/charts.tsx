@@ -49,7 +49,7 @@ export interface Datum {
 export function ChartCard({ title, subtitle, children, table, action, className }: { title: string; subtitle?: ReactNode; children: ReactNode; table?: Array<[string, string]>; action?: ReactNode; className?: string }) {
   const [asTable, setAsTable] = useState(false)
   return (
-    <section className={cn('min-w-0 rounded-card border border-line bg-surface p-4 shadow-soft sm:p-5', className)}>
+    <section className={cn('min-w-0 border-t border-line py-5 sm:py-6', className)}>
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-[15px] font-bold">{title}</h3>
@@ -406,7 +406,7 @@ export function StatTile({ label, value, delta, deltaGood = true, sub }: { label
   const up = (delta ?? 0) >= 0
   const good = up === deltaGood
   return (
-    <div className="rounded-card border border-line bg-surface px-4 py-3.5 shadow-soft">
+    <div className="min-w-0 border-l-2 border-line px-4 py-2">
       <p className="text-xs font-semibold text-ink-2">{label}</p>
       <p className="tabular mt-1 text-[26px] leading-tight font-semibold tracking-tight">{value}</p>
       <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-ink-3">

@@ -6,7 +6,8 @@
 import { useClaims, useExpeditionRuns, useRecalls, useSessions, useSettings } from '@/data/hooks'
 import type { ChallengeClaim, ExpeditionRun, RecallAttempt, Session } from '@/data/types'
 import { levelInfo, xpBreakdown, type XpBreakdown } from '@/game/progression'
-import { todayKey, type DayKey } from '@/lib/time'
+import { type DayKey } from '@/lib/time'
+import { useDay } from '@/lib/useDay'
 import { useAtlas, type AtlasData } from './data'
 import { explore, type ExploreState } from './explore'
 import { computeMastery, dueForReview, type DueItem, type MasteryMap } from './mastery'
@@ -53,8 +54,9 @@ export function useExploration(): Exploration | null {
   const recalls = useRecalls()
   const claims = useClaims()
   const settings = useSettings()
+  const today = useDay()
   if (!atlas) return null
-  return computeExploration(atlas, sessions, runs, recalls, claims, settings.baseCamp, todayKey())
+  return computeExploration(atlas, sessions, runs, recalls, claims, settings.baseCamp, today)
 }
 
 /** XP and level without waiting for the gazetteer (it doesn't need it). */

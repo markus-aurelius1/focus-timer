@@ -9,6 +9,7 @@ import { create, nextOrder, patch, remove, reorder } from '@/data/repo'
 import { PALETTE } from '@/data/seed'
 import type { Label, Project, Task } from '@/data/types'
 import { cn } from '@/lib/cn'
+import { useDay } from '@/lib/useDay'
 import { addDaysKey, dayKey, diffDays, formatDuration, longDate, relativeDayLabel, todayKey, type DayKey } from '@/lib/time'
 import { byPriorityThenOrder, compareTasks, groupUpcoming, isInbox, isOverdue, isToday, tagUsage } from '@/planner/tasks'
 import { labelScope } from '@/stats/aggregate'
@@ -35,6 +36,7 @@ const VIEWS: Array<{ id: View; label: string }> = [
 ]
 
 export function TasksScreen() {
+  const today = useDay()
   const route = useRoute()
   const view = (VIEWS.find((v) => v.id === route.params.get('view'))?.id ?? 'today') as View
   const projectId = route.params.get('project')
@@ -60,7 +62,7 @@ export function TasksScreen() {
     <div className="pt-safe mx-auto w-full max-w-3xl px-4 sm:px-6">
       <header className="flex items-end justify-between gap-3 pt-5 pb-3">
         <div className="min-w-0">
-          <p className="truncate text-xs font-bold tracking-[0.12em] text-ink-3 uppercase">{longDate(todayKey())}</p>
+          <p className="truncate text-xs font-bold tracking-[0.12em] text-ink-3 uppercase">{longDate(today)}</p>
           <h1 className="font-display text-[32px] leading-tight font-medium tracking-tight">Plan</h1>
         </div>
         <div className="flex items-center gap-1">
@@ -327,7 +329,7 @@ function DayGroup({ day, tasks, today }: { day: DayKey; tasks: Task[]; today: Da
   return (
     <section>
       <div className="flex items-baseline justify-between gap-2 border-b border-line px-1 pb-1.5">
-        <h3 className="font-display text-lg font-medium">
+        <h3 className="font-sans text-base font-semibold">
           {relativeDayLabel(day, today)}
           {diffDays(today, day) < 7 && diffDays(today, day) > 1 && <span className="ml-2 font-sans text-xs font-semibold text-ink-3">{longDate(day).split(', ')[1]}</span>}
         </h3>
@@ -371,7 +373,7 @@ function DoneView({ tasks }: { tasks: Task[] }) {
     <div className="space-y-5">
       {groups.entries.map(([day, list]) => (
         <section key={day}>
-          <h3 className="flex items-baseline justify-between border-b border-line px-1 pb-1.5 font-display text-lg font-medium">
+          <h3 className="flex items-baseline justify-between border-b border-line px-1 pb-1.5 font-sans text-base font-semibold">
             {relativeDayLabel(day)}
             <span className="font-sans text-xs font-bold text-ink-3">{list.length} done</span>
           </h3>
@@ -406,7 +408,7 @@ function ProjectsView({ tasks }: { tasks: Task[] }) {
             <button key={p.id} type="button" onClick={() => navigate(`#/tasks?view=projects&project=${p.id}`)} className="rounded-card border border-line bg-surface p-4 text-left shadow-soft transition-transform active:scale-[0.99]">
               <div className="flex items-center gap-2.5">
                 <span className="size-3 rounded-full" style={{ background: p.color }} />
-                <span className="truncate font-display text-lg font-medium">{p.name}</span>
+                <span className="truncate font-sans text-base font-semibold">{p.name}</span>
               </div>
               <p className="mt-2 text-[13px] text-ink-2">
                 {open} open · {done} done · {formatDuration(seconds)} focused

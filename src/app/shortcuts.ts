@@ -5,7 +5,8 @@
  */
 import { useEffect } from 'react'
 import { useTimer } from '@/timer/store'
-import { navigate, type RouteName } from './router'
+import { executeAction } from '@/tars/runtime'
+import type { RouteName } from './router'
 import { useUi } from './ui-store'
 
 export const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
@@ -37,6 +38,7 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { keys: ['G', 'A'], label: 'Atlas' },
       { keys: ['G', 'C'], label: 'Calendar' },
       { keys: ['G', 'I'], label: 'Insights' },
+      { keys: ['G', 'W'], label: 'News' },
       { keys: ['G', 'S'], label: 'Settings' },
     ],
   },
@@ -58,7 +60,7 @@ export const SHORTCUTS: ShortcutGroup[] = [
   },
 ]
 
-const GO: Record<string, RouteName> = { f: 'focus', t: 'tasks', a: 'atlas', c: 'calendar', i: 'insights', s: 'settings' }
+const GO: Record<string, RouteName> = { f: 'focus', t: 'tasks', a: 'atlas', c: 'calendar', i: 'insights', s: 'settings', w: 'current-affairs' }
 
 /** True when a key press is meant for a text field, not for a shortcut. */
 export function isTyping(target: EventTarget | null): boolean {
@@ -94,7 +96,7 @@ export function useGlobalShortcuts() {
       if (chord && Date.now() - chord < 1200 && GO[key]) {
         e.preventDefault()
         chord = 0
-        navigate(`#/${GO[key]}`)
+        void executeAction('navigation.open', { route:GO[key] })
         return
       }
       chord = 0
@@ -105,7 +107,7 @@ export function useGlobalShortcuts() {
         ui.set({ shortcutsOpen: true })
       } else if (key === 'n' && !e.shiftKey) {
         e.preventDefault()
-        ui.newTask({ plannedFor: null })
+        void executeAction('task.create', { plannedFor:null })
       }
     }
     window.addEventListener('keydown', onKey)
@@ -115,5 +117,6 @@ export function useGlobalShortcuts() {
 
 /** Start or pause from anywhere (command palette, media keys). */
 export function toggleTimer() {
-  useTimer.getState().toggle()
+  const status=useTimer.getState().timer.status
+  void executeAction(status==='running'?'timer.pause':status==='paused'?'timer.resume':'timer.start', {})
 }

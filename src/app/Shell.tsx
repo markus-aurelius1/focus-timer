@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, ChartNoAxesColumn, CloudOff, Flame, ListTodo, Map as MapIcon, PanelLeftClose, PanelLeftOpen, Search, Settings2, Timer } from 'lucide-react'
+import { CalendarDays, ChartNoAxesColumn, CloudOff, Flame, ListTodo, Map as MapIcon, Newspaper, PanelLeftClose, PanelLeftOpen, Search, Settings2, Timer } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 import { formatClock } from '@/lib/time'
@@ -11,7 +11,8 @@ import { useNow } from '@/timer/useNow'
 import { LogoMark, Wordmark } from '@/ui/Logo'
 import { T } from '@/ui/motion'
 import { useTodayProgress } from '@/features/shared/useProgress'
-import { navigate, type RouteName } from './router'
+import { executeAction } from '@/tars/runtime'
+import type { RouteName } from './router'
 import { modKey } from './shortcuts'
 import { useUi } from './ui-store'
 
@@ -21,11 +22,12 @@ const TABS: Array<{ name: RouteName; label: string; icon: typeof Timer; key: str
   { name: 'atlas', label: 'Atlas', icon: MapIcon, key: 'A' },
   { name: 'calendar', label: 'Calendar', icon: CalendarDays, key: 'C' },
   { name: 'insights', label: 'Insights', icon: ChartNoAxesColumn, key: 'I' },
+  { name: 'current-affairs', label: 'News', icon: Newspaper, key: 'W' },
 ]
 
 function go(name: RouteName) {
   haptics.tap()
-  navigate(`#/${name}`)
+  void executeAction('navigation.open', { route:name })
 }
 
 export function BottomNav({ route }: { route: RouteName }) {

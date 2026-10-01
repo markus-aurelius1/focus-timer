@@ -284,6 +284,7 @@ export function inferSubject<L extends Pick<Label, 'id' | 'name' | 'archived'>>(
     .sort((a, b) => b.w.join(' ').length - a.w.join(' ').length)
   if (!hits.length) return undefined
   const best = hits[0]
+  if (hits.slice(1).some((h) => h.w.join(' ') === best.w.join(' '))) return undefined
   const bestText = ` ${best.w.join(' ')} `
   // Every other hit must be part of the best one (e.g. "Chemistry" inside "Organic Chemistry").
   if (hits.slice(1).some((h) => !bestText.includes(` ${h.w.join(' ')} `))) return undefined

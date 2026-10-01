@@ -52,7 +52,7 @@ const overlaps = (a: Box, b: Box) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 &
 let ctx: CanvasRenderingContext2D | null = null
 const widthCache = new Map<string, number>()
 export const FONT_SANS = 'Manrope, ui-sans-serif, system-ui, sans-serif'
-export const FONT_SERIF = 'Fraunces, Georgia, serif'
+export const FONT_SERIF = 'Manrope, ui-sans-serif, system-ui, sans-serif'
 
 function measure(text: string, size: number, weight: number, italic: boolean, serif: boolean, spacing: number): number {
   const key = `${text}|${size}|${weight}|${italic}|${serif}|${spacing}`
@@ -109,14 +109,14 @@ export function baselineFromTop(style: LabelStyle, size: number): number {
 export const STYLE_SPEC: Record<LabelStyle, { weight: number; italic: boolean; serif: boolean; upper: boolean; spacing: number }> = {
   state: { weight: 700, italic: false, serif: false, upper: true, spacing: 0.08 },
   country: { weight: 700, italic: false, serif: false, upper: true, spacing: 0.14 },
-  'water-major': { weight: 500, italic: true, serif: true, upper: true, spacing: 0.18 },
-  water: { weight: 500, italic: true, serif: true, upper: false, spacing: 0.02 },
-  river: { weight: 500, italic: true, serif: true, upper: false, spacing: 0.03 },
-  'physical-major': { weight: 600, italic: true, serif: true, upper: true, spacing: 0.16 },
-  physical: { weight: 500, italic: true, serif: true, upper: false, spacing: 0.02 },
+  'water-major': { weight: 500, italic: true, serif: false, upper: true, spacing: 0.12 },
+  water: { weight: 500, italic: true, serif: false, upper: false, spacing: 0.02 },
+  river: { weight: 500, italic: true, serif: false, upper: false, spacing: 0.03 },
+  'physical-major': { weight: 600, italic: true, serif: false, upper: true, spacing: 0.10 },
+  physical: { weight: 500, italic: true, serif: false, upper: false, spacing: 0.02 },
   place: { weight: 650, italic: false, serif: false, upper: false, spacing: 0 },
-  'place-physical': { weight: 600, italic: true, serif: true, upper: false, spacing: 0 },
-  'place-water': { weight: 600, italic: true, serif: true, upper: false, spacing: 0 },
+  'place-physical': { weight: 600, italic: true, serif: false, upper: false, spacing: 0 },
+  'place-water': { weight: 600, italic: true, serif: false, upper: false, spacing: 0 },
 }
 
 const WATER_KINDS: LabelKind[] = ['ocean', 'sea', 'bay', 'gulf', 'strait', 'lake']

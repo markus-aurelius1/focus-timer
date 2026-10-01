@@ -1,14 +1,15 @@
 import { useMemo } from 'react'
 import { useGoals, useSessions, useSettings } from '@/data/hooks'
 import { computeStreaks, studyDays } from '@/stats/aggregate'
-import { addDaysKey, todayKey } from '@/lib/time'
+import { addDaysKey } from '@/lib/time'
+import { useDay } from '@/lib/useDay'
 
 /** Today's focus, the daily goal and the streak – shared by the Focus screen and widgets. */
 export function useTodayProgress() {
   const sessions = useSessions()
   const goals = useGoals()
   const settings = useSettings()
-  const today = todayKey()
+  const today = useDay()
   return useMemo(() => {
     const todays = sessions.filter((s) => s.date === today)
     const seconds = todays.reduce((a, s) => a + s.duration, 0)

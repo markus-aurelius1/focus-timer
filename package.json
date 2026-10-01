@@ -3,17 +3,19 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Tars — a calm, local-first study planner, focus timer and progress tracker.",
+  "description": "Tars \u2014 a calm, local-first study planner, focus timer and progress tracker.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node tools/build-atlas-assets.mjs && tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
+    "atlas:pyq": "node tools/atlas-build/canonical-pyq.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "cap:sync": "npm run build && cap sync",
     "cap:android": "npm run build && cap sync android && cap open android",
-    "cap:ios": "npm run build && cap sync ios && cap open ios"
+    "cap:ios": "npm run build && cap sync ios && cap open ios",
+    "atlas:assets": "node tools/build-atlas-assets.mjs"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "^8.0.1",
@@ -47,6 +49,7 @@
     "@types/topojson-client": "^3.1.5",
     "@types/topojson-specification": "^1.0.5",
     "@vitejs/plugin-react": "^6.1.1",
+    "ajv": "^8.20.0",
     "fake-indexeddb": "^6.2.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",

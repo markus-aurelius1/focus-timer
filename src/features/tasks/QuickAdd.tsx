@@ -7,7 +7,7 @@ import type { Priority, Task } from '@/data/types'
 import { cn } from '@/lib/cn'
 import { relativeDayLabel, todayKey, type DayKey } from '@/lib/time'
 import { inferSubject, parseQuickAdd } from '@/planner/quickAdd'
-import { addFromQuickAdd, normalizeTags } from '@/planner/tasks'
+import { addFromQuickAdd, AmbiguousNameError, normalizeTags } from '@/planner/tasks'
 import { haptics } from '@/services/haptics'
 import { Button, TextArea } from '@/ui/controls'
 import { T } from '@/ui/motion'
@@ -63,10 +63,12 @@ export function QuickAdd({ defaults, placeholder, autoFocus }: { defaults?: Part
   const parsed = useMemo(() => parseQuickAdd(text, today, { sessionMinutes }), [text, today, sessionMinutes])
 
   // What the task will be created with: explicit choices › the text › this list's defaults.
-  const namedLabel = parsed.labelName ? labels.find((l) => l.name.toLowerCase() === parsed.labelName!.toLowerCase()) : undefined
+  const namedLabels = parsed.labelName ? labels.filter((l) => l.name.toLowerCase() === parsed.labelName!.toLowerCase()) : []
+  const namedLabel = namedLabels.length === 1 ? namedLabels[0] : undefined
   const inferred = !parsed.labelName && o.labelId === undefined && !defaults?.labelId ? inferSubject(parsed.title, labels) : undefined
   const labelId = o.labelId !== undefined ? o.labelId : (namedLabel?.id ?? inferred?.id ?? defaults?.labelId ?? null)
-  const namedProject = parsed.projectName ? projects.find((p) => p.name.toLowerCase() === parsed.projectName!.toLowerCase()) : undefined
+  const namedProjects = parsed.projectName ? projects.filter((p) => p.name.toLowerCase() === parsed.projectName!.toLowerCase()) : []
+  const namedProject = namedProjects.length === 1 ? namedProjects[0] : undefined
   const projectId = o.projectId !== undefined ? o.projectId : (namedProject?.id ?? defaults?.projectId ?? null)
   const tags = normalizeTags([...parsed.tags, ...(o.addedTags ?? [])]).filter((t) => !o.removedTags?.includes(t))
   const priority = o.priority ?? parsed.priority ?? defaults?.priority ?? 0
@@ -117,6 +119,8 @@ export function QuickAdd({ defaults, placeholder, autoFocus }: { defaults?: Part
       setText('')
       setO({})
       inputRef.current?.focus()
+    } catch (error) {
+      toast({ title: error instanceof AmbiguousNameError ? error.message : 'The task couldn’t be saved. Try again.' })
     } finally {
       setBusy(false)
     }

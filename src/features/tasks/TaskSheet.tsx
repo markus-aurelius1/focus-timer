@@ -1,3 +1,4 @@
+import { executeAction } from '@/tars/runtime'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Reorder, useDragControls } from 'motion/react'
 import { AlarmClock, CalendarClock, CalendarPlus, Check, Clock3, Copy, Flag, FolderOpen, GripVertical, Hash, Play, Plus, Repeat2, Tag, Timer, Trash2, X } from 'lucide-react'
@@ -11,6 +12,7 @@ import type { RecurrenceRule, Subtask, Task } from '@/data/types'
 import { uid } from '@/lib/id'
 import { cn } from '@/lib/cn'
 import { addDaysKey, atTime, dayKey, formatDuration, formatTimeOfDay, hhmm, relativeDayLabel, todayKey, weekdayOf, weekdayShort, type DayKey } from '@/lib/time'
+import { useDay } from '@/lib/useDay'
 import { describeRule, RECURRENCE_PRESETS } from '@/planner/recurrence'
 import { addTask, blankTask, completeTask, deleteTask, restoreTask, uncompleteTask } from '@/planner/tasks'
 import { Button, Chip, IconButton, Select, Stepper, TextArea, TextInput } from '@/ui/controls'
@@ -108,6 +110,7 @@ export function TaskSheet() {
         ))
       }
     >
+      {draft?.notes.match(/#\/atlas\?place=([\w.-]+)/)?.[1] && <Button className="mx-5 mb-3" onClick={() => { const placeId=draft.notes.match(/#\/atlas\?place=([\w.-]+)/)![1]; onClose(); void executeAction('atlas.openPlace',{placeId}) }}>Open revision place</Button>}
       {draft && <TaskFields draft={draft} set={set} setDraft={setDraft} existing={isNew ? undefined : existing} />}
     </Sheet>
   )
@@ -156,7 +159,7 @@ function TaskFields({
   setDraft: (fn: (d: Draft | null) => Draft | null) => void
   existing: Task | undefined
 }) {
-  const today = todayKey()
+  const today = useDay()
   const id = useId()
   return (
     <div className="space-y-5">

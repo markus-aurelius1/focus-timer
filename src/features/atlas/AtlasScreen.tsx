@@ -1,3 +1,5 @@
+import { BookOpen } from 'lucide-react'
+import { useHotspots } from '@/atlas/useHotspots'
 /**
  * The Atlas: a real atlas map that fills in as you study. Focus time moves your
  * expedition and uncovers places; recall makes them Familiar, Strong and
@@ -5,7 +7,7 @@
  * map – the ones not yet discovered are drawn quietly until you reach them.
  */
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowLeft, Check, ChevronUp, Crosshair, Flag, GraduationCap, Info, Layers, Lock, Maximize2, Minimize2, Minus, Plus, Search } from 'lucide-react'
+import { Check, ChevronUp, Crosshair, Flag, GraduationCap, Info, Layers, Lock, Maximize2, Minimize2, Minus, Plus, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { consumeParams, useRoute } from '@/app/router'
 import { isTyping } from '@/app/shortcuts'
@@ -35,6 +37,11 @@ import { FieldReviewSheet, type ReviewRequest } from './FieldReview'
 import { GazetteerSheet } from './Gazetteer'
 import { kindsFor, PLACE_GROUPS } from './groups'
 import { LegendSheet } from './Legend'
+import { PyqBrowser } from './PyqBrowser'
+import { OfflineAtlas } from './OfflineAtlas'
+import type { PyqFilter } from '@/atlas/pyq/browse'
+import { useTarsSelection } from '@/tars/selection'
+import { CanonicalQuiz } from './CanonicalQuiz'
 import { PlaceDetails } from './PlaceDetails'
 import { UnitDetails } from './UnitDetails'
 import { masteryFn, viewFor } from './util'
@@ -97,6 +104,14 @@ function Atlas({ ex }: { ex: Exploration }) {
     if (h) map.current = h
   }, [])
   const [sel, setSel] = useState<Selection | null>(null)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+  const inspectorTrigger = useRef<HTMLButtonElement>(null)
+  const inspectorCollapse = useRef<HTMLButtonElement>(null)
+  const [browserFilter, setBrowserFilter] = useState<PyqFilter | null>(null)
+  const [showHotspots, setShowHotspots] = useState(false)
+  const hotspotIds = useHotspots(showHotspots)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [pyqId, setPyqId] = useState<string | null>(null)
   const [panel, setPanel] = useState<Panel>(null)
   const [review, setReview] = useState<ReviewRequest | null>(null)
   const [lastVisit] = useState(readVisit)
@@ -109,13 +124,7 @@ function Atlas({ ex }: { ex: Exploration }) {
   const pillShown = timerActive && !full.on
 
   useEffect(() => () => writeVisit(Date.now()), [])
-  // First visit without a base camp: ask for one (once settings have loaded).
-  const asked = useRef(false)
-  useEffect(() => {
-    if (asked.current || settings.updatedAt === 0) return
-    asked.current = true
-    if (!settings.baseCamp) setPanel('basecamp')
-  }, [settings.updatedAt, settings.baseCamp])
+  // Base camp stays an optional travel choice; opening knowledge never forces a setup dialog.
 
   const view = viewFor(settings.atlasStyle, ex.level.rankIndex)
   const mastery = useMemo(() => masteryFn(ex), [ex])
@@ -167,6 +176,8 @@ function Atlas({ ex }: { ex: Exploration }) {
 
   const living = useMemo(() => livingWorld(ex, shownId), [ex, shownId])
   const selectedPlace = sel?.type === 'place' ? ex.atlas.byId.get(sel.id) : undefined
+  useEffect(() => { useTarsSelection.getState().set(selectedPlace?.id ?? null, pyqId) }, [selectedPlace?.id, pyqId])
+  useEffect(() => () => useTarsSelection.getState().set(null, null), [])
   const highlights = useMemo<Highlight[]>(() => {
     if (!sel) return []
     if (sel.type === 'state' || sel.type === 'country') return [{ kind: sel.type, id: sel.id }]
@@ -211,6 +222,7 @@ function Atlas({ ex }: { ex: Exploration }) {
       }
       if (t.type === 'country' && shownId === 'india' && t.id === 'ind') return
       setSel(t)
+      setInspectorOpen(true)
     },
     [ex, shownId, flyToPlace],
   )
@@ -231,11 +243,16 @@ function Atlas({ ex }: { ex: Exploration }) {
     if (id && ex.atlas.byId.get(id)) {
       const p = ex.atlas.byId.get(id)!
       setSel({ type: 'place', id })
+      setInspectorOpen(true)
       flyToPlace(p, { sheetOpen: true })
     }
     if (route.params.get('review') && ex.due.length) setReview({ placeIds: ex.due.slice(0, 8).map((d) => d.id), source: 'review' })
     if (route.params.get('expeditions')) setPanel('expeditions')
-    consumeParams('place', 'review', 'expeditions', 'sheet')
+    if (route.params.get('search')) { setSearchQuery(route.params.get('search')!); setPanel('gazetteer') }
+    if (route.params.get('test') && ex.atlas.byId.has(route.params.get('test')!)) setReview({ placeIds: [route.params.get('test')!], source: 'card' })
+    if (route.params.get('questions')) setBrowserFilter({ placeId: route.params.get('placeId') ?? undefined, family: route.params.get('family') ?? undefined, year: route.params.get('year') ? Number(route.params.get('year')) : undefined, kind: route.params.get('kind') ?? undefined, mode: route.params.get('mode') ?? undefined })
+    if (route.params.get('pyq')) setPyqId(route.params.get('pyq'))
+    consumeParams('place', 'review', 'expeditions', 'sheet', 'pyq', 'search', 'test', 'questions', 'placeId', 'family', 'year', 'kind', 'mode')
   }, [route.raw]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const startReview = () => {
@@ -258,10 +275,11 @@ function Atlas({ ex }: { ex: Exploration }) {
       <PlaceDetails
         ex={ex}
         place={selectedPlace}
+        onPyq={setPyqId}
         onSelect={selectAndShow}
         onTest={(id) => setReview({ placeIds: [id], source: 'card', title: 'Test me' })}
         onShow={(p) => {
-          if (!desktop) setSel(null)
+          if (!desktop) setInspectorOpen(false)
           flyToPlace(p)
         }}
       />
@@ -274,7 +292,7 @@ function Atlas({ ex }: { ex: Exploration }) {
   const setLayers = (patch: Partial<AtlasLayers>) => void updateSettings({ atlasLayers: { ...layers, ...patch } })
 
   return (
-    <div className={cn('flex', full.on ? 'h-dvh' : MAP_HEIGHT)}>
+    <div data-atlas-surface className={cn('relative flex', full.on ? 'h-dvh' : MAP_HEIGHT)}>
       <div className="relative min-w-0 flex-1 overflow-hidden">
         {sheet ? (
           <AnimatePresence initial={false}>
@@ -287,12 +305,13 @@ function Atlas({ ex }: { ex: Exploration }) {
                 explored={explored}
                 places={places}
                 discovered={discovered}
-                showUndiscovered={layers.undiscovered}
+                showUndiscovered={true}
                 kinds={kinds}
                 showAreas={layers.areas}
                 featurePlaces={features}
                 mastery={mastery}
                 newIds={newIds}
+                pyqPlaceIds={hotspotIds}
                 selectedId={sel?.type === 'place' ? sel.id : undefined}
                 highlights={highlights}
                 route={routeOverlay}
@@ -325,9 +344,10 @@ function Atlas({ ex }: { ex: Exploration }) {
             />
           </div>
           <div className="pointer-events-auto ml-auto flex gap-1.5">
-            <MapButton label="Search places" onClick={() => setPanel('gazetteer')}>
+            <MapButton label="Search places" onClick={() => { setSearchQuery(''); setPanel('gazetteer') }}>
               <Search className="size-[18px]" />
             </MapButton>
+            <MapButton label="PYQ hotspots" pressed={showHotspots} active={showHotspots} onClick={() => setShowHotspots(v => !v)}><BookOpen className="size-[18px]" /><span className="sr-only">{showHotspots ? 'Hide' : 'Show'} curated question places</span></MapButton>
             <LayersMenu current={view.style} rankIndex={ex.level.rankIndex} layers={layers} onLayers={setLayers} />
             <MapButton label="Legend" onClick={() => setPanel('legend')}>
               <Info className="size-[18px]" />
@@ -342,7 +362,7 @@ function Atlas({ ex }: { ex: Exploration }) {
         </div>
 
         {(
-          <div data-map-ui className={cn('absolute flex flex-col gap-1.5', desktop ? 'right-3 bottom-3' : 'top-[110px] left-3')}>
+          <div data-map-ui className={cn('absolute flex flex-col gap-1.5', desktop ? 'left-3 bottom-3' : 'top-[110px] left-3')}>
             <MapButton label="Zoom in" onClick={() => map.current?.zoomBy(1.6)}>
               <Plus className="size-[18px]" />
             </MapButton>
@@ -381,34 +401,21 @@ function Atlas({ ex }: { ex: Exploration }) {
         )}
       </div>
 
-      {desktop && (
-        <aside className="scrollbar-thin w-[380px] shrink-0 overflow-y-auto border-l border-line bg-surface/60 p-4">
-          <AnimatePresence mode="wait" initial={false}>
-            {details ? (
-              <motion.div key={sel?.type === 'place' ? sel.id : `${sel?.type}:${sel?.id}`} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
-                <button type="button" onClick={() => setSel(null)} className="mb-3 flex items-center gap-1.5 text-[13px] font-bold text-ink-2 hover:text-ink">
-                  <ArrowLeft className="size-4" /> Atlas
-                </button>
-                <div className="rounded-card border border-line bg-surface p-4 shadow-soft">{details}</div>
-              </motion.div>
-            ) : (
-              <motion.div key="panel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
-                <h1 className="mb-3 px-1 font-display text-[28px] leading-tight font-medium tracking-tight">Atlas</h1>
-                <AtlasPanel ex={ex} actions={actions} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </aside>
-      )}
-
-      {!desktop && (
-        <Sheet open={!!details} onClose={() => setSel(null)} size="md">
-          {details}
-        </Sheet>
-      )}
+      {desktop && <>
+        {!inspectorOpen && <button ref={inspectorTrigger} data-map-ui type="button" className="absolute top-20 right-0 z-10 rounded-l-2xl border border-line bg-surface px-3 py-4 text-sm font-bold shadow-soft" aria-label="Open Atlas inspector" aria-expanded={false} onClick={() => { setInspectorOpen(true); requestAnimationFrame(() => inspectorCollapse.current?.focus({ preventScroll: true })) }}>Inspector ←</button>}
+        {inspectorOpen && <aside data-inspector className="scrollbar-thin absolute top-16 right-3 bottom-3 z-10 w-[380px] max-w-[calc(100%-24px)] overflow-y-auto rounded-[24px] border border-line bg-surface p-5 shadow-dialog" aria-label="Atlas inspector">
+          <button ref={inspectorCollapse} type="button" onClick={() => { setInspectorOpen(false); requestAnimationFrame(() => inspectorTrigger.current?.focus({ preventScroll: true })) }} className="mb-5 text-sm font-bold text-ink-2 hover:text-accent" aria-label="Collapse Atlas inspector" aria-expanded={true}>Collapse →</button>
+          {details ?? <><h1 className="mb-5 font-display text-2xl">Atlas</h1><Button onClick={() => setBrowserFilter({})}>Browse previous questions</Button><AtlasPanel ex={ex} actions={actions} /><OfflineAtlas /></>}
+        </aside>}
+      </>}
+      {!desktop && <Sheet open={!!details && inspectorOpen && !browserFilter && !pyqId && !review && !panel} onClose={() => setInspectorOpen(false)} size="md" label={selectedPlace?.name ?? 'Atlas details'}>{details}</Sheet>}
+      {!desktop && details && !inspectorOpen && <button data-map-ui type="button" className="absolute top-28 right-3 rounded-full bg-surface px-4 py-3 text-sm font-bold shadow-soft" onClick={() => setInspectorOpen(true)} aria-label="Reopen place inspector">Place details</button>}
+      <PyqBrowser filter={browserFilter} atlas={ex.atlas} onClose={() => setBrowserFilter(null)} onOpen={(id) => { setBrowserFilter(null); setPyqId(id) }} onPlace={(id) => { setBrowserFilter(null); selectAndShow({ type: 'place', id }) }} />
+      <CanonicalQuiz id={pyqId} atlas={ex.atlas} onClose={() => setPyqId(null)} onPlace={(id) => { setPyqId(null); selectAndShow({ type: 'place', id }); setInspectorOpen(true) }} />
       {!desktop && (
         <Sheet open={panel === 'more'} onClose={() => setPanel(null)} title="Atlas" size="md">
-          <AtlasPanel ex={ex} actions={actions} />
+          <Button onClick={() => { setPanel(null); setBrowserFilter({}) }}>Browse previous questions</Button>
+          <AtlasPanel ex={ex} actions={actions} /><OfflineAtlas />
         </Sheet>
       )}
       <ExpeditionSheet
@@ -427,12 +434,14 @@ function Atlas({ ex }: { ex: Exploration }) {
       <GazetteerSheet
         ex={ex}
         sheet={sheetId}
+        initialQuery={searchQuery}
         open={panel === 'gazetteer'}
         onClose={() => setPanel(null)}
         onPick={(id) => {
           setPanel(null)
           const p = ex.atlas.byId.get(id)
           setSel({ type: 'place', id })
+      setInspectorOpen(true)
           if (p) flyToPlace(p, { sheetOpen: true })
         }}
       />
@@ -523,7 +532,13 @@ function LayersMenu({ current, rankIndex, layers, onLayers }: {
     const close = (e: PointerEvent) => {
       if (!box.current?.contains(e.target as Node)) setOpen(false)
     }
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      e.stopPropagation()
+      setOpen(false)
+      box.current?.querySelector<HTMLButtonElement>('button')?.focus()
+    }
     document.addEventListener('pointerdown', close)
     document.addEventListener('keydown', esc)
     return () => {
@@ -549,14 +564,13 @@ function LayersMenu({ current, rankIndex, layers, onLayers }: {
             className="scrollbar-thin absolute top-full right-0 z-40 mt-1.5 max-h-[min(70dvh,560px)] w-[min(18.5rem,calc(100vw-1.5rem))] origin-top-right overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-lift"
           >
             <p className="px-3 pt-2 pb-1 text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">Study map style</p>
-            {MAP_STYLES.map((s) => {
+            <div role="group" aria-label="Study map style">{MAP_STYLES.map((s) => {
               const locked = s.minRank > rankIndex
               return (
                 <button
                   key={s.id}
                   type="button"
-                  role="menuitemradio"
-                  aria-checked={current === s.id}
+                  aria-pressed={current === s.id}
                   disabled={locked}
                   onClick={() => void updateSettings({ atlasStyle: s.id })}
                   className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left hover:bg-surface-2 disabled:opacity-60"
@@ -568,16 +582,10 @@ function LayersMenu({ current, rankIndex, layers, onLayers }: {
                   {locked ? <Lock className="size-4 text-ink-3" /> : current === s.id && <Check className="size-4 text-accent" />}
                 </button>
               )
-            })}
+            })}</div>
             <div className="my-1.5 border-t border-line" />
             <p className="px-3 pt-1 pb-1 text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">Show</p>
-            <label className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-surface-2">
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">Places not yet discovered</span>
-                <span className="block text-[12px] text-ink-2">Drawn faintly until you reach them</span>
-              </span>
-              <Toggle checked={layers.undiscovered} onChange={(v) => onLayers({ undiscovered: v })} label="Places not yet discovered" />
-            </label>
+            <p className="px-3 py-2 text-xs text-ink-3">Every place is accessible. Focus powers travel; recall powers learning.</p>
             <label className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-surface-2">
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold">Protected areas &amp; disputed regions</span>

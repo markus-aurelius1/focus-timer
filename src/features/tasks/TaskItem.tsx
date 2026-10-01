@@ -1,3 +1,5 @@
+import { executeAction } from '@/tars/runtime'
+import { db } from '@/data/db'
 import { motion } from 'motion/react'
 import { AlarmClock, Check, GripVertical, ListChecks, Play, Repeat2, Timer } from 'lucide-react'
 import { useState, type PointerEvent as ReactPointerEvent } from 'react'
@@ -17,7 +19,7 @@ export const PRIORITY_NAME = ['None', 'Low', 'Medium', 'High'] as const
 export function TaskCheck({ task, size = 'md' }: { task: Task; size?: 'sm' | 'md' }) {
   const [pending, setPending] = useState(false)
   const checked = !!task.done || pending
-  const s = size === 'sm' ? 'size-5' : 'size-[22px]'
+  const s = size === 'sm' ? 'size-6' : 'size-7'
   return (
     <button
       type="button"
@@ -32,8 +34,10 @@ export function TaskCheck({ task, size = 'md' }: { task: Task; size?: 'sm' | 'md
           setPending(true)
           // Let the check animation play before the task leaves the list.
           setTimeout(async () => {
-            const next = await toggleTask(task)
+            const result = await executeAction('task.complete', { taskId:task.id })
             setPending(false)
+            if(!result.ok)return
+            const next = result.createdTaskId ? await db.tasks.get(result.createdTaskId) : undefined
             toast({
               title: 'Completed',
               body: next ? `${task.title} · next on ${relativeDayLabel(next.plannedFor ?? next.dueDate ?? todayKey())}` : task.title,
@@ -47,10 +51,10 @@ export function TaskCheck({ task, size = 'md' }: { task: Task; size?: 'sm' | 'md
         }
       }}
       className={cn('group relative flex shrink-0 items-center justify-center rounded-full border-2 transition-colors', s)}
-      style={{ borderColor: checked ? 'var(--success)' : PRIORITY_COLOR[task.priority], background: checked ? 'var(--success)' : task.priority ? `color-mix(in oklab, ${PRIORITY_COLOR[task.priority]} 10%, transparent)` : undefined }}
+      style={{ borderColor: checked ? 'var(--success)' : task.priority ? PRIORITY_COLOR[task.priority] : 'var(--ink-3)', background: checked ? 'var(--success)' : task.priority ? `color-mix(in oklab, ${PRIORITY_COLOR[task.priority]} 10%, transparent)` : undefined }}
     >
       <motion.span initial={false} animate={{ scale: checked ? 1 : 0.4, opacity: checked ? 1 : 0 }} transition={{ type: 'spring', stiffness: 600, damping: 26 }}>
-        <Check className="size-3.5 text-white" strokeWidth={3.2} />
+        <Check className="size-3.5 text-white dark:text-bg" strokeWidth={3.2} />
       </motion.span>
     </button>
   )

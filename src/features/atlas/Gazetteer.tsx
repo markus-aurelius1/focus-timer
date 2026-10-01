@@ -1,8 +1,8 @@
 /** The gazetteer – a searchable index of every place, and the accessible alternative to the map. */
-import { Lock, Search } from 'lucide-react'
-import { useDeferredValue, useMemo, useState } from 'react'
+import { Search } from 'lucide-react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { placeSubtitle } from '@/atlas/data'
-import { MASTERY_LABEL } from '@/atlas/mastery'
+import { atLeast, MASTERY_LABEL } from '@/atlas/mastery'
 import type { Place, PlaceKind, SheetId } from '@/atlas/types'
 import type { Exploration } from '@/atlas/useExploration'
 import { cn } from '@/lib/cn'
@@ -10,7 +10,7 @@ import { Chip, Segmented, TextInput, Toggle } from '@/ui/controls'
 import { Sheet } from '@/ui/Sheet'
 import { PLACE_GROUPS } from './groups'
 import { BAND_CLASS, BAND_LABEL } from './PastPapers'
-import { MASTERY_COLOUR } from './style'
+import { MASTERY_TEXT_COLOUR } from './style'
 import { KIND_NAME } from './symbols'
 import { masteryFn, PlaceIcon, TAG_LABEL } from './util'
 
@@ -32,8 +32,9 @@ interface Entry {
   other: string
 }
 
-export function GazetteerSheet({ ex, open, onClose, onPick, sheet }: { ex: Exploration; open: boolean; onClose: () => void; onPick: (id: string) => void; sheet: SheetId }) {
-  const [q, setQ] = useState('')
+export function GazetteerSheet({ ex, open, onClose, onPick, sheet, initialQuery = '' }: { ex: Exploration; open: boolean; onClose: () => void; onPick: (id: string) => void; sheet: SheetId; initialQuery?: string }) {
+  const [q, setQ] = useState(initialQuery)
+  useEffect(() => { setQ(initialQuery) }, [initialQuery])
   const term = norm(useDeferredValue(q))
   const [group, setGroup] = useState('all')
   const [scope, setScope] = useState<SheetId>(sheet)
@@ -93,7 +94,7 @@ export function GazetteerSheet({ ex, open, onClose, onPick, sheet }: { ex: Explo
   const known = inScope.filter((r) => ex.state.discovered.has(r.p.id)).length
 
   return (
-    <Sheet open={open} onClose={onClose} title="Gazetteer" subtitle={`${known} of ${inScope.length} discovered`} size="lg">
+    <Sheet open={open} onClose={onClose} title="Gazetteer" subtitle={`${known} of ${inScope.length} travelled`} size="lg">
       <div className="sticky top-0 z-10 -mx-5 bg-surface px-5 pb-3">
         <label className="relative block">
           <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-3" />
@@ -102,7 +103,7 @@ export function GazetteerSheet({ ex, open, onClose, onPick, sheet }: { ex: Explo
         <div className="mt-3 flex items-center justify-between gap-3">
           <Segmented value={scope} onChange={setScope} options={[{ value: 'india', label: 'India' }, { value: 'world', label: 'World' }]} />
           <label className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
-            Discovered only <Toggle checked={onlyKnown} onChange={setOnlyKnown} label="Discovered only" />
+            Travelled only <Toggle checked={onlyKnown} onChange={setOnlyKnown} label="Travelled only" />
           </label>
         </div>
         {hasPriority && (
@@ -145,12 +146,12 @@ export function GazetteerSheet({ ex, open, onClose, onPick, sheet }: { ex: Explo
                     {p.yield.score}
                   </span>
                 )}
-                {found ? (
-                  <span className="shrink-0 text-[12px] font-bold" style={{ color: lvl === 'discovered' ? 'var(--ink-3)' : MASTERY_COLOUR[lvl] }}>
-                    {MASTERY_LABEL[lvl]}
+                {found || atLeast(lvl, 'familiar') ? (
+                  <span className="shrink-0 text-[12px] font-bold" style={{ color: lvl === 'discovered' ? 'var(--ink-3)' : MASTERY_TEXT_COLOUR[lvl] }}>
+                    {found && lvl === 'discovered' ? 'Travelled' : MASTERY_LABEL[lvl]}
                   </span>
                 ) : (
-                  <Lock className="size-4 shrink-0 text-ink-3" aria-label="Not yet discovered" />
+                  <span className="text-xs font-semibold text-ink-3">Accessible</span>
                 )}
               </button>
             </li>

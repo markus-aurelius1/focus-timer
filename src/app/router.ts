@@ -1,8 +1,8 @@
 /** Tiny hash router – deep links work in the PWA, in Capacitor and from notification taps. */
 import { useSyncExternalStore } from 'react'
 
-export type RouteName = 'focus' | 'tasks' | 'atlas' | 'calendar' | 'insights' | 'settings'
-const ROUTES: RouteName[] = ['focus', 'tasks', 'atlas', 'calendar', 'insights', 'settings']
+export type RouteName = 'focus' | 'tasks' | 'atlas' | 'calendar' | 'insights' | 'settings' | 'current-affairs'
+const ROUTES: RouteName[] = ['focus', 'tasks', 'atlas', 'calendar', 'insights', 'settings', 'current-affairs']
 
 export interface Route {
   name: RouteName
@@ -61,4 +61,9 @@ export function useRoute(): Route {
     },
     () => current,
   )
+}
+
+/** Imperative actions can run before the browser dispatches hashchange. */
+export function currentRoute(): Route {
+  return typeof location !== 'undefined' && location.hash !== current.raw ? parse(location.hash) : current
 }

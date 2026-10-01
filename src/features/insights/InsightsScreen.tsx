@@ -4,6 +4,7 @@ import { navigate } from '@/app/router'
 import { useEvents, useGoals, useLabels, useLookups, useProjects, useSessions, useSettings, useTasks } from '@/data/hooks'
 import type { Session } from '@/data/types'
 import { cn } from '@/lib/cn'
+import { useDay } from '@/lib/useDay'
 import {
   addDaysKey,
   daysInRange,
@@ -17,7 +18,6 @@ import {
   parseDayKey,
   relativeDayLabel,
   shortDate,
-  todayKey,
   weekdayLong,
   weekdayOrder,
   weekdayShort,
@@ -57,7 +57,7 @@ const minKey = (a: DayKey, b: DayKey) => (a < b ? a : b)
 
 export default function InsightsScreen() {
   const settings = useSettings()
-  const today = todayKey()
+  const today = useDay()
   const [kind, setKind] = useState<RangeKind>('week')
   const [anchor, setAnchor] = useState<DayKey>(today)
   const [labelFilter, setLabelFilter] = useState('')
@@ -237,9 +237,9 @@ export default function InsightsScreen() {
       </div>
 
       {empty ? (
-        <div className="rounded-card border border-line bg-surface shadow-soft">
+        <><div className="py-6">
           <EmptyState title="Your story starts with one session" body="Every focus session is recorded automatically. Complete one and your charts, streaks and patterns appear here." action={<Button variant="primary" onClick={() => navigate('#/focus')}>Start focusing</Button>} />
-        </div>
+        </div><AtlasInsights /></>
       ) : (
         <div className="space-y-4 pb-6">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

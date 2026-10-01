@@ -6,7 +6,8 @@ import { create, nextOrder, patch, remove } from '@/data/repo'
 import { PALETTE } from '@/data/seed'
 import type { Habit, HabitKind } from '@/data/types'
 import { cn } from '@/lib/cn'
-import { addDaysKey, parseDayKey, startOfWeekKey, todayKey, weekdayOrder, weekdayShort, type DayKey } from '@/lib/time'
+import { addDaysKey, parseDayKey, startOfWeekKey, weekdayOrder, weekdayShort, type DayKey } from '@/lib/time'
+import { useDay } from '@/lib/useDay'
 import { habitEvaluator, habitStreak } from '@/planner/habits'
 import { haptics } from '@/services/haptics'
 import { Button, Card, Field, IconButton, Segmented, Stepper, TextInput, Select } from '@/ui/controls'
@@ -20,7 +21,7 @@ export function HabitsView() {
   const habits = useHabits()
   const labels = useLabels(true)
   const settings = useSettings()
-  const today = todayKey()
+  const today = useDay()
   const from = addDaysKey(today, -400)
   const logs = useHabitLogs(from, today)
   const sessions = useSessionsBetween(from, today)

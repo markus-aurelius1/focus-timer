@@ -21,7 +21,7 @@ export function AtlasInsights() {
     let familiar = 0
     let strong = 0
     let mastered = 0
-    for (const id of ex.state.discovered.keys()) {
+    for (const id of ex.atlas.byId.keys()) {
       const l = levelOf(id, true, ex.mastery)
       if (atLeast(l, 'familiar')) familiar++
       if (atLeast(l, 'strong')) strong++
@@ -36,7 +36,7 @@ export function AtlasInsights() {
       if (perWeek.has(w)) perWeek.set(w, perWeek.get(w)! + 1)
     }
     // Accuracy by question type.
-    const byType = new Map<QuestionType, { n: number; ok: number }>()
+    const byType = new Map<QuestionType | 'pyq', { n: number; ok: number }>()
     for (const r of recalls) {
       const t = byType.get(r.type) ?? { n: 0, ok: 0 }
       t.n++
@@ -49,27 +49,27 @@ export function AtlasInsights() {
   if (!ex || !data) return null
   const discovered = ex.state.discovered.size
   const spread = [
-    { key: 'discovered', label: 'Discovered only', value: discovered - data.familiar, color: 'var(--ink-3)' },
+    { key: 'discovered', label: 'Not yet familiar', value: data.total - data.familiar, color: 'var(--ink-3)' },
     { key: 'familiar', label: 'Familiar', value: data.familiar - data.strong, color: MASTERY_COLOUR.familiar },
     { key: 'strong', label: 'Strong', value: data.strong - data.mastered, color: MASTERY_COLOUR.strong },
     { key: 'mastered', label: 'Mastered', value: data.mastered, color: MASTERY_COLOUR.mastered },
   ]
   const accuracy = [...data.byType.entries()]
-    .map(([t, v]) => ({ key: t, label: TYPE_LABEL[t], value: Math.round((v.ok / v.n) * 100), sub: `${v.n} answered` }))
+    .map(([t, v]) => ({ key: t, label: t === 'pyq' ? 'Canonical PYQ' : TYPE_LABEL[t], value: Math.round((v.ok / v.n) * 100), sub: `${v.n} answered` }))
     .sort((a, b) => b.value - a.value)
 
   return (
     <section className="space-y-4" aria-label="Atlas">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Places discovered" value={String(discovered)} sub={`of ${data.total} in the Atlas`} />
-        <StatTile label="Familiar or better" value={String(data.familiar)} sub={discovered ? `${Math.round((data.familiar / discovered) * 100)}% of discovered` : 'answer a question'} />
+        <StatTile label="Places travelled" value={String(discovered)} sub={`of ${data.total} in the Atlas`} />
+        <StatTile label="Familiar or better" value={String(data.familiar)} sub={data.familiar ? `${Math.round((data.familiar / data.total) * 100)}% of Atlas` : 'answer a question'} />
         <StatTile label="Mastered" value={String(data.mastered)} sub={`${data.strong} Strong or better`} />
         <StatTile label="Reviews due" value={String(ex.due.length)} sub={ex.due.length ? 'spaced review keeps them fresh' : 'all caught up'} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard
-          title="Discoveries"
-          subtitle="Places uncovered each week"
+          title="Travel"
+          subtitle="Places reached through focus each week"
           table={data.weeks.map((w) => [`Week of ${shortDate(w)}`, String(data.perWeek.get(w) ?? 0)])}
           action={
             ex.due.length > 0 && (
@@ -84,11 +84,11 @@ export function AtlasInsights() {
             formatValue={(v) => String(Math.round(v))}
             tickEvery={3}
             height={150}
-            ariaLabel="Places discovered per week"
+            ariaLabel="Places travelled per week"
           />
         </ChartCard>
         <ChartCard title="Mastery" subtitle="Recall – not time – moves places up" table={spread.map((r) => [r.label, String(r.value)])}>
-          <BarList rows={spread} formatValue={(v) => String(v)} empty={<p className="text-sm text-ink-3">Nothing discovered yet.</p>} />
+          <BarList rows={spread} formatValue={(v) => String(v)} empty={<p className="text-sm text-ink-3">Answer questions to build recall.</p>} />
           {accuracy.length > 0 && (
             <>
               <p className="mt-5 mb-2 text-xs font-bold tracking-[0.1em] text-ink-3 uppercase">Accuracy by question type</p>

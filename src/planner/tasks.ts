@@ -113,9 +113,15 @@ export async function addTask(partial: Partial<Task>): Promise<Task> {
   return create('tasks', { ...blankTask(partial), tags: normalizeTags(partial.tags ?? []), order, seriesId })
 }
 
+export class AmbiguousNameError extends Error {}
+
 function findByName<T extends { name: string; archived: boolean }>(items: T[], name: string): T | undefined {
   const n = name.trim().toLowerCase()
-  return items.find((i) => !i.archived && i.name.toLowerCase() === n) ?? items.find((i) => !i.archived && i.name.toLowerCase().startsWith(n))
+  const active = items.filter(i => !i.archived)
+  const exact = active.filter(i => i.name.toLowerCase() === n)
+  const matches = exact.length ? exact : active.filter(i => i.name.toLowerCase().startsWith(n))
+  if (matches.length > 1) throw new AmbiguousNameError(`Several names match “${name}”. Choose a unique full name.`)
+  return matches[0]
 }
 
 /**
@@ -125,65 +131,69 @@ function findByName<T extends { name: string; archived: boolean }>(items: T[], n
  */
 export async function addFromQuickAdd(parsed: QuickAddResult, defaults: Partial<Task> = {}): Promise<Task | null> {
   if (!parsed.title) return null
-  let projectId = defaults.projectId ?? null
-  let labelId = defaults.labelId ?? null
-  let tags = [...(defaults.tags ?? []), ...(parsed.tags ?? [])]
-  if (!parsed.projectName && !defaults.projectId && tags.length) {
-    const projects = (await db.projects.toArray()).filter((p) => !p.archived)
-    const match = tags.map((t) => projects.find((p) => p.name.toLowerCase() === t.replace(/[-_]/g, ' '))).find(Boolean)
-    if (match) {
-      projectId = match.id
-      tags = tags.filter((t) => t.replace(/[-_]/g, ' ') !== match.name.toLowerCase())
+  return db.transaction('rw', [db.tasks, db.projects, db.labels], async () => {
+    let projectId = defaults.projectId ?? null
+    let labelId = defaults.labelId ?? null
+    let tags = normalizeTags([...(defaults.tags ?? []), ...(parsed.tags ?? [])])
+    if (!parsed.projectName && !defaults.projectId && tags.length) {
+      const projects = (await db.projects.toArray()).filter((p) => !p.archived)
+      const matches = projects.filter(p => tags.some(t => p.name.toLowerCase() === t.replace(/[-_]/g, ' ')))
+      if (matches.length > 1) throw new AmbiguousNameError('Several projects match these tags. Choose one project explicitly.')
+      const match = matches[0]
+      if (match) {
+        projectId = match.id
+        tags = tags.filter((t) => t.replace(/[-_]/g, ' ') !== match.name.toLowerCase())
+      }
     }
-  }
-  if (parsed.projectName) {
-    const projects = await db.projects.toArray()
-    const found = findByName<Project>(projects, parsed.projectName)
-    projectId = found
-      ? found.id
-      : (
-          await create('projects', {
-            name: capitalise(parsed.projectName),
-            color: PALETTE[projects.length % PALETTE.length].value,
-            labelId: null,
-            note: '',
-            archived: false,
-            order: projects.length,
-          })
-        ).id
-  }
-  if (parsed.labelName) {
-    const labels = await db.labels.toArray()
-    const found = findByName<Label>(labels, parsed.labelName)
-    labelId = found
-      ? found.id
-      : (
-          await create('labels', {
-            name: capitalise(parsed.labelName),
-            color: PALETTE[(labels.length + 3) % PALETTE.length].value,
-            parentId: null,
-            kind: 'label',
-            archived: false,
-            order: labels.length,
-          })
-        ).id
-  }
-  if (!labelId && projectId) {
-    const project = await db.projects.get(projectId)
-    labelId = project?.labelId ?? null
-  }
-  return addTask({
-    ...defaults,
-    title: parsed.title,
-    priority: parsed.priority ?? defaults.priority ?? 0,
-    projectId,
-    labelId,
-    tags,
-    estimatedPomodoros: parsed.estimate ?? defaults.estimatedPomodoros ?? 1,
-    plannedFor: parsed.plannedFor ?? defaults.plannedFor ?? null,
-    dueDate: parsed.dueDate ?? defaults.dueDate ?? null,
-    dueTime: parsed.dueTime ?? defaults.dueTime ?? null,
-    recurrence: parsed.recurrence ?? defaults.recurrence ?? null,
+    if (parsed.projectName) {
+      const projects = await db.projects.toArray()
+      const found = findByName<Project>(projects, parsed.projectName)
+      projectId = found
+        ? found.id
+        : (
+            await create('projects', {
+              name: capitalise(parsed.projectName),
+              color: PALETTE[projects.length % PALETTE.length].value,
+              labelId: null,
+              note: '',
+              archived: false,
+              order: projects.length,
+            })
+          ).id
+    }
+    if (parsed.labelName) {
+      const labels = await db.labels.toArray()
+      const found = findByName<Label>(labels, parsed.labelName)
+      labelId = found
+        ? found.id
+        : (
+            await create('labels', {
+              name: capitalise(parsed.labelName),
+              color: PALETTE[(labels.length + 3) % PALETTE.length].value,
+              parentId: null,
+              kind: 'label',
+              archived: false,
+              order: labels.length,
+            })
+          ).id
+    }
+    if (!labelId && projectId) {
+      const project = await db.projects.get(projectId)
+      labelId = project?.labelId ?? null
+    }
+    return addTask({
+      ...defaults,
+      title: parsed.title,
+      priority: parsed.priority ?? defaults.priority ?? 0,
+      projectId,
+      labelId,
+      tags,
+      estimatedPomodoros: parsed.estimate ?? defaults.estimatedPomodoros ?? 1,
+      plannedFor: parsed.plannedFor ?? defaults.plannedFor ?? null,
+      dueDate: parsed.dueDate ?? defaults.dueDate ?? null,
+      dueTime: parsed.dueTime ?? defaults.dueTime ?? null,
+      recurrence: parsed.recurrence ?? defaults.recurrence ?? null,
+    })
   })
 }
 
@@ -194,26 +204,33 @@ const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
  * next instance, shifted to the next occurrence of its rule.
  */
 export async function completeTask(task: Task, now = Date.now()): Promise<Task | null> {
-  await patch('tasks', task.id, { done: 1, completedAt: now })
-  if (!task.recurrence) return null
-  const today = todayKey()
-  const anchor = taskDay(task) ?? today
-  const next = nextOccurrence(task.recurrence, anchor, anchor > today ? anchor : today)
-  if (!next) return null
-  const shift = diffDays(anchor, next)
-  const shiftKey = (k: DayKey | null) => (k ? addDaysKey(k, shift) : null)
-  return addTask({
-    ...task,
-    id: undefined,
-    plannedFor: shiftKey(task.plannedFor),
-    dueDate: shiftKey(task.dueDate) ?? (task.plannedFor ? null : next),
-    reminderAt: task.reminderAt ? task.reminderAt + shift * 86_400_000 : null,
-    subtasks: task.subtasks.map((s) => ({ ...s, id: uid(), done: false })),
-    done: 0,
-    completedAt: null,
-    order: task.order,
-    seriesId: task.seriesId ?? task.id,
-  } as Partial<Task>)
+  // Serialize every caller, including UI shortcuts and other tabs. Completing
+  // the current record and creating its successor must succeed together.
+  return db.transaction('rw', db.tasks, async () => {
+    const current = await db.tasks.get(task.id)
+    if (!current || current.done) return null
+    task = current
+    await patch('tasks', task.id, { done: 1, completedAt: now })
+    if (!task.recurrence) return null
+    const today = todayKey()
+    const anchor = taskDay(task) ?? today
+    const next = nextOccurrence(task.recurrence, anchor, anchor > today ? anchor : today)
+    if (!next) return null
+    const shift = diffDays(anchor, next)
+    const shiftKey = (k: DayKey | null) => (k ? addDaysKey(k, shift) : null)
+    return addTask({
+      ...task,
+      id: undefined,
+      plannedFor: shiftKey(task.plannedFor),
+      dueDate: shiftKey(task.dueDate) ?? (task.plannedFor ? null : next),
+      reminderAt: task.reminderAt ? task.reminderAt + shift * 86_400_000 : null,
+      subtasks: task.subtasks.map((s) => ({ ...s, id: uid(), done: false })),
+      done: 0,
+      completedAt: null,
+      order: task.order,
+      seriesId: task.seriesId ?? task.id,
+    } as Partial<Task>)
+  })
 }
 
 export async function uncompleteTask(task: Task): Promise<void> {

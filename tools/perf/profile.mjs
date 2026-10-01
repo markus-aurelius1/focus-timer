@@ -31,10 +31,12 @@ async function measure(name, gesture) {
   await page.evaluate(() => {
     window.__frames = []
     window.__long = []
-    window.__run = true
+    // A generation token prevents a previous sample from resuming when the next starts.
+    const generation = window.__generation = (window.__generation ?? 0) + 1
     const loop = (t) => {
+      if (window.__generation !== generation) return
       window.__frames.push(t)
-      if (window.__run) requestAnimationFrame(loop)
+      requestAnimationFrame(loop)
     }
     requestAnimationFrame(loop)
     try {
@@ -49,7 +51,7 @@ async function measure(name, gesture) {
   const wall = Date.now() - t0
   const m1 = await metrics()
   const r = await page.evaluate(() => {
-    window.__run = false
+    window.__generation++
     return { frames: window.__frames, long: window.__long }
   })
   const d = r.frames.slice(1).map((t, i) => t - r.frames[i]).sort((a, b) => a - b)
@@ -137,6 +139,7 @@ results.push(
     await page.waitForTimeout(500)
   }),
 )
+writeFileSync(`${out}${label}-heap.json`, JSON.stringify(await cdp.send('Runtime.getHeapUsage'), null, 2))
 await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })
 writeFileSync(`${out}${label}.json`, JSON.stringify(results, null, 2))
 await browser.close()

@@ -24,7 +24,7 @@ const VIEWPORTS = [
   ['768', { width: 768, height: 1024 }, true],
   ['1366', { width: 1366, height: 768 }, false],
   ['1920', { width: 1920, height: 1080 }, false],
-]
+].filter(([name]) => !process.env.VIEWPORTS || process.env.VIEWPORTS.split(',').includes(name))
 
 const problems = []
 
@@ -184,10 +184,16 @@ for (const [vp, viewport, touch] of VIEWPORTS) {
     await page.waitForTimeout(700)
     await check('atlas-fullscreen')
     await escape()
+    // Headless browser fullscreen may restore its native window size instead of the emulated viewport.
+    await page.evaluate(async () => { if (document.fullscreenElement) await document.exitFullscreen() })
+    await page.setViewportSize(viewport)
     if (viewport.width >= 1024) {
       // Collapsed sidebar: icons only, the content takes the space.
       await page.goto(base + '#/focus')
       await page.waitForTimeout(800)
+      const expand = page.getByRole('button', { name: /expand sidebar/i })
+      if (await expand.isVisible()) await expand.click()
+      console.log('audit viewport', await page.evaluate(() => ({ width: innerWidth, hash: location.hash, chrome: document.documentElement.dataset.chrome, sidebar: document.querySelector('#sidebar') && getComputedStyle(document.querySelector('#sidebar')).display })))
       await page.getByRole('button', { name: /collapse sidebar/i }).click()
       await check('focus-sidebar-collapsed')
       await page.getByRole('button', { name: /expand sidebar/i }).click()

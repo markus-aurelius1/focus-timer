@@ -1,9 +1,9 @@
+import { executeAction } from '@/tars/runtime'
 import { App as CapApp } from '@capacitor/app'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { installSoundFollow, setSoundFollowsTimer } from '@/audio/follow'
 import { installAudio } from '@/audio/store'
-import { db } from '@/data/db'
 import { useLookups, useProfiles, useSettings, useTask } from '@/data/hooks'
 import { ensureSeed } from '@/data/seed'
 import { cn } from '@/lib/cn'
@@ -33,6 +33,7 @@ import { Onboarding } from '@/features/onboarding/Onboarding'
 import { consumeParams, navigate, useRoute, type RouteName } from './router'
 import { useOnline } from '@/lib/useOnline'
 import { T } from '@/ui/motion'
+import { TarsPresence } from '@/tars/TarsPresence'
 import { CommandPalette } from './CommandPalette'
 import { BottomNav, SideNav, TimerPill } from './Shell'
 import { ShortcutsSheet } from './ShortcutsSheet'
@@ -44,6 +45,7 @@ const CalendarScreen = lazy(() => import('@/features/calendar/CalendarScreen'))
 const InsightsScreen = lazy(() => import('@/features/insights/InsightsScreen'))
 const AtlasScreen = lazy(() => import('@/features/atlas/AtlasScreen'))
 const SettingsScreen = lazy(() => import('@/features/settings/SettingsScreen'))
+const CurrentAffairsScreen = lazy(() => import('@/features/current-affairs/CurrentAffairsScreen'))
 
 type BootState = 'loading' | 'ready' | 'error'
 
@@ -124,7 +126,7 @@ function Main() {
       <TitleSync />
       <SideNav route={route.name} />
       <div className="shell-offset">
-        <main className={cn('mx-auto w-full', fitted ? 'min-h-0' : 'min-h-dvh pb-[calc(84px+env(safe-area-inset-bottom))]', !fitted && (route.name === 'focus' ? 'lg:pb-0' : 'lg:pb-10'))}>
+        <main className={cn('mx-auto w-full', fitted ? 'min-h-0' : 'min-h-dvh', !fitted && (route.name === 'focus' ? 'pb-[calc(84px+env(safe-area-inset-bottom))] lg:pb-0' : 'pb-[calc(148px+env(safe-area-inset-bottom))] lg:pb-10'))}>
           {/* Enter-only transition: the old screen leaves at once (nothing can hold it on
               screen), the new one rises in from the top of the page. */}
           <motion.div key={route.name} initial={firstScreen.current ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: T.base }}>
@@ -144,6 +146,7 @@ function Main() {
       <ProfileSheet />
       <Onboarding />
       <AnimatePresence>{immersive && <ImmersiveFocus key="immersive" />}</AnimatePresence>
+      <TarsPresence />
       <CommandPalette />
       <ShortcutsSheet />
       <ConfirmHost />
@@ -217,6 +220,8 @@ function Screen({ name }: { name: RouteName }) {
       return <AtlasScreen />
     case 'settings':
       return <SettingsScreen />
+    case 'current-affairs':
+      return <CurrentAffairsScreen />
   }
 }
 
@@ -344,19 +349,12 @@ function DeepLinks() {
     if (route.name === 'focus') {
       const blockId = p.get('block')
       if (blockId) {
-        void db.events.get(blockId).then((ev) => {
-          if (!ev) return
-          const t = useTimer.getState()
-          if (t.timer.status === 'idle') {
-            t.setContext({ taskId: ev.taskId, labelId: ev.labelId })
-            t.start()
-          }
-        })
+        void executeAction('calendar.startBlock', { eventId:blockId })
         consumeParams('block', 'date')
       }
       if (p.get('start') === '1') {
         const t = useTimer.getState()
-        if (t.timer.status !== 'running') t.start()
+        if (t.timer.status !== 'running') void executeAction(t.timer.status === 'paused' ? 'timer.resume' : 'timer.start', {})
         consumeParams('start')
       }
     }
@@ -367,7 +365,7 @@ function DeepLinks() {
       }
       const taskId = p.get('task')
       if (taskId) {
-        useUi.getState().openTask(taskId)
+        void executeAction('task.open', { taskId })
         consumeParams('task')
       }
     }

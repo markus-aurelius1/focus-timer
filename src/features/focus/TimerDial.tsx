@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { Check } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { cn } from '@/lib/cn'
 import type { Phase } from '@/data/types'
 import { progress as progressAt, type TimerState } from '@/timer/engine'
 import { useTimer } from '@/timer/store'
@@ -212,7 +213,7 @@ function useBloom(phase: Phase) {
 /** Digits in fixed-width slots so nothing shifts as time changes. */
 export function TimeDigits({ text, className }: { text: string; className?: string }) {
   return (
-    <span className={className} aria-hidden="true">
+    <span className={cn('type-numeric', className)} aria-hidden="true">
       {text.split('').map((ch, i) =>
         ch === ':' ? (
           <span key={i} className="inline-block w-[0.3em] -translate-y-[0.06em] text-center opacity-60">

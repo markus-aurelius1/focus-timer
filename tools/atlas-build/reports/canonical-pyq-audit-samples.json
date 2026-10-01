@@ -1,0 +1,80 @@
+{
+  "schema": "atlas-pyq-audit-samples/v1",
+  "samples": [
+    {
+      "questionId": "UPSC-CSE-1996-GS1-Q019",
+      "dimensions": [
+        "UPSC-CSE:old",
+        "mcq",
+        "multi-place"
+      ]
+    },
+    {
+      "questionId": "UPSC-CSE-2026-GS1-Q040",
+      "dimensions": [
+        "UPSC-CSE:recent"
+      ]
+    },
+    {
+      "questionId": "UPPCS-2018-GS1-Q050",
+      "dimensions": [
+        "UPPCS:old"
+      ]
+    },
+    {
+      "questionId": "UPPCS-2025-GS1-Q138",
+      "dimensions": [
+        "UPPCS:recent"
+      ]
+    },
+    {
+      "questionId": "CDS-2018-I-GK-Q102",
+      "dimensions": [
+        "CDS:old"
+      ]
+    },
+    {
+      "questionId": "CDS-2026-II-GK-Q044",
+      "dimensions": [
+        "CDS:recent"
+      ]
+    },
+    {
+      "questionId": "UPSC-CSE-2002-GS1-Q120",
+      "dimensions": [
+        "statements"
+      ]
+    },
+    {
+      "questionId": "UPSC-CSE-2000-GS1-Q014",
+      "dimensions": [
+        "matching"
+      ]
+    },
+    {
+      "questionId": "UPSC-CSE-2008-GS1-Q024",
+      "dimensions": [
+        "pairs"
+      ]
+    },
+    {
+      "questionId": "UPSC-CSE-2024-GS1-Q009",
+      "dimensions": [
+        "table"
+      ]
+    },
+    {
+      "questionId": "UPSC-CSE-2014-GS1-Q052",
+      "dimensions": [
+        "sequence"
+      ]
+    },
+    {
+      "questionId": "UPSC-CSE-2007-GS1-Q075",
+      "dimensions": [
+        "assertion-reason"
+      ]
+    }
+  ],
+  "dimensionsAbsentFromStrictSubset": []
+}

@@ -1,0 +1,1135 @@
+{
+  "schema": "tars-atlas-assets/v1",
+  "version": "d9eb9da8897a9c6120a47e96a105e014501a734c060acd53f2befb25cf847aab",
+  "renderer": "tars-svg/v1",
+  "indiaBoundaryPolicy": "Existing controlled Atlas India sheet and overlays; no generic service substitution",
+  "tiers": {
+    "CORE": {
+      "policy": "Always bundled and precached. Complete curated study data and world context."
+    },
+    "INDIA": {
+      "policy": "Bundled India vectors, overlays and relief."
+    },
+    "REGIONAL": {
+      "policy": "Optional verified packs only; none published in this release.",
+      "packs": []
+    },
+    "ONLINE": {
+      "policy": "No online map provider in this release.",
+      "cacheBudgetBytes": 0
+    }
+  },
+  "assets": [
+    {
+      "id": "atlas-assets/v1/pyq-hotspots.json",
+      "path": "atlas-assets/v1/pyq-hotspots.json",
+      "version": "f59fa03c8c6b15dffc84d088378f2c4133319d9a60ddb00e5fa173fd41e54d87",
+      "bytes": 17987,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/ATTRIBUTION.txt",
+      "path": "atlas/v1/ATTRIBUTION.txt",
+      "version": "c52af706238ba233494c5ade637750de954f3f784b51e7836ef0dc289620ffef",
+      "bytes": 2025,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/india-overlay.json",
+      "path": "atlas/v1/india-overlay.json",
+      "version": "f8651ec206014644e6e8199cd3096e6b4e86ed44446275c8a56bca57ff470634",
+      "bytes": 136713,
+      "tier": "INDIA",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/india-relief.webp",
+      "path": "atlas/v1/india-relief.webp",
+      "version": "c4c6f70dacfeaad2882e21ce5d461bb1d0da5f3fcdf6d64c595fd959a5b6e254",
+      "bytes": 596944,
+      "tier": "INDIA",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/india-shade.webp",
+      "path": "atlas/v1/india-shade.webp",
+      "version": "fda83a33439eac94a388f323dac6341c1821ee666f030bfe5327abaaa7fc391c",
+      "bytes": 109246,
+      "tier": "INDIA",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/india.json",
+      "path": "atlas/v1/india.json",
+      "version": "c75cdcf2d3b23dfe61d94fa5664ce278c4d558bed632fb6ed2f0da393724faa0",
+      "bytes": 585130,
+      "tier": "INDIA",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/places.json",
+      "path": "atlas/v1/places.json",
+      "version": "6d2122b8e7b74d225bf76e419e93be33544ec87e1e4233e325a0aae0051f021d",
+      "bytes": 2548302,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/world-overlay.json",
+      "path": "atlas/v1/world-overlay.json",
+      "version": "865991bb3368be797f7f5bb09dc9ddf7d12b62f42433d3d9dbaf89315f177bde",
+      "bytes": 120037,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/world-relief.webp",
+      "path": "atlas/v1/world-relief.webp",
+      "version": "7c015d0697ebb3222410a82fdd86b2151bef88d33035ac4ad3aeb4a837788cfe",
+      "bytes": 341662,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/world-shade.webp",
+      "path": "atlas/v1/world-shade.webp",
+      "version": "a5f6a9340cf94c4a527038d53f211b40a6dbf26a53b94ed76a9982add9dbc8ba",
+      "bytes": 43636,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas/v1/world.json",
+      "path": "atlas/v1/world.json",
+      "version": "736a091ab3c837dfd408f0f8fcd87079f4c69ae3fd73f8699c6c6e19c33d4770",
+      "bytes": 734717,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2018-I-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2018-I-GK.json",
+      "version": "094dc05e2ddad03c38de4a6e26777ee5cb3b0d4712f90943b3b307fcc515de3e",
+      "bytes": 1388,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2018-II-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2018-II-GK.json",
+      "version": "cb908a89c02f69f13e2dd2e0f79a8c31e537b072179e56cab39201bd17799c90",
+      "bytes": 1165,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2019-I-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2019-I-GK.json",
+      "version": "2ebe41be08eb701e765c554debf3d6f354ec47e9e1b3efe9e1fee38ab1c4efce",
+      "bytes": 1616,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2019-II-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2019-II-GK.json",
+      "version": "3d3e742da0e30218db0b2ae558096b37f7a52181e5a996b58e6e34f9ce180913",
+      "bytes": 1395,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2020-I-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2020-I-GK.json",
+      "version": "d2f0e41bc7996a7834d550a9e7045ce51f77b81662473406d22d56e3096120c8",
+      "bytes": 1160,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2020-II-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2020-II-GK.json",
+      "version": "90672a9da10c6b97ce59980a6fbc474b35acc1518595c1f26f36de24d77da914",
+      "bytes": 1395,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2021-I-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2021-I-GK.json",
+      "version": "d050b4c06082c4a959893b43e06330460627ed79cd8e8e3f6fb3f893fae70b87",
+      "bytes": 1160,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2021-II-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2021-II-GK.json",
+      "version": "ef877f8283db2e8cc638621211b20e46f17e90a66fd9d695b3ed7ce2561d0601",
+      "bytes": 935,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2022-I-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2022-I-GK.json",
+      "version": "797566e53f8b34ba34673df4a4be314f8e3dc691a5846163af7d6addef70227b",
+      "bytes": 1388,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2022-II-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2022-II-GK.json",
+      "version": "5171b67e7c0dcc10d39203e498d215bedd6df0710c48f3cee3c7a9e5c4bd72a8",
+      "bytes": 935,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2023-I-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2023-I-GK.json",
+      "version": "ceb19dc439ba4f1590c3bd3343cc068454696aa5052f33f08845232f00b84cfe",
+      "bytes": 1616,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2023-II-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2023-II-GK.json",
+      "version": "2f207d3b2b0e1a708db9a1e7550e9045adf89b610a47046b619cd06da7a4aec6",
+      "bytes": 1395,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2024-II-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2024-II-GK.json",
+      "version": "f1032ca1d291f36a49f39b1da0120e22e80c990b754b34893c1b5602386d46e8",
+      "bytes": 2315,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2025-I-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2025-I-GK.json",
+      "version": "05c1b10c1648722491758d52b62c109d8fa1d1a9a0eca976be192e9d2a423fc5",
+      "bytes": 2300,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/CDS-2026-II-GK.json",
+      "path": "pyq-atlas/v1/answers/CDS-2026-II-GK.json",
+      "version": "f7d9498ded1dddc527962ea16d44bbe6dea7769270cf51c2325dcd495bfb3d25",
+      "bytes": 1165,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPPCS-2018-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPPCS-2018-GS1.json",
+      "version": "de4bc660404305440a74d3b8ea38f0f16a03ed27cc543efbdb398365ee098075",
+      "bytes": 1855,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPPCS-2019-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPPCS-2019-GS1.json",
+      "version": "81b19cab5d997a388072ef85750d1ccce057b5ded2667c9fa71ee1445365c9be",
+      "bytes": 1165,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPPCS-2020-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPPCS-2020-GS1.json",
+      "version": "b839c9409cb34f7b960ba4b35625946b03231f12f99b45ba68233ed372e3bad8",
+      "bytes": 1625,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPPCS-2021-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPPCS-2021-GS1.json",
+      "version": "55ed80014c9efd0baa94c3f94bcb76241ea3a04ccb2ddb7c11df42d7b48d3f82",
+      "bytes": 2545,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPPCS-2022-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPPCS-2022-GS1.json",
+      "version": "076c3c49ef126170ad9923fb6038cc180f730bbe10dc73b818d22bdf98471330",
+      "bytes": 935,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPPCS-2023-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPPCS-2023-GS1.json",
+      "version": "a3ae9245903d86fd9de1d98344044e112493f6c27beccdcb5f792e65aebd404c",
+      "bytes": 1395,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPPCS-2024-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPPCS-2024-GS1.json",
+      "version": "7edc211d454ba2aa6927047183b881548c5d7a11ebbb2f02431a29ca22338b14",
+      "bytes": 1165,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPPCS-2025-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPPCS-2025-GS1.json",
+      "version": "e7f8b63be0443093de1db44d80fd507dfaaf565e722e1063e7f67b1c956c7c87",
+      "bytes": 1855,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-1996-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-1996-GS1.json",
+      "version": "b503605840687e37d23beb65f30e607c9c8a446cf72c4a777b9e0a75e911b987",
+      "bytes": 944,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-1999-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-1999-GS1.json",
+      "version": "9d500c0754b07068b7ae8938b6ef4edb77f57bb0060c7d4bc8a852fed5b711af",
+      "bytes": 944,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2000-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2000-GS1.json",
+      "version": "24efbcedaaaedcf05b0063d4b034c8751c428dd03917f599c21beef85160b531",
+      "bytes": 944,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2001-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2001-GS1.json",
+      "version": "4276b5962bee0e8d9b4ccc048664541c68cc5ceabc6d69e35c914e146faab177",
+      "bytes": 944,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2002-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2002-GS1.json",
+      "version": "49190dff39c1c9e6950303b5f99b8dd63a39070cba154f5a503f5b8f4928f40e",
+      "bytes": 1180,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2003-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2003-GS1.json",
+      "version": "220699a4369db387ebc1a463914154e3796f1b1f05224c6a52b0181c48578b92",
+      "bytes": 944,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2005-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2005-GS1.json",
+      "version": "88224705ce8fc8192766cab07414157a0aec10c66a712740760e5a67a8184c4a",
+      "bytes": 2360,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2006-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2006-GS1.json",
+      "version": "7e828b4a45918194d5cdcf48c64c9e8406435ec057314e772eeab6b0fb4b3c5b",
+      "bytes": 1652,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2007-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2007-GS1.json",
+      "version": "4a461942ef4e4bb2d633fcc06b8e22ae3df7d2c7f547157c4aecd5be21315e02",
+      "bytes": 1888,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2008-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2008-GS1.json",
+      "version": "4a19f447aa8ffda35e92ce4fbe39edc4681d9acec2336081dadfcdb4bb70f543",
+      "bytes": 1652,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2009-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2009-GS1.json",
+      "version": "7e907db89979e5c923e3388dcd0bb968ed69102949f5be5003e2c515c75f1800",
+      "bytes": 1888,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2010-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2010-GS1.json",
+      "version": "3593e95a11140ed2380dac30a97c68f5d31fbe01e2b0c1c56c21f7dfc04d3533",
+      "bytes": 1416,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2011-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2011-GS1.json",
+      "version": "e644b651efee765355f49d209531d93eef12dfe860ece07a762c9fedac5de4e9",
+      "bytes": 944,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2013-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2013-GS1.json",
+      "version": "a26c89bb1a1a20abe99dcc2add1a33ec9c016e8712d5ba4c8fd46fbfa369cf0c",
+      "bytes": 1180,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2014-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2014-GS1.json",
+      "version": "dbc2638fcb412bdbb149b44ab45753de6c0e0a07310179530b48a81f2d4ed9f4",
+      "bytes": 1888,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2015-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2015-GS1.json",
+      "version": "d37506cded9efb90dfa1f3ccb47607b6e1c5c9f45c854b388c06750d27c5e540",
+      "bytes": 1180,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2016-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2016-GS1.json",
+      "version": "6d7050a5476af485866588895322ed0620f88f7599f1f87ea3bc4d2b05f47a25",
+      "bytes": 944,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2017-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2017-GS1.json",
+      "version": "5619c1d99ddeaf4638864657db7f46b061612b4cbee9d8a9baf0cae1afb37745",
+      "bytes": 1416,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2018-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2018-GS1.json",
+      "version": "dfd9480ab21122165fa3d74f36fe643a8d8ed3ba9fd7f048f62d0b23d760cc73",
+      "bytes": 944,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2019-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2019-GS1.json",
+      "version": "6073f5e3aec2e9d8b1ce88721767578554f8c108f592cc5459841348feb7d680",
+      "bytes": 1416,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2020-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2020-GS1.json",
+      "version": "b9af3791f8a9d44a27f7e72b184a8a0a53bd97f2c2b2ac763638efbac5bb6bf1",
+      "bytes": 1180,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2021-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2021-GS1.json",
+      "version": "3c648ad9e4c8317d9dfc9d9c3df6581f0154519a8ecc1685c9df000e86c91804",
+      "bytes": 1180,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2022-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2022-GS1.json",
+      "version": "0801cf36fa7b92556ddaf588cb51f2aef4b735489ad01796d2e7a2295bf29a7e",
+      "bytes": 1180,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2023-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2023-GS1.json",
+      "version": "1e46969bca8a882aa7125ad53048f64afbb57e9ea88a47e1e8b342762ce6d621",
+      "bytes": 944,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2024-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2024-GS1.json",
+      "version": "7beef602cacda44a9feee7f26feb01853a7883f4be9dd7e77e22396782d52ce3",
+      "bytes": 1652,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/answers/UPSC-CSE-2026-GS1.json",
+      "path": "pyq-atlas/v1/answers/UPSC-CSE-2026-GS1.json",
+      "version": "17bafa835b36841c10b226f9c92bba174a69cd516e0170bdfb7c18166aad0da3",
+      "bytes": 2596,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/manifest.json",
+      "path": "pyq-atlas/v1/manifest.json",
+      "version": "80eb20097d1a88beb5727a2729b22b9ad881b2a7e51be465ee0f80616a62ed6a",
+      "bytes": 18932,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2018-I-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2018-I-GK.json",
+      "version": "95f73341bf048c537208db0ee9248d9e306d15f6c88e89319ef08fdbc7446fbd",
+      "bytes": 5724,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2018-II-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2018-II-GK.json",
+      "version": "e0833602d67646bdeb19eb0ac1c9c1aec4f9d90911e8d50c60783b0115683718",
+      "bytes": 4315,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2019-I-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2019-I-GK.json",
+      "version": "501562c8947f69e2b281894125baa5aca5b22b184b21a899aed8df95cbdd570d",
+      "bytes": 7442,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2019-II-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2019-II-GK.json",
+      "version": "19de6497a81df3707c87b3e02b55808e6016978dfe889d2fee73e33eea13c896",
+      "bytes": 6656,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2020-I-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2020-I-GK.json",
+      "version": "f528e5209642422ac23ddfadefd5e8daf0e68ecad870eb53361114e06949a4df",
+      "bytes": 4460,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2020-II-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2020-II-GK.json",
+      "version": "271f8f5d18ac1e1cd6e4d35fd061d7edb9445ad290c42fa630921288589410a3",
+      "bytes": 5892,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2021-I-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2021-I-GK.json",
+      "version": "0d3b1eb51346333f979a32b33395f6ac5b9adc60c04fcef27998743e16c1297f",
+      "bytes": 5274,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2021-II-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2021-II-GK.json",
+      "version": "c3a726923788465d19885f413444f60c0739cc7e4d420cd5ff377363e8ec0737",
+      "bytes": 2185,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2022-I-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2022-I-GK.json",
+      "version": "fbbe63ce996c037e633db36767aa3d748a86ad7b677b175e3f01b696ec2ab59d",
+      "bytes": 7287,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2022-II-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2022-II-GK.json",
+      "version": "99aac5b951daf83aa2c29d6fd558a325d6e148fa146848be643d6b70640b40c8",
+      "bytes": 2469,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2023-I-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2023-I-GK.json",
+      "version": "5cb4f27b136e69c54d35958c75edb594b954ee053462cca6c6f28707d9384888",
+      "bytes": 13453,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2023-II-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2023-II-GK.json",
+      "version": "2c757188cc5f6cfa57e466fccaa9e02062f56843643259b624649ffe140c8405",
+      "bytes": 6946,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2024-II-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2024-II-GK.json",
+      "version": "2efd589b4fdb045c1a7b6f722633c3eb48781141da54ada623d0b38888ebac54",
+      "bytes": 18303,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2025-I-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2025-I-GK.json",
+      "version": "5cb6d0eba05dbc89fc953e4e960303309c190113451b16c9071d17d6e4fdd6a2",
+      "bytes": 16303,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/CDS-2026-II-GK.json",
+      "path": "pyq-atlas/v1/papers/CDS-2026-II-GK.json",
+      "version": "9db80966917c2f0624f7cfba7acc2c18351b9fa9f88361c78f6204d3b01d63d5",
+      "bytes": 3604,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPPCS-2018-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPPCS-2018-GS1.json",
+      "version": "5c2eb26c24bad7196dfd123529bf5c494953409edd2de3ba36d09dbc46ccd5f8",
+      "bytes": 9375,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPPCS-2019-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPPCS-2019-GS1.json",
+      "version": "70c6bb1b3705fb00277501d01aac33e9c01b9e57fc3c6c140902b8259b5cdf52",
+      "bytes": 8570,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPPCS-2020-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPPCS-2020-GS1.json",
+      "version": "fefddb245ab04d7ee641f634236205ae53c5ed24bceb2eb78b8558529245080b",
+      "bytes": 10361,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPPCS-2021-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPPCS-2021-GS1.json",
+      "version": "807b56b6b9b29ce44aebf9974b0cd21fc4f5992d65847c0fb9529f1a5aaae103",
+      "bytes": 18227,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPPCS-2022-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPPCS-2022-GS1.json",
+      "version": "e5bea2afee87cc9f78e80ffeef4bec4914f5eb17b8035a87703bdefe0a78bb5b",
+      "bytes": 2823,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPPCS-2023-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPPCS-2023-GS1.json",
+      "version": "cac1d186c5f1f7f44805925fe5c3d7a6975d0c83ed820e43e57c74f7ae1367af",
+      "bytes": 7638,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPPCS-2024-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPPCS-2024-GS1.json",
+      "version": "89a2f08708625f7f718adae3f27b550de2491d67eaaa30477e657f33ad562c6c",
+      "bytes": 9274,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPPCS-2025-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPPCS-2025-GS1.json",
+      "version": "35c7762cf07f70e7b77721a04dad2250b593709c26028f81b447e8a1a587b403",
+      "bytes": 13206,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-1996-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-1996-GS1.json",
+      "version": "fc3dda5311def8458d85a7305e24523584b04b222e7861180f6169d75dcfd26f",
+      "bytes": 2889,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-1999-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-1999-GS1.json",
+      "version": "50025964bf45098087e05dcfe8aabf00fca434ed2b46062c5285266ed70ba722",
+      "bytes": 2405,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2000-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2000-GS1.json",
+      "version": "0221de44899f9a2d54db0254063ca06db6e401a1dc03edcca1dd2bcbabc03447",
+      "bytes": 4410,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2001-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2001-GS1.json",
+      "version": "f761a2bbc0fb7653a395f25ed17665ae1130b31266848d88305b067035a8e0c6",
+      "bytes": 1887,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2002-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2002-GS1.json",
+      "version": "3fbefbd83ea45d45537da56a751a89ef682e952c21d2d4867d38ba2b82f133f0",
+      "bytes": 4003,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2003-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2003-GS1.json",
+      "version": "a5590b124be61332f4576ac63089f50bda45eae82c55bf6d6c8ebd78209b9a0a",
+      "bytes": 1852,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2005-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2005-GS1.json",
+      "version": "a6bf1f64e4aebf64cbae0718784bd0842066ae350eb04ce8dd67854f660d6640",
+      "bytes": 14442,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2006-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2006-GS1.json",
+      "version": "a8fe454680329daca7e0d7444b17364c9074dbbfb3e72013760db8b250fe226f",
+      "bytes": 9311,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2007-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2007-GS1.json",
+      "version": "d2f53afc83f7768c4a77a3b118a9f6acfd06eaec0ef5174c9551714bcdea0e10",
+      "bytes": 8903,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2008-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2008-GS1.json",
+      "version": "b128a3c13a7dd8754c00b70e88aa794d7f49694a1e0c78c3bf74a457f83c3999",
+      "bytes": 8615,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2009-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2009-GS1.json",
+      "version": "dfcf5e070e65be16a5fe0908db43131069a75e4cc122ec0e39e6bf91f724d100",
+      "bytes": 12524,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2010-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2010-GS1.json",
+      "version": "2d05f68c27ddd06929b522ae6a0a1ad8b77288db5b0256880702dce70c798fe3",
+      "bytes": 5614,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2011-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2011-GS1.json",
+      "version": "8360368b174c2d607c58560a393d677af460291720ddae638712694f7567d603",
+      "bytes": 3190,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2013-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2013-GS1.json",
+      "version": "6784ae9174180111da5f432802759a82696a7477ace407df8bcb94595949e882",
+      "bytes": 6023,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2014-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2014-GS1.json",
+      "version": "c88faffbe649abaf4dcd4c6e73f81b834d22388ef977348439c30bbb47950242",
+      "bytes": 17448,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2015-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2015-GS1.json",
+      "version": "ca311eece7929b11562b6be73ab71643675c233a8e772e959de67192c95d4317",
+      "bytes": 5376,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2016-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2016-GS1.json",
+      "version": "d48d0592ab268fd2a2dcbc6a3ff66a79cc9ab53a382e176db84f921b760b601b",
+      "bytes": 3435,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2017-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2017-GS1.json",
+      "version": "7576f38ccd49f8a2c187fa9f846b8e0dbe4445bb8f759b9cee9562d4a1333f3f",
+      "bytes": 8710,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2018-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2018-GS1.json",
+      "version": "59914ebe45bdb7892f9747beb34511036c4c39793e72763771a31ff27ff0131a",
+      "bytes": 2850,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2019-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2019-GS1.json",
+      "version": "3e8a67a0ea7efe872ff2577affc6431d67070cdbb1c39ef2a5c7cb1ed569d5a2",
+      "bytes": 11975,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2020-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2020-GS1.json",
+      "version": "c3bf02dbc47b7765f5efb72953281714889e7095653824406a0492769cf319c2",
+      "bytes": 6825,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2021-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2021-GS1.json",
+      "version": "876393aa7bc2be366c845493faf2425cdacbfa344b447197f4b742a159942d47",
+      "bytes": 6852,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2022-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2022-GS1.json",
+      "version": "1d853dcd4600d5d854da5c3d468b2627f017dd6b0f4b03c948dfa8d602f1b342",
+      "bytes": 5351,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2023-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2023-GS1.json",
+      "version": "3459a85a01b6bebe17398ab65a9c4763187b474a340ed8deb65c404d27d956e9",
+      "bytes": 2655,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2024-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2024-GS1.json",
+      "version": "630207a078bc92a4ca996ca4e6be0f200983ca7566f55ca891e86210b59a5586",
+      "bytes": 11882,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/papers/UPSC-CSE-2026-GS1.json",
+      "path": "pyq-atlas/v1/papers/UPSC-CSE-2026-GS1.json",
+      "version": "b7b51f5e7553723516942d3bb2e2cd34da863071c0d65754f6d8da8f63ec72cd",
+      "bytes": 23507,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "pyq-atlas/v1/place-pyq-index.json",
+      "path": "pyq-atlas/v1/place-pyq-index.json",
+      "version": "c9a7ecc098adadcb1c4c0455b398ee353087d0bce14f02adfb44844c6d52ba3f",
+      "bytes": 55614,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    }
+  ],
+  "totalBytes": 5762934
+}

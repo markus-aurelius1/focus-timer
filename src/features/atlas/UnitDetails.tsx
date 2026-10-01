@@ -12,8 +12,7 @@ export function UnitDetails({ ex, unit, onSelect }: { ex: Exploration; unit: { t
   const key = state ? state.id : (country?.iso ?? unit.id)
   const dev = developmentOf(ex, key)
   const level = masteryFn(ex)
-  const places = (atlas.inUnit.get(key) ?? []).filter((p) => ex.state.discovered.has(p.id)).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
-  const explored = ex.state.explored.has(key)
+  const places = [...(atlas.inUnit.get(key) ?? [])].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
   const name = state?.name ?? country?.name ?? unit.id
   const bar = (n: number, colour: string, label: string) => (
     <div className="flex items-center gap-2 text-[12px] font-semibold text-ink-2">
@@ -46,11 +45,11 @@ export function UnitDetails({ ex, unit, onSelect }: { ex: Exploration; unit: { t
 
       <div className="mt-4 rounded-2xl bg-surface-2 p-3.5">
         <p className="flex items-baseline justify-between">
-          <span className="text-[14px] font-bold">{explored ? DEVELOPMENT_LABEL[dev.level] : 'Unexplored'}</span>
-          <span className="text-[12px] text-ink-3">{explored ? DEVELOPMENT_HINT[dev.level] : 'Focus to explore it'}</span>
+          <span className="text-[14px] font-bold">{DEVELOPMENT_LABEL[dev.level]}</span>
+          <span className="text-[12px] text-ink-3">{DEVELOPMENT_HINT[dev.level]}</span>
         </p>
         <div className="mt-2.5 space-y-1.5">
-          {bar(dev.discovered, 'var(--ink-3)', 'Discovered')}
+          {bar(dev.discovered, 'var(--ink-3)', 'Travelled')}
           {bar(dev.familiar, MASTERY_COLOUR.familiar, 'Familiar')}
           {bar(dev.strong, MASTERY_COLOUR.strong, 'Strong')}
           {bar(dev.mastered, MASTERY_COLOUR.mastered, 'Mastered')}
@@ -80,7 +79,7 @@ export function UnitDetails({ ex, unit, onSelect }: { ex: Exploration; unit: { t
 
       <div className="mt-4">
         <p className="text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">
-          Discovered here · {places.length} of {dev.total}
+          Accessible here · {places.length} places
         </p>
         {places.length ? (
           <ul className="mt-1.5 grid gap-1 sm:grid-cols-2">
@@ -98,7 +97,7 @@ export function UnitDetails({ ex, unit, onSelect }: { ex: Exploration; unit: { t
             })}
           </ul>
         ) : (
-          <p className="mt-1.5 text-[14px] text-ink-2">Nothing discovered here yet.</p>
+          <p className="mt-1.5 text-[14px] text-ink-2">No gazetteer places recorded here.</p>
         )}
       </div>
     </div>

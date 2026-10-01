@@ -1,3 +1,5 @@
+import { ContextMoment } from '@/tars/ContextMoment'
+import { executeAction } from '@/tars/runtime'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown, Flame, Headphones, Maximize2, Minus, Pause, Play, Plus, Settings2, SkipForward, Square, Target } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
@@ -15,6 +17,7 @@ import { byPriorityThenOrder, compareTasks, isOverdue, isToday } from '@/planner
 import { elapsedMs, remainingMs, type TimerState } from '@/timer/engine'
 import { PHASE_LABEL, useTimer } from '@/timer/store'
 import { useNow } from '@/timer/useNow'
+import { useDay } from '@/lib/useDay'
 import { Button, Card, IconButton, Segmented } from '@/ui/controls'
 import { EmptyState } from '@/ui/feedback'
 import { EASE_OUT, T } from '@/ui/motion'
@@ -43,6 +46,7 @@ export function FocusScreen() {
     <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pt-safe sm:px-6 lg:h-dvh">
       <div className="flex min-h-[calc(100svh-84px-env(safe-area-inset-bottom)-env(safe-area-inset-top))] flex-col lg:min-h-0 lg:flex-1">
         <FocusHeader />
+        <ContextMoment />
         <div className="flex flex-1 flex-col lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] lg:gap-10">
           <TimerPanel />
           {desktop && <TodayPanel />}
@@ -64,7 +68,7 @@ function useFocusShortcuts() {
       if (ui.immersive) return
       if (e.code === 'Space') {
         e.preventDefault()
-        useTimer.getState().toggle()
+        void executeAction(useTimer.getState().timer.status === 'running' ? 'timer.pause' : useTimer.getState().timer.status === 'paused' ? 'timer.resume' : 'timer.start', {})
       } else if (e.key === 'f') {
         ui.set({ immersive: true })
         void enterFullscreen()
@@ -78,13 +82,13 @@ function useFocusShortcuts() {
 function FocusHeader() {
   const soundPlaying = useAudio((s) => s.playing)
   const status = useTimer((s) => s.timer.status)
-  const today = todayKey()
+  const today = useDay()
   return (
     <header className="flex shrink-0 items-center justify-between gap-3 py-4">
       <div className="min-w-0">
         <p className="text-xs font-bold tracking-[0.12em] text-ink-3 uppercase">{longDate(today)}</p>
         <AnimatePresence mode="wait" initial={false}>
-          <motion.p key={status === 'idle' ? 'idle' : 'zone'} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0, transition: T.base }} exit={{ opacity: 0, y: -4, transition: T.exit }} className="font-display truncate text-lg font-medium">
+          <motion.p key={status === 'idle' ? 'idle' : 'zone'} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0, transition: T.base }} exit={{ opacity: 0, y: -4, transition: T.exit }} className="truncate text-base font-semibold">
             {status === 'idle' ? greeting() : status === 'paused' ? 'Taking a pause' : 'In the zone'}
           </motion.p>
         </AnimatePresence>
@@ -228,7 +232,7 @@ function TimerPanel() {
   const onStop = () => {
     const minMs = settings.minSessionSeconds * 1000
     if (timer.phase === 'focus' && el >= minMs) setStopOpen(true)
-    else useTimer.getState().stop()
+    else void executeAction('timer.stop', {})
   }
 
   return (
@@ -292,7 +296,7 @@ function TimerPanel() {
           </button>
         )}
       </div>
-      <div className="chrome-dim w-full">
+      <div className="chrome-dim w-full pr-24 sm:pr-0">
         <ExpeditionStrip />
       </div>
 
@@ -308,7 +312,7 @@ function TimerPanel() {
               block
               onClick={() => {
                 setStopOpen(false)
-                useTimer.getState().stop()
+                void executeAction('timer.stop', {})
               }}
             >
               Save {formatDuration(el / 1000)} and stop
@@ -318,7 +322,7 @@ function TimerPanel() {
               block
               onClick={() => {
                 setStopOpen(false)
-                useTimer.getState().stop({ discard: true })
+                void executeAction('timer.stop', { discard:true })
               }}
             >
               Discard and reset
@@ -353,7 +357,7 @@ function CycleSlabs({ done, total, color }: { done: number; total: number; color
 }
 
 function Controls({ timer, onStop }: { timer: TimerState; onStop: () => void }) {
-  const { start, pause, skip, adjust } = useTimer.getState()
+  const { skip, adjust } = useTimer.getState()
   const idle = timer.status === 'idle'
   const running = timer.status === 'running'
   const adjustable = timer.targetMs !== null
@@ -368,7 +372,7 @@ function Controls({ timer, onStop }: { timer: TimerState; onStop: () => void }) 
           <Square className="size-[17px] fill-current" />
         </SideControl>
       )}
-      <MainButton timer={timer} onClick={() => (running ? pause() : start())} />
+      <MainButton timer={timer} onClick={() => (void executeAction(running ? 'timer.pause' : timer.status === 'paused' ? 'timer.resume' : 'timer.start', {}))} />
       {idle ? (
         <SideControl label="+5 min" hint="5 minutes more" disabled={!adjustable} onClick={() => adjust(5 * MINUTE)}>
           <Plus className="size-5" />

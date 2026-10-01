@@ -1,6 +1,7 @@
-import { Check, ChevronDown, Flag, Lock, Pause, Play } from 'lucide-react'
+import { Check, ChevronDown, Flag, Pause, Play } from 'lucide-react'
 import { useState } from 'react'
-import { startExpedition, stopExpedition } from '@/atlas/actions'
+import { executeAction } from '@/tars/runtime'
+import { stopExpedition } from '@/atlas/actions'
 import type { ExpeditionProgress } from '@/atlas/explore'
 import type { Expedition } from '@/atlas/types'
 import type { Exploration } from '@/atlas/useExploration'
@@ -78,8 +79,9 @@ function ExpeditionRow({
   const reached = p?.reached ?? 0
   const status = p?.complete ? 'Complete' : active ? 'Active' : p && p.minutes > 0 ? 'Paused' : 'Not started'
   const start = async () => {
+    const result = await executeAction('atlas.startExpedition', { expeditionId:e.id })
+    if (!result.ok) return
     haptics.success()
-    await startExpedition(e.id)
     toast({ title: `${e.title} is now active`, body: 'Your next focus session moves it on.', tone: 'celebrate' })
   }
   const gate = p?.blockedBy
@@ -142,8 +144,8 @@ function ExpeditionRow({
                             st?.reached ? 'border-transparent bg-surface-3' : next ? 'border-accent text-accent' : 'border-dashed border-line text-ink-3',
                           )}
                         >
-                          {st?.reached ? <Check className="size-3" /> : !next && <Lock className="size-3" />}
-                          {st?.reached || next ? place.name : '· · ·'}
+                          {st?.reached ? <Check className="size-3" /> : <Flag className="size-3" />}
+                          {place.name}
                         </button>
                       </li>
                     )

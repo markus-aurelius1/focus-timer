@@ -1,6 +1,6 @@
 /** Focus-screen link to the Atlas: where the next minutes lead, and break-time recall. */
 import { Flag, GraduationCap } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { navigate } from '@/app/router'
 import { useExploration } from '@/atlas/useExploration'
 import { useSettings } from '@/data/hooks'
@@ -9,7 +9,8 @@ import { useTimer } from '@/timer/store'
 import { useNow } from '@/timer/useNow'
 import { cn } from '@/lib/cn'
 import { expeditionStatus } from '@/features/atlas/AtlasPanel'
-import { FieldReviewSheet, type ReviewRequest } from '@/features/atlas/FieldReview'
+import type { ReviewRequest } from '@/features/atlas/FieldReview'
+const FieldReviewSheet = lazy(() => import('@/features/atlas/FieldReview').then(m => ({ default:m.FieldReviewSheet })))
 import { minutesText } from '@/features/atlas/util'
 
 export function ExpeditionStrip() {
@@ -53,7 +54,7 @@ export function ExpeditionStrip() {
           <GraduationCap className="size-3.5" /> Two quick questions while you rest
         </button>
       )}
-      <FieldReviewSheet request={review} onClose={() => setReview(null)} />
+      {review && <Suspense fallback={null}><FieldReviewSheet request={review} onClose={() => setReview(null)} /></Suspense>}
     </div>
   )
 }

@@ -27,7 +27,7 @@ export function Onboarding() {
 
   if (open && step === 1) {
     return (
-      <Sheet open={open} onClose={finish} size="md" bare>
+      <Sheet open={open} onClose={finish} size="md" bare label="Welcome to Tars">
         <div className="px-6 pt-6 pb-6 sm:px-8 sm:pt-10">
           <h2 className="font-display text-[28px] leading-tight font-medium tracking-tight">Choose your base camp</h2>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-2">Your home state starts explored on the Atlas. Your first expedition sets out from here, and you can move it any time.</p>
@@ -43,7 +43,7 @@ export function Onboarding() {
   }
 
   return (
-    <Sheet open={open} onClose={finish} size="md" bare>
+    <Sheet open={open} onClose={finish} size="md" bare label="Choose your base camp">
       <div className="px-6 pt-6 pb-6 sm:px-8 sm:pt-10">
         <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-accent-soft">
           <LogoMark className="size-8 text-accent" />

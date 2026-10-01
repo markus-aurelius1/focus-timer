@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
 import { readFileSync } from 'node:fs'
+import currentAffairs from './api/current-affairs.ts'
 
 // BASE lets the PWA be hosted from a sub-path (e.g. GitHub Pages). Capacitor uses '/'.
 const base = process.env.BASE ?? '/'
@@ -28,6 +29,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    { name: 'current-affairs-gateway', configureServer(server) { server.middlewares.use('/api/current-affairs', currentAffairs) }, configurePreviewServer(server) { server.middlewares.use('/api/current-affairs', currentAffairs) } },
     { name: 'site-url', transformIndexHtml: (html) => html.replaceAll('%SITE_URL%', siteUrl) },
     VitePWA({
       registerType: 'prompt',
@@ -84,7 +86,24 @@ export default defineConfig({
       },
       workbox: {
         // The Atlas (sheets, relief plates, gazetteer) is precached so the map works offline from the first launch.
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest,json,webp}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest,json,webp}', 'atlas/**/*.txt'],
+        // The measured curated subset is <0.6 MiB: precache data for first-launch offline,
+        // while application loading/validation stays paper-lazy. Hash queries select the same precached bytes.
+        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^hash$/],
+        runtimeCaching: [
+          { urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname === '/api/current-affairs', handler: 'NetworkFirst', options: {
+            cacheName: 'current-affairs-v1', networkTimeoutSeconds: 12, cacheableResponse: { statuses: [200] }, expiration: { maxEntries: 1 },
+            // navigator.onLine can stay true without internet access, including a cached reload.
+            plugins: [{ cachedResponseWillBeUsed: async ({ cachedResponse }) => {
+              if (!cachedResponse) return undefined
+              const headers = new Headers(cachedResponse.headers)
+              headers.set('X-Tars-News-Cache', 'hit')
+              return new Response(cachedResponse.body, { status: cachedResponse.status, statusText: cachedResponse.statusText, headers })
+            } }],
+          } },
+          { urlPattern: /\/pyq-atlas\/v1\/manifest\.json$/, handler: 'NetworkFirst', options: { cacheName: 'atlas-pyq-manifest-v1', networkTimeoutSeconds: 3, cacheableResponse: { statuses: [200] } } },
+          { urlPattern: /\/pyq-atlas\/v1\/(?:papers\/|answers\/|place-pyq-index\.json)/, handler: 'CacheFirst', options: { cacheName: 'atlas-pyq-packs-v1', cacheableResponse: { statuses: [200] }, expiration: { maxEntries: 160 } } },
+        ],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,

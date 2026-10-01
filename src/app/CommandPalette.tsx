@@ -3,63 +3,17 @@
  * or capture a new one in natural language ("Physics revision tomorrow 5pm #exam").
  */
 import { AnimatePresence, motion } from 'motion/react'
-import {
-  CalendarDays,
-  ChartNoAxesColumn,
-  CheckCircle2,
-  CornerDownLeft,
-  Expand,
-  Headphones,
-  Keyboard,
-  ListTodo,
-  Map as MapIcon,
-  Moon,
-  PanelLeft,
-  Pause,
-  Play,
-  Plus,
-  Search,
-  Settings2,
-  SlidersHorizontal,
-  Square,
-  Sun,
-  SunMoon,
-  Target,
-  Timer,
-  type LucideIcon,
-} from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { CornerDownLeft, Search } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { updateSettings, useLabels, useOpenTasks, useProjects, useSettings } from '@/data/hooks'
-import type { Task } from '@/data/types'
 import { cn } from '@/lib/cn'
-import { relativeDayLabel, todayKey } from '@/lib/time'
-import { inferSubject, parseQuickAdd } from '@/planner/quickAdd'
-import { addFromQuickAdd } from '@/planner/tasks'
-import { enterFullscreen } from '@/services/fullscreen'
 import { haptics } from '@/services/haptics'
-import { PHASE_LABEL, useTimer } from '@/timer/store'
 import { DUR, EASE_IN, T } from '@/ui/motion'
 import { lockScroll } from '@/ui/scrollLock'
 import { isTopLayer, pushLayer, trapTab } from '@/ui/Sheet'
-import { toast } from '@/ui/toast'
 import { useIsWide } from '@/ui/useMedia'
-import { quickAddChips } from '@/features/tasks/quickAddChips'
-import { navigate, useRoute } from './router'
-import { modKey } from './shortcuts'
+import { useCommands, type Command } from '@/tars/commands'
 import { useUi } from './ui-store'
-
-interface Command {
-  id: string
-  section: string
-  label: string
-  hint?: string
-  keywords?: string
-  icon: LucideIcon
-  /** Key hint shown on the right. */
-  keys?: string
-  run: () => void | Promise<void>
-}
 
 const close = () => useUi.getState().set({ paletteOpen: false })
 
@@ -100,7 +54,8 @@ function Palette() {
     }
   }, [id])
 
-  useEffect(() => setActive(0), [query])
+  const needsChoice = commands[0]?.requiresChoice ?? false
+  useEffect(() => setActive(needsChoice ? -1 : 0), [query, needsChoice])
   useEffect(() => {
     list.current?.querySelector<HTMLElement>(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' })
   }, [active])
@@ -150,9 +105,10 @@ function Palette() {
                 void run(commands[active])
               }
             }}
-            placeholder="Search, go to, or type a new task…"
+            placeholder="Ask Tars, find a place, or capture a task…"
             className="h-14 min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-3"
             role="combobox"
+            aria-label="Search and commands"
             aria-expanded="true"
             aria-controls={`${id}-list`}
             aria-activedescendant={commands[active] ? `${id}-${active}` : undefined}
@@ -208,116 +164,4 @@ function Palette() {
       </motion.div>
     </div>
   )
-}
-
-function score(text: string, q: string): number {
-  const t = text.toLowerCase()
-  const words = q.toLowerCase().split(/\s+/).filter(Boolean)
-  let s = 0
-  for (const w of words) {
-    const i = t.indexOf(w)
-    if (i < 0) return 0
-    s += i === 0 ? 3 : /\s/.test(t[i - 1] ?? '') ? 2 : 1
-  }
-  return s
-}
-
-function useCommands(query: string): Command[] {
-  const route = useRoute()
-  const timer = useTimer((s) => s.timer)
-  const settings = useSettings()
-  const tasks = useOpenTasks()
-  const labels = useLabels()
-  const projects = useProjects()
-  const collapsed = useUi((s) => s.sidebarCollapsed)
-  const today = todayKey()
-
-  return useMemo(() => {
-    const q = query.trim()
-    const ui = useUi.getState()
-    const t = useTimer.getState()
-    const running = timer.status === 'running'
-    const idle = timer.status === 'idle'
-
-    const base: Command[] = [
-      running
-        ? { id: 'pause', section: 'Timer', label: 'Pause timer', icon: Pause, keywords: 'stop break timer', keys: 'Space', run: () => t.pause() }
-        : { id: 'start', section: 'Timer', label: idle ? `Start ${PHASE_LABEL[timer.phase].toLowerCase()}` : 'Resume timer', icon: Play, keywords: 'start focus timer pomodoro begin', keys: 'Space', run: () => t.start() },
-      ...(!idle ? [{ id: 'stop', section: 'Timer', label: 'Stop timer', icon: Square, keywords: 'end finish', run: () => t.stop() }] : []),
-      { id: 'immersive', section: 'Timer', label: 'Immersive focus', hint: 'Full-screen, distraction-free clock', icon: Expand, keywords: 'fullscreen zen', run: () => { navigate('#/focus'); ui.set({ immersive: true }); void enterFullscreen() } },
-      { id: 'context', section: 'Timer', label: 'What are you working on?', hint: 'Pick a subject, task and intention', icon: Target, keywords: 'subject task intention', run: () => ui.set({ contextOpen: true }) },
-      { id: 'sounds', section: 'Timer', label: 'Sounds', hint: 'Soundscapes and music', icon: Headphones, keywords: 'ambient rain noise music', keys: 'S', run: () => ui.set({ soundOpen: true }) },
-      { id: 'profiles', section: 'Timer', label: 'Timer profiles', hint: 'Pomodoro, countdown, stopwatch', icon: SlidersHorizontal, keywords: 'mode stopwatch countdown pomodoro length', run: () => ui.set({ profileOpen: true }) },
-      { id: 'new-task', section: 'Tasks', label: 'New task…', hint: 'With subject, tags, dates and more', icon: Plus, keywords: 'add create todo', keys: 'N', run: () => ui.newTask({ plannedFor: today }) },
-      { id: 'go-focus', section: 'Go to', label: 'Focus', icon: Timer, keys: 'G F', run: () => navigate('#/focus') },
-      { id: 'go-today', section: 'Go to', label: 'Tasks · Today', icon: ListTodo, keys: 'G T', keywords: 'plan', run: () => navigate('#/tasks?view=today') },
-      { id: 'go-upcoming', section: 'Go to', label: 'Tasks · Upcoming', icon: ListTodo, run: () => navigate('#/tasks?view=upcoming') },
-      { id: 'go-inbox', section: 'Go to', label: 'Tasks · Inbox', icon: ListTodo, run: () => navigate('#/tasks?view=inbox') },
-      { id: 'go-projects', section: 'Go to', label: 'Tasks · Projects', icon: ListTodo, run: () => navigate('#/tasks?view=projects') },
-      { id: 'go-habits', section: 'Go to', label: 'Tasks · Habits', icon: ListTodo, run: () => navigate('#/tasks?view=habits') },
-      { id: 'go-atlas', section: 'Go to', label: 'Atlas', icon: MapIcon, keys: 'G A', keywords: 'map geography', run: () => navigate('#/atlas') },
-      { id: 'go-calendar', section: 'Go to', label: 'Calendar', icon: CalendarDays, keys: 'G C', keywords: 'schedule events', run: () => navigate('#/calendar') },
-      { id: 'go-insights', section: 'Go to', label: 'Insights', icon: ChartNoAxesColumn, keys: 'G I', keywords: 'stats analytics progress', run: () => navigate('#/insights') },
-      { id: 'go-settings', section: 'Go to', label: 'Settings', icon: Settings2, keys: 'G S', keywords: 'preferences', run: () => navigate('#/settings') },
-      ...(route.name === 'atlas'
-        ? [{ id: 'atlas-full', section: 'Atlas', label: ui.atlasFullscreen ? 'Exit full-screen map' : 'Full-screen map', icon: Expand, keys: '⇧F', run: () => window.dispatchEvent(new CustomEvent('tars:atlas-fullscreen')) }]
-        : []),
-      { id: 'theme-light', section: 'Appearance', label: 'Theme: Paper (light)', icon: Sun, keywords: 'light mode theme', run: () => void updateSettings({ theme: 'light' }) },
-      { id: 'theme-dark', section: 'Appearance', label: 'Theme: Night (dark)', icon: Moon, keywords: 'dark mode theme', run: () => void updateSettings({ theme: 'dark' }) },
-      { id: 'theme-auto', section: 'Appearance', label: 'Theme: Auto', hint: settings.theme === 'system' ? 'Current' : 'Follow the system', icon: SunMoon, keywords: 'system theme', run: () => void updateSettings({ theme: 'system' }) },
-      { id: 'sidebar', section: 'Appearance', label: collapsed ? 'Expand sidebar' : 'Collapse sidebar', icon: PanelLeft, keys: `${modKey}\\`, run: () => ui.toggleSidebar() },
-      { id: 'shortcuts', section: 'Help', label: 'Keyboard shortcuts', icon: Keyboard, keys: '?', run: () => ui.set({ shortcutsOpen: true }) },
-    ]
-
-    if (!q) return base.filter((c) => c.section !== 'Appearance' || c.id.startsWith('sidebar') || c.id === 'theme-' + (settings.theme === 'dark' ? 'light' : 'dark'))
-
-    const matches = base
-      .map((c) => ({ c, s: score(`${c.label} ${c.keywords ?? ''} ${c.section}`, q) }))
-      .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s)
-      .map((x) => x.c)
-
-    const taskHits: Command[] = tasks
-      .map((task) => ({ task, s: score(task.title, q) }))
-      .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s)
-      .slice(0, 6)
-      .map(({ task }) => taskCommand(task, today, projects.find((p) => p.id === task.projectId)?.name))
-
-    // Capture: always offer to add what was typed as a task, parsed like quick add.
-    const parsed = parseQuickAdd(q, today)
-    const subject = parsed.labelName ? undefined : inferSubject(parsed.title, labels)
-    const chips = quickAddChips(parsed, today, subject?.name)
-    const add: Command[] = parsed.title
-      ? [
-          {
-            id: 'add',
-            section: 'Create',
-            label: `Add task “${parsed.title}”`,
-            hint: chips.length ? chips.join(' · ') : 'Press Enter to add it to your inbox',
-            icon: Plus,
-            run: async () => {
-              const task = await addFromQuickAdd(parsed, { labelId: subject?.id ?? null })
-              if (task) toast({ title: 'Task added', body: task.title, tone: 'success', action: { label: 'Open', run: () => useUi.getState().openTask(task.id) } })
-            },
-          },
-        ]
-      : []
-
-    // A strong command match goes first; otherwise creating the task is the likely intent.
-    const strong = matches.length && score(matches[0].label, q) >= 3
-    return strong ? [...matches, ...taskHits, ...add] : [...add, ...taskHits, ...matches]
-  }, [query, timer, settings.theme, tasks, labels, projects, collapsed, route.name, today])
-}
-
-function taskCommand(task: Task, today: string, project?: string): Command {
-  const day = task.dueDate ?? task.plannedFor
-  return {
-    id: `task-${task.id}`,
-    section: 'Tasks',
-    label: task.title,
-    hint: [project, day ? `${task.dueDate ? 'Due ' : ''}${relativeDayLabel(day, today)}` : null].filter(Boolean).join(' · ') || 'Open task',
-    icon: CheckCircle2,
-    run: () => useUi.getState().openTask(task.id),
-  }
 }

@@ -230,11 +230,13 @@ export type RecallSource = 'review' | 'card' | 'break' | 'checkpoint'
 /** One answered recall question. Mastery is always derived from these. */
 export interface RecallAttempt extends Entity {
   placeId: string
-  type: QuestionType
+  type: QuestionType | 'pyq'
   correct: 0 | 1
   at: number
   date: DayKey
   source: RecallSource
+  /** Canonical attempts are history, not bodies or mutable progression counters. Optional, non-indexed v2 extension. */
+  pyq?: { canonicalQuestionId: string; baseQuestionHash: string; suppliedAnswerHash: string; selectedAnswer: 'A' | 'B' | 'C' | 'D'; acceptedAnswers: Array<'A' | 'B' | 'C' | 'D'>; eligiblePlaceIds: string[] }
 }
 
 /**

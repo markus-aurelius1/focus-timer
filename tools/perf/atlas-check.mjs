@@ -103,19 +103,10 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
     ok('hover over a place shows a pointer', (await page.evaluate(() => document.querySelector('[role=application]').style.cursor)) === 'pointer')
   } else ok('found a symbol to hover', false)
 
-  // Layers: hiding undiscovered places leaves fewer symbols.
-  const all = await page.locator('.atlas-sym').count()
+  // Access is independent of travel; the obsolete hiding control must be absent.
   await page.getByRole('button', { name: 'Map layers' }).click()
-  await page.getByRole('switch', { name: 'Places not yet discovered' }).click()
+  ok('all places accessible: no discovery visibility gate', await page.getByRole('switch', { name: 'Places not yet discovered' }).count() === 0)
   await page.keyboard.press('Escape')
-  await settle(page, 900)
-  const known = await page.locator('.atlas-sym').count()
-  ok('hiding undiscovered places removes their symbols', known < all, `${all} → ${known}`)
-  await page.getByRole('button', { name: 'Map layers' }).click()
-  await page.getByRole('switch', { name: 'Places not yet discovered' }).click()
-  await page.keyboard.press('Escape')
-  await settle(page)
-
   // Search → fly → card, on the other sheet.
   await page.getByRole('button', { name: 'Search places' }).click()
   await page.getByRole('textbox', { name: 'Search the gazetteer' }).fill('Nagorno')

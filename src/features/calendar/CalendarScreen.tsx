@@ -1,3 +1,4 @@
+import { executeAction } from '@/tars/runtime'
 import { ChevronLeft, ChevronRight, GraduationCap, Play, Plus, Settings2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { navigate, useRoute } from '@/app/router'
@@ -5,6 +6,7 @@ import { useUi } from '@/app/ui-store'
 import { useEvents, useLabels, useLookups, useSessionsBetween, useSettings, useTasks } from '@/data/hooks'
 import type { Task } from '@/data/types'
 import { cn } from '@/lib/cn'
+import { useDay } from '@/lib/useDay'
 import {
   addDaysKey,
   addMonthsKey,
@@ -41,7 +43,7 @@ export default function CalendarScreen() {
   const route = useRoute()
   const desktop = useIsDesktop()
   const settings = useSettings()
-  const today = todayKey()
+  const today = useDay()
   const param = route.params.get('date')
   const [anchor, setAnchor] = useState<DayKey>(isDayKey(param) ? param : today)
   const [view, setView] = useState<View>(desktop ? 'week' : 'day')
@@ -417,12 +419,10 @@ function DayColumn({ day, occurrences, sessions, labels, onSlot, onEvent, nowMin
                 tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation()
-                  const t = useTimer.getState()
-                  t.setContext({ taskId: o.event.taskId, labelId: o.event.labelId })
-                  t.start()
-                  navigate('#/focus')
+                  void executeAction('calendar.startBlock', { eventId:o.event.id })
                 }}
                 className="absolute right-1.5 bottom-1.5 flex size-7 items-center justify-center rounded-full bg-accent text-accent-ink"
+                onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); void executeAction('calendar.startBlock', { eventId:o.event.id }) } }}
                 aria-label="Start this focus block"
               >
                 <Play className="size-3.5 fill-current" />

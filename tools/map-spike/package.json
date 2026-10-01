@@ -1,0 +1,17 @@
+{
+  "name": "tars-map-spike",
+  "private": true,
+  "type": "module",
+  "description": "Isolated renderer experiment; never imported by the application.",
+  "scripts": {
+    "prepare:data": "node prepare.mjs",
+    "serve": "node server.mjs",
+    "check": "node check.mjs"
+  },
+  "devDependencies": {
+    "geojson-vt": "^5.0.4",
+    "maplibre-gl": "^6.11.2",
+    "pmtiles": "^4.0.0",
+    "vt-pbf": "^3.1.3"
+  }
+}

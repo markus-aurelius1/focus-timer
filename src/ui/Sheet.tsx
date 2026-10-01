@@ -131,7 +131,7 @@ export function Sheet({ open, onClose, title, subtitle, children, footer, size =
               maxW,
             )}
             initial={wide ? { opacity: 0, scale: 0.97, y: 10 } : { y: '100%' }}
-            animate={wide ? { opacity: 1, scale: 1, y: 0, transition: T.base } : { y: 0, transition: T.sheet }}
+            animate={wide ? { opacity: 1, scale: 1, y: 0, transition: T.base } : { opacity: 1, scale: 1, y: 0, transition: T.sheet }}
             exit={wide ? { opacity: 0, scale: 0.98, y: 6, transition: T.exit } : { y: '100%', transition: { duration: DUR.base, ease: EASE_IN } }}
             drag={wide ? false : 'y'}
             dragControls={drag}

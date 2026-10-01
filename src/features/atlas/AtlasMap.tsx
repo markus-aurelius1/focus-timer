@@ -184,6 +184,7 @@ export interface AtlasMapProps {
   places: Place[]
   mastery?: (id: string) => MasteryLevel
   newIds?: Set<string>
+  pyqPlaceIds?: ReadonlySet<string> | null
   selectedId?: string
   highlights?: Highlight[]
   route?: RouteOverlay | null
@@ -263,7 +264,7 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
   const moving = useRef(false)
   const invRef = useRef(1)
   /** Names and symbols that keep their size while zooming (collected after each layout). */
-  const anchors = useRef<Array<HTMLElement | SVGElement>>([])
+  const anchors = useRef<Array<HTMLElement>>([])
   const calmRef = useRef(lowPowerDevice())
   /** Fingers or a mouse button are down: names wait for the release instead of re-laying out mid-gesture. */
   const holding = useRef(false)
@@ -310,10 +311,12 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
     if (l && layer) {
       const s = cur.k / l.k
       layer.style.transform = `translate3d(${cur.x - s * l.x}px,${cur.y - s * l.y}px,0) scale(${s})`
-      // Names and symbols keep their size while the map zooms (counter-scaled about their anchors),
-      // so zooming reads as one continuous motion. Low-power devices let them scale instead.
+      // HTML names keep their size during zoom. SVG symbols scale with the layer
+      // until settlement, avoiding a costly SVG repaint on every animation frame.
+      // Compact viewports and low-power devices also let HTML names scale;
+      // dense phone labels must not trigger per-frame text rasterization.
       // Written on the anchors themselves: a custom property on the layer would restyle every SVG node beneath it.
-      const inv = calmRef.current ? 1 : Math.round((1 / s) * 1000) / 1000
+      const inv = calmRef.current || size.current.w < 768 ? 1 : Math.round((1 / s) * 1000) / 1000
       if (inv !== invRef.current) {
         invRef.current = inv
         const v = inv === 1 ? '' : String(inv)
@@ -393,7 +396,7 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
   useLayoutEffect(() => {
     if (!layoutT) return
     laidOut.current = layoutT
-    anchors.current = labelLayer.current ? [...labelLayer.current.querySelectorAll<HTMLElement | SVGElement>('.atlas-name, .atlas-sym, .atlas-ring')] : []
+    anchors.current = labelLayer.current ? [...labelLayer.current.querySelectorAll<HTMLElement>('.atlas-name, .atlas-ring')] : []
     invRef.current = NaN
     place()
   }, [layoutT, place])
@@ -991,7 +994,7 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
     const kinds = props.kinds
     const minZ = (p: Place) => (p.kind === 'capital' ? (p.tags?.includes('national') || p.level === 1 ? 0 : 1.4) : p.level === 1 ? 1.3 : p.level === 2 ? 2 : 2.9)
     const prio = (p: Place) =>
-      (p.id === props.selectedId ? 1000 : 0) + (props.newIds?.has(p.id) ? 500 : 0) + (known(p.id) ? 200 : 0) + (p.kind === 'capital' ? 60 : 0) + (4 - p.level) * 20 + (p.yield?.score ?? 0) / 5
+      (p.id === props.selectedId ? 1000 : 0) + (props.pyqPlaceIds?.has(p.id) ? 80 : 0) + (props.newIds?.has(p.id) ? 500 : 0) + (known(p.id) ? 200 : 0) + (p.kind === 'capital' ? 60 : 0) + (4 - p.level) * 20 + (p.yield?.score ?? 0) / 5
     const cand = placeIndex
       .query(viewRect(layoutT, w, h, 20))
       .filter((p) => {
@@ -999,8 +1002,8 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
         if (kinds && !kinds.has(p.kind)) return false
         const isKnown = known(p.id)
         if (!isKnown && !props.showUndiscovered) return false
-        if (p.geom && labelled.has(p.geom)) return false
-        return z >= minZ(p) + (isKnown ? 0 : 0.35)
+        if (p.geom && labelled.has(p.geom) && !props.pyqPlaceIds?.has(p.id)) return false
+        return z >= (props.pyqPlaceIds?.has(p.id) ? 0.9 : minZ(p) + (isKnown ? 0 : 0.35))
       })
       .map((p) => ({ p, sx: p.x * layoutT.k + layoutT.x, sy: p.y * layoutT.k + layoutT.y }))
       .filter(({ sx, sy }) => sx > -20 && sx < w + 20 && sy > -20 && sy < h + 20)
@@ -1013,7 +1016,7 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
       out.push(c.p)
     }
     return out
-  }, [layoutT, placeIndex, props.showPlaces, props.selectedId, props.newIds, props.kinds, props.showUndiscovered, known, labelled])
+  }, [layoutT, placeIndex, props.showPlaces, props.selectedId, props.newIds, props.kinds, props.showUndiscovered, props.pyqPlaceIds, known, labelled])
   drawn.current = visible
 
   const labels = useMemo<PlacedLabel[]>(() => {
@@ -1187,9 +1190,10 @@ export const AtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function Atlas
             <g key={p.id} transform={`translate(${x},${y})`}>
               <PlaceSymbol
                 place={p}
-                muted={muted}
+                muted={muted && !['familiar', 'strong', 'mastered'].includes(props.mastery?.(p.id) ?? '')}
+                pyq={props.pyqPlaceIds?.has(p.id)}
                 selected={props.selectedId === p.id}
-                mastery={muted ? 'discovered' : (props.mastery?.(p.id) ?? 'discovered')}
+                mastery={props.mastery?.(p.id) ?? 'discovered'}
                 glowId={toneId === 'night' && props.living?.lights.has(p.id) ? ids.glow : undefined}
               />
             </g>
@@ -1286,14 +1290,15 @@ function labelPaint(l: PlacedLabel, toneId: Tone) {
  * A place's symbol. Memoised: when the view settles only its outer translate
  * changes, so React leaves the symbol itself alone.
  */
-const PlaceSymbol = memo(function PlaceSymbol({ place: p, muted, selected, mastery, glowId }: { place: Place; muted: boolean; selected: boolean; mastery: MasteryLevel; glowId?: string }) {
+const PlaceSymbol = memo(function PlaceSymbol({ place: p, muted, selected, mastery, glowId, pyq }: { place: Place; muted: boolean; selected: boolean; mastery: MasteryLevel; glowId?: string; pyq?: boolean }) {
   // Inner group: hover lift, fade-in and the muted look, all in CSS.
   return (
     <g data-place={p.id} className={cn('atlas-sym', muted && 'atlas-sym-muted')}>
       {glowId && <circle r={12} fill={`url(#${glowId})`} />}
+      {pyq && <circle r={15} fill="none" stroke="#b8781b" strokeWidth={1.6} strokeDasharray="2 3" />}
       {selected && <circle r={12} fill="none" stroke={HIGHLIGHT} strokeWidth={2.5} className="atlas-selected" />}
       <Symbol kind={p.kind} tags={p.tags} national={p.tags?.includes('national')} />
-      {!muted && <MasteryBadge level={mastery} />}
+      <MasteryBadge level={mastery} />
     </g>
   )
 })

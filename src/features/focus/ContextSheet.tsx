@@ -5,7 +5,8 @@ import { create } from '@/data/repo'
 import { PALETTE } from '@/data/seed'
 import type { Task } from '@/data/types'
 import { cn } from '@/lib/cn'
-import { todayKey } from '@/lib/time'
+import { useDay } from '@/lib/useDay'
+import { focusContextForTask } from '@/planner/focusContext'
 import { byPriorityThenOrder, isOverdue, isToday } from '@/planner/tasks'
 import { useUi } from '@/app/ui-store'
 import { useTimer } from '@/timer/store'
@@ -24,7 +25,7 @@ export function ContextSheet() {
   const tasks = useOpenTasks()
   const [query, setQuery] = useState('')
   const [newLabel, setNewLabel] = useState<string | null>(null)
-  const today = todayKey()
+  const today = useDay()
 
   const tree = useMemo(() => flattenLabels(labels), [labels])
   const projectOf = (id: string | null) => projects.find((p) => p.id === id)
@@ -40,7 +41,7 @@ export function ContextSheet() {
   const pickTask = (t: Task | null) => {
     if (!t) return setContext({ taskId: null, projectId: null })
     const project = projectOf(t.projectId)
-    setContext({ taskId: t.id, projectId: t.projectId, labelId: t.labelId ?? project?.labelId ?? context.labelId })
+    setContext(focusContextForTask(t, project, context))
   }
 
   const addLabel = async () => {

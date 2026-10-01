@@ -5,8 +5,7 @@ import { create, patch, remove } from '@/data/repo'
 import type { CalendarEvent, EventKind, RecurrenceRule } from '@/data/types'
 import { weekdayOf } from '@/lib/time'
 import { RECURRENCE_PRESETS } from '@/planner/recurrence'
-import { useTimer } from '@/timer/store'
-import { navigate } from '@/app/router'
+import { executeAction } from '@/tars/runtime'
 import { Button, Field, IconButton, Segmented, Select, TextArea, TextInput, Toggle } from '@/ui/controls'
 import { ColorPicker } from '@/ui/ColorPicker'
 import { confirmDialog } from '@/ui/feedback'
@@ -80,13 +79,7 @@ export function EventSheet({ draft, onClose }: { draft: EventDraft | null; onClo
     onClose()
   }
 
-  const startNow = () => {
-    const t = useTimer.getState()
-    t.setContext({ taskId: ev.taskId ?? null, labelId: ev.labelId ?? null })
-    if (t.timer.status === 'idle') t.start()
-    onClose()
-    navigate('#/focus')
-  }
+  const startNow = async () => { if(ev.id) { const result = await executeAction('calendar.startBlock',{eventId:ev.id}); if(result.ok) onClose() } }
 
   const recurrenceId = RECURRENCE_PRESETS.find((p) => JSON.stringify(p.rule) === JSON.stringify(ev.recurrence))?.id ?? (ev.recurrence ? 'weekly' : 'none')
 

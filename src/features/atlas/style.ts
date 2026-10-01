@@ -41,3 +41,9 @@ export const MASTERY_COLOUR = {
 } as const
 
 export type MasteryLevel = keyof typeof MASTERY_COLOUR
+
+/** Marker colors sit over cartography; small UI text needs theme-aware ink. */
+export const MASTERY_TEXT_COLOUR: Record<MasteryLevel, string> = {
+  unknown: 'var(--ink)', discovered: 'var(--ink)',
+  familiar: 'var(--mastery-familiar-ink)', strong: 'var(--success)', mastered: 'var(--accent)',
+}

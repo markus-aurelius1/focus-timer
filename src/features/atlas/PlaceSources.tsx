@@ -1,21 +1,16 @@
 /**
  * Where a place's data comes from, folded into one quiet line at the foot of
  * its card: the position, then (on demand) every source – reference pages,
- * official lists, geometry and the papers that asked about it.
+ * official lists and geometry. PYQ provenance stays with canonical questions.
  */
 import { ChevronRight } from 'lucide-react'
-import type { Place, SourceRef } from '@/atlas/types'
+import { geographicSources } from '@/atlas/access'
+import type { Place } from '@/atlas/types'
 
 const deg = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? pos : neg}`
 
 export function PlaceSources({ place: p }: { place: Place }) {
-  const seen = new Set<string>()
-  const sources: SourceRef[] = []
-  for (const s of [...(p.sources ?? []), ...(p.pyq?.sources ?? [])]) {
-    if (seen.has(s.url)) continue
-    seen.add(s.url)
-    sources.push(s)
-  }
+  const sources = geographicSources(p.sources)
   const where = `${deg(p.lat, 'N', 'S')}, ${deg(p.lon, 'E', 'W')}`
   if (!sources.length) return <p className="tabular mt-5 border-t border-line pt-3 text-[12px] text-ink-3">{where}</p>
   return (
@@ -35,7 +30,6 @@ export function PlaceSources({ place: p }: { place: Place }) {
             ) : (
               s.title
             )}
-            {s.pages?.length ? <span className="tabular"> · pp. {s.pages.join(', ')}</span> : null}
           </li>
         ))}
       </ul>

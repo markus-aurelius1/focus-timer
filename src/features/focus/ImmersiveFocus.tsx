@@ -1,3 +1,4 @@
+import { executeAction } from '@/tars/runtime'
 import { motion } from 'motion/react'
 import { Headphones, Minimize2, Pause, Play, SkipForward, Square } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -24,7 +25,7 @@ const GOLD = '#f2c46d'
  */
 export function ImmersiveFocus() {
   const timer = useTimer((s) => s.timer)
-  const { start, pause, skip, stop } = useTimer.getState()
+  const { skip } = useTimer.getState()
   const settings = useSettings()
   const now = useNow(true)
   const { label } = useLookups()
@@ -69,7 +70,7 @@ export function ImmersiveFocus() {
       if (e.key === 'Escape') close()
       if (e.key === ' ') {
         e.preventDefault()
-        useTimer.getState().toggle()
+        void executeAction(useTimer.getState().timer.status === 'running' ? 'timer.pause' : useTimer.getState().timer.status === 'paused' ? 'timer.resume' : 'timer.start', {})
       }
       poke()
     }
@@ -127,12 +128,12 @@ export function ImmersiveFocus() {
       </div>
 
       <div className={cn('pb-safe relative flex items-center justify-center gap-4 pb-10 transition-opacity duration-500', controls ? 'opacity-100' : 'pointer-events-none opacity-0')}>
-        <RoundButton label="Stop" onClick={() => stop()}>
+        <RoundButton label="Stop" onClick={() => { void executeAction('timer.stop', {}) }}>
           <Square className="size-4 fill-current" />
         </RoundButton>
         <button
           type="button"
-          onClick={() => (running ? pause() : start())}
+          onClick={() => (void executeAction(running ? 'timer.pause' : timer.status === 'paused' ? 'timer.resume' : 'timer.start', {}))}
           aria-label={running ? 'Pause' : 'Start'}
           className="flex size-[72px] items-center justify-center rounded-full bg-white text-black shadow-lg transition-transform active:scale-95"
         >

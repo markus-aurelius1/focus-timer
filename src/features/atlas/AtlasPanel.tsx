@@ -50,7 +50,7 @@ export function expeditionStatus(ex: Exploration): { title: string; line: string
   const a = ex.state.active
   if (!a) {
     const next = ex.state.survey.next
-    return { title: 'Free survey', line: next ? `${minutesText(ex.state.survey.remaining)} to the next discovery` : 'Everything nearby is explored', color: 'var(--ink-3)', blocked: false }
+    return { title: 'Free survey', line: next ? `${minutesText(ex.state.survey.remaining)} to the next stop` : 'Everything nearby is explored', color: 'var(--ink-3)', blocked: false }
   }
   if (a.complete) return { title: a.expedition.title, line: 'Complete – choose your next expedition', color: a.expedition.color, blocked: false }
   if (a.blockedBy) return { title: a.expedition.title, line: `Checkpoint: ${a.blockedBy.need - a.blockedBy.have} more place${a.blockedBy.need - a.blockedBy.have === 1 ? '' : 's'} to recall`, color: a.expedition.color, blocked: true }
@@ -87,7 +87,7 @@ export function AtlasPanel({ ex, actions }: { ex: Exploration; actions: PanelAct
 
       <Section title="Field review" icon={<GraduationCap className="size-3.5" />}>
         <p className="text-[13.5px] text-ink-2">
-          {ex.due.length ? `${ex.due.length} place${ex.due.length === 1 ? '' : 's'} due – spaced reviews make places Strong, then Mastered.` : ex.state.discovered.size ? 'All caught up. New reviews appear as places come due.' : 'Discover places by focusing, then review them here.'}
+          {ex.due.length ? `${ex.due.length} place${ex.due.length === 1 ? '' : 's'} due – spaced reviews make places Strong, then Mastered.` : ex.state.discovered.size ? 'All caught up. New reviews appear as places come due.' : 'Choose any place to test your recall.'}
         </p>
         <Button variant="primary" size="sm" className="mt-3" disabled={!ex.due.length} onClick={actions.startReview}>
           Review {Math.min(8, ex.due.length) || ''} now
@@ -198,7 +198,7 @@ function Regions({ ex, onPick, onBaseCamp }: { ex: Exploration; onPick: (id: str
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[14px] font-semibold">{s.name}</span>
                 <span className="block text-[12px] text-ink-3">
-                  {DEVELOPMENT_LABEL[d.level]} · {d.discovered}/{d.total} discovered
+                  {DEVELOPMENT_LABEL[d.level]} · {d.discovered}/{d.total} travelled
                 </span>
               </span>
               <span className="h-1 w-16 overflow-hidden rounded-full bg-line">

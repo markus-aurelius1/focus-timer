@@ -1,0 +1,23 @@
+<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tars map experiment</title>
+<link rel="stylesheet" href="node_modules/maplibre-gl/dist/maplibre-gl.css">
+<style>body{margin:0;font:14px system-ui}#map{height:100dvh}#status{position:absolute;top:12px;left:12px;background:#fffcf5;padding:10px;z-index:2;border-radius:10px}button{padding:10px}</style>
+<div id="map"></div><div id="status">Controlled Atlas vector experiment <button id="india">India</button><button id="world">World</button><span id="place"></span></div>
+<script src="node_modules/pmtiles/dist/pmtiles.js"></script>
+<script type="module">
+import * as maplibregl from './node_modules/maplibre-gl/dist/maplibre-gl.mjs'
+const started=performance.now(), protocol=new pmtiles.Protocol(); maplibregl.addProtocol('pmtiles',protocol.tile)
+const map=window.spikeMap=new maplibregl.Map({container:'map',center:[81,23],zoom:3,renderWorldCopies:false,style:{version:8,sources:{atlas:{type:'vector',url:'pmtiles://'+location.origin+'/data/controlled.pmtiles'},study:{type:'geojson',data:location.origin+'/data/study.json'}},layers:[{id:'water',type:'background',paint:{'background-color':'#c6e1f2'}}]}})
+map.on('load',async()=>{
+ const layers=await (await fetch('data/layers.json')).json()
+ for(const layer of layers) map.addLayer({id:layer,type:layer.endsWith('rivers')?'line':'fill',source:'atlas','source-layer':layer,paint:layer.endsWith('rivers')?{'line-color':'#6a9fb5','line-width':1}:layer.endsWith('lakes')?{'fill-color':'#c6e1f2'}:{'fill-color':layer.startsWith('india_')?'#e7dfc3':'#e9e7d8','fill-outline-color':'#9f998c'}})
+ map.addLayer({id:'places',type:'circle',source:'study',paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,1.5,8,5],'circle-color':['match',['get','kind'],'park','#447956','strategic','#a14f4e','#384d69'],'circle-stroke-color':'#fff','circle-stroke-width':1}})
+ // Local HTML labels avoid a remote glyph dependency in this offline experiment.
+ const data=await (await fetch('data/study.json')).json()
+ const markers=[]
+ function labels(){for(const m of markers)m.remove();markers.length=0;for(const f of data.features.filter(f=>map.getBounds().contains(f.geometry.coordinates)).slice(0,map.getZoom()>5?60:16)){const el=document.createElement('span');el.textContent=f.properties.name;el.style.cssText='font:11px system-ui;text-shadow:0 0 3px white;background:#ffffffaa;padding:2px';markers.push(new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat(f.geometry.coordinates).addTo(map))}}
+ map.on('moveend',labels);labels();window.spikeReady={startupMs:performance.now()-started,places:data.features.length}
+ map.on('click','places',e=>{const f=e.features[0];document.getElementById('place').textContent=f.properties.id+' · '+f.properties.name;map.flyTo({center:f.geometry.coordinates,zoom:6})})
+})
+document.getElementById('india').onclick=()=>map.flyTo({center:[81,23],zoom:3})
+document.getElementById('world').onclick=()=>map.flyTo({center:[10,15],zoom:1})
+</script>

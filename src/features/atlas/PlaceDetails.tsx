@@ -1,17 +1,17 @@
-import { BookmarkPlus, ChevronRight, Crosshair, GraduationCap, Lock, MapPin } from 'lucide-react'
+/** Freely accessible place knowledge; travel and recall are independent historical states. */
+import { BookmarkPlus, ChevronRight, Crosshair, GraduationCap, MapPin } from 'lucide-react'
 import { PlaceSources } from './PlaceSources'
 import type { ReactNode } from 'react'
 import { placeSubtitle } from '@/atlas/data'
 import { MASTERY_LABEL, type PlaceMastery } from '@/atlas/mastery'
 import type { Place, PlaceRelations } from '@/atlas/types'
 import type { Exploration } from '@/atlas/useExploration'
-import { addTask } from '@/planner/tasks'
+import { executeAction } from '@/tars/runtime'
 import { todayKey, relativeDayLabel } from '@/lib/time'
 import { cn } from '@/lib/cn'
 import { Button } from '@/ui/controls'
-import { toast } from '@/ui/toast'
-import { PastPapers } from './PastPapers'
-import { MASTERY_COLOUR } from './style'
+import { PlaceQuestions } from './PlaceQuestions'
+import { MASTERY_COLOUR, MASTERY_TEXT_COLOUR } from './style'
 import { KIND_NAME } from './symbols'
 import { breadcrumb, masteryFn, PlaceIcon, TAG_LABEL } from './util'
 import type { MapTarget } from './AtlasMap'
@@ -42,7 +42,7 @@ const BACK_LABEL: Partial<Record<keyof PlaceRelations, string>> = {
   near: 'Nearby',
 }
 
-export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow }: { ex: Exploration; place: Place; onSelect: (t: MapTarget) => void; onTest: (id: string) => void; onShow?: (p: Place) => void }) {
+export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: { ex: Exploration; place: Place; onSelect: (t: MapTarget) => void; onTest: (id: string) => void; onShow?: (p: Place) => void; onPyq: (id: string) => void }) {
   const { atlas } = ex
   const discovered = ex.state.discovered.get(p.id)
   const level = masteryFn(ex)(p.id)
@@ -79,10 +79,7 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow }: { ex: E
     e.chapters.flatMap((c, ci) => c.stops.map((s, si) => ({ e, ci, si, c, s }))).filter((x) => x.s.place === p.id),
   )
 
-  const addRevision = async () => {
-    await addTask({ title: `Revise ${p.name}`, notes: p.facts.join('\n'), plannedFor: todayKey(), estimatedPomodoros: 1 })
-    toast({ title: 'Revision task added', body: `Revise ${p.name} · today`, tone: 'success' })
-  }
+  const addRevision = () => executeAction('task.revisePlace', { placeId: p.id })
 
   return (
     <div>
@@ -122,8 +119,9 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow }: { ex: E
         ))}
       </nav>
 
-      {discovered ? (
+      {(
         <>
+          <p className="mt-5 text-xs text-ink-3">{discovered ? 'Travelled through focus-powered progression.' : 'Accessible now · not yet travelled.'}</p>
           <MasteryRow level={level} m={m} />
           <ul className="mt-4 space-y-2">
             {p.facts.map((f, i) => (
@@ -143,7 +141,7 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow }: { ex: E
               ))}
             </div>
           )}
-          <PastPapers place={p} />
+          <PlaceQuestions placeId={p.id} onOpen={onPyq} />
           <div className="mt-6 grid grid-cols-2 gap-2">
             <Button variant="primary" icon={<GraduationCap className="size-4" />} onClick={() => onTest(p.id)}>
               Test me
@@ -158,32 +156,9 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow }: { ex: E
             )}
           </div>
         </>
-      ) : (
-        <div className="mt-5 rounded-2xl border border-dashed border-line-strong p-4">
-          <p className="flex items-center gap-2 text-[15px] font-bold">
-            <Lock className="size-4 text-ink-3" /> Not yet discovered
-          </p>
-          <p className="mt-1.5 text-[14px] leading-relaxed text-ink-2">Its notes and questions unlock when your focus time reaches it.</p>
-          {stopsIn.length > 0 ? (
-            <ul className="mt-3 space-y-1.5">
-              {stopsIn.map(({ e, c, ci, si }) => (
-                <li key={`${e.id}${ci}${si}`} className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
-                  <MapPin className="size-3.5" style={{ color: e.color }} />
-                  {e.title} · {c.title}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-[13px] font-semibold text-ink-2">{p.sheet === 'india' ? 'Found by free survey outward from your base camp.' : 'World places are found on World expeditions; this one is not on a route yet.'}</p>
-          )}
-        </div>
       )}
-      {!discovered && <PastPapers place={p} />}
-      {!discovered && onShow && (
-        <Button className="mt-4 w-full" variant="ghost" icon={<Crosshair className="size-4" />} onClick={() => onShow(p)}>
-          Show on the map
-        </Button>
-      )}
+
+      {stopsIn.length > 0 && <section className="mt-4"><h3 className="text-xs font-bold text-ink-3 uppercase">Expedition context</h3><ul className="mt-2 space-y-2">{stopsIn.map(({ e, c, ci, si }) => <li key={`${e.id}${ci}${si}`} className="flex items-center gap-2 text-sm"><MapPin className="size-3.5" style={{ color: e.color }} />{e.title} · {c.title}</li>)}</ul></section>}
       <PlaceSources place={p} />
     </div>
   )
@@ -200,7 +175,7 @@ function LinkChip({ place, ex, onClick }: { place: Place; ex: Exploration; onCli
 }
 
 export function MasteryRow({ level, m }: { level: ReturnType<ReturnType<typeof masteryFn>>; m?: PlaceMastery }) {
-  const steps = ['discovered', 'familiar', 'strong', 'mastered'] as const
+  const steps = ['familiar', 'strong', 'mastered'] as const
   const idx = steps.indexOf(level as (typeof steps)[number])
   let hint = 'Answer one question to make it Familiar.'
   if (m) {
@@ -211,14 +186,14 @@ export function MasteryRow({ level, m }: { level: ReturnType<ReturnType<typeof m
   return (
     <div className="mt-4 rounded-2xl bg-surface-2 p-3.5">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold" style={{ color: level === 'discovered' ? undefined : MASTERY_COLOUR[level] }}>
-          {MASTERY_LABEL[level]}
+        <span className="text-[13px] font-bold" style={{ color: MASTERY_TEXT_COLOUR[level] }}>
+          {level === 'unknown' || level === 'discovered' ? m?.attempts ? 'Recall started' : 'Not yet tested' : MASTERY_LABEL[level]}
         </span>
         {m?.due && <span className="text-[12px] font-semibold text-ink-3">Review {m.due <= todayKey() ? 'due now' : relativeDayLabel(m.due).toLowerCase()}</span>}
       </div>
       <div className="mt-2 flex gap-1" aria-hidden="true">
         {steps.map((s, i) => (
-          <span key={s} className="h-1.5 flex-1 rounded-full" style={{ background: i <= idx ? MASTERY_COLOUR[s === 'discovered' ? 'discovered' : s] : 'var(--line)' }} />
+          <span key={s} className="h-1.5 flex-1 rounded-full" style={{ background: i <= idx ? MASTERY_COLOUR[s] : 'var(--line)' }} />
         ))}
       </div>
       <p className="mt-2 text-[12px] leading-snug text-ink-2">{hint}</p>

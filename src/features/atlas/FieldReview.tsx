@@ -4,7 +4,7 @@
  */
 import { AnimatePresence, motion } from 'motion/react'
 import { ArrowRight, Check, RotateCcw, Sparkles, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { recordRecall } from '@/atlas/actions'
 import { useSheet } from '@/atlas/sheet'
 import { isCorrect, makeQuestion, TYPE_LABEL, type Question } from '@/atlas/questions'
@@ -17,7 +17,7 @@ import { haptics } from '@/services/haptics'
 import { Button } from '@/ui/controls'
 import { Sheet } from '@/ui/Sheet'
 import { AtlasMap, type MapPin } from './AtlasMap'
-import { MASTERY_COLOUR } from './style'
+import { MASTERY_TEXT_COLOUR } from './style'
 import { labelKeyOf } from './labels'
 import { masteryFn } from './util'
 
@@ -30,7 +30,7 @@ export interface ReviewRequest {
 export function FieldReviewSheet({ request, onClose }: { request: ReviewRequest | null; onClose: () => void }) {
   const ex = useExploration()
   return (
-    <Sheet open={!!request && !!ex} onClose={onClose} size="lg" bare>
+    <Sheet open={!!request && !!ex} onClose={onClose} size="lg" bare label={request?.title ?? 'Field review'}>
       {request && ex && <Review key={request.placeIds.join()} ex={ex} request={request} onClose={onClose} />}
     </Sheet>
   )
@@ -57,23 +57,38 @@ export function Review({ ex, request, onClose, compact }: { ex: Exploration; req
   )
   const [index, setIndex] = useState(0)
   const [results, setResults] = useState<Result[]>([])
+  const pending = useRef(false)
+  const saved = useRef(new Set<string>())
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const q = questions[index]
   const answered = results[index]
   const done = index >= questions.length
 
-  const answer = (given: string) => {
-    if (!q || answered) return
+  const answer = async (given: string) => {
+    if (!q || answered || pending.current || saved.current.has(q.key)) return
+    pending.current = true
+    setSaving(true)
+    setError(null)
     const correct = isCorrect(q, given)
-    correct ? haptics.success() : haptics.warning()
-    setResults((r) => [...r, { q, correct, given }])
-    void recordRecall(q.placeId, q.type, correct, request.source)
+    try {
+      await recordRecall(q.placeId, q.type, correct, request.source)
+      saved.current.add(q.key)
+      correct ? haptics.success() : haptics.warning()
+      setResults((r) => [...r, { q, correct, given }])
+    } catch {
+      setError('Your answer could not be saved. Try again.')
+    } finally {
+      pending.current = false
+      setSaving(false)
+    }
   }
 
   if (!questions.length) {
     return (
       <div className="p-6 text-center">
         <p className="font-display text-xl">Nothing to review yet</p>
-        <p className="mt-2 text-sm text-ink-2">Discover places by focusing – they’ll appear here for review.</p>
+        <p className="mt-2 text-sm text-ink-2">Choose any place to test your recall.</p>
         <Button className="mt-5" onClick={onClose}>
           Close
         </Button>
@@ -104,8 +119,12 @@ export function Review({ ex, request, onClose, compact }: { ex: Exploration; req
         <motion.div key={q.key} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
           <h3 className="mt-1.5 font-display text-[22px] leading-snug font-medium tracking-tight">{q.prompt}</h3>
           {q.clue && <p className="mt-2 rounded-2xl bg-surface-2 px-4 py-3 text-[15px] leading-relaxed italic">“{q.clue}”</p>}
-          {q.map && <QuestionMap ex={ex} q={q} result={answered} onPin={answer} />}
-          {q.order ? <OrderInput q={q} result={answered} onSubmit={answer} /> : <Choices q={q} result={answered} onPick={answer} />}
+          <fieldset disabled={saving} className="min-w-0" aria-label="Recall answer">
+            {q.map && <QuestionMap ex={ex} q={q} result={answered} onPin={answer} />}
+            {q.order ? <OrderInput q={q} result={answered} onSubmit={answer} /> : <Choices q={q} result={answered} onPick={answer} />}
+          </fieldset>
+          {saving && <p role="status" className="mt-3 text-sm text-ink-2">Saving answer…</p>}
+          {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
           {answered && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className={cn('mt-4 rounded-2xl p-4', answered.correct ? 'bg-success/10' : 'bg-danger/10')}>
               <p className={cn('flex items-center gap-2 text-[15px] font-bold', answered.correct ? 'text-success' : 'text-danger')}>
@@ -263,7 +282,7 @@ function Summary({ ex, results, before, onClose }: { ex: Exploration; results: R
           {changes.map((c) => (
             <li key={c.id} className="flex items-center justify-between rounded-2xl bg-surface-2 px-4 py-2.5 text-[14px]">
               <span className="font-semibold">{ex.atlas.byId.get(c.id)?.name}</span>
-              <span className="font-bold" style={{ color: MASTERY_COLOUR[c.to] }}>
+              <span className="font-bold" style={{ color: MASTERY_TEXT_COLOUR[c.to] }}>
                 {MASTERY_LABEL[c.to]}
               </span>
             </li>

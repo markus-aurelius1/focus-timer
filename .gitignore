@@ -28,3 +28,7 @@ pyq-sources/
 
 .vercel
 .env*
+
+# Reproducible isolated map experiment outputs
+tools/map-spike/data/
+tools/current-affairs/.cache/

@@ -14,16 +14,20 @@ async function currentRun() {
 
 /** Make `expeditionId` the active expedition from now on. */
 export async function startExpedition(expeditionId: string, at = Date.now()): Promise<void> {
-  const cur = await currentRun()
-  if (cur?.expeditionId === expeditionId) return
-  if (cur) await patch('expeditions', cur.id, { endedAt: at })
-  await create('expeditions', { expeditionId, startedAt: at, endedAt: null })
+  await db.transaction('rw', db.expeditions, async () => {
+    const cur = await currentRun()
+    if (cur?.expeditionId === expeditionId) return
+    if (cur) await patch('expeditions', cur.id, { endedAt: at })
+    await create('expeditions', { expeditionId, startedAt: at, endedAt: null })
+  })
 }
 
 /** Pause expeditions: minutes go to the free survey until another is chosen. */
 export async function stopExpedition(at = Date.now()): Promise<void> {
-  const cur = await currentRun()
-  if (cur) await patch('expeditions', cur.id, { endedAt: at })
+  await db.transaction('rw', db.expeditions, async () => {
+    const cur = await currentRun()
+    if (cur) await patch('expeditions', cur.id, { endedAt: at })
+  })
 }
 
 /**
@@ -32,11 +36,13 @@ export async function stopExpedition(at = Date.now()): Promise<void> {
  * it and part of the map is already explored.
  */
 export async function chooseBaseCamp(atlas: AtlasData, stateId: string): Promise<void> {
-  await updateSettings({ baseCamp: stateId })
-  if ((await db.expeditions.count()) > 0) return
-  const first = await db.sessions.orderBy('startedAt').first()
-  const e = suggestExpedition(atlas, stateId)
-  await create('expeditions', { expeditionId: e.id, startedAt: first ? first.startedAt - 1000 : Date.now(), endedAt: null })
+  await db.transaction('rw', [db.settings, db.expeditions, db.sessions], async () => {
+    await updateSettings({ baseCamp: stateId })
+    if ((await db.expeditions.count()) > 0) return
+    const first = await db.sessions.orderBy('startedAt').first()
+    const e = suggestExpedition(atlas, stateId)
+    await create('expeditions', { expeditionId: e.id, startedAt: first ? first.startedAt - 1000 : Date.now(), endedAt: null })
+  })
 }
 
 export async function recordRecall(placeId: string, type: QuestionType, correct: boolean, source: RecallSource): Promise<void> {

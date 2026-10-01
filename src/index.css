@@ -95,17 +95,18 @@
   --line-strong: rgba(46, 40, 28, 0.18);
   --ink: #1a1c27;
   --ink-2: #5a5e6e;
-  --ink-3: #959aa6;
-  --accent: #b8781b;
+  --ink-3: #5d626f;
+  --accent: #895911;
   --accent-soft: rgba(184, 120, 27, 0.12);
   --accent-ink: #fff8ea;
   --primary: #1c2033;
   --primary-ink: #f7f3ea;
-  --phase-focus: #b8781b;
-  --phase-break: #2e8c77;
+  --phase-focus: #895911;
+  --phase-break: #226f5e;
   --phase-long: #5e57c9;
-  --danger: #c4503d;
-  --success: #3a9562;
+  --danger: #a63c2c;
+  --success: #246b40;
+  --mastery-familiar-ink: #2457a3;
   /* Chart marks – validated for lightness band, chroma and ≥3:1 contrast on the surface. */
   --chart: #b8781b;
   --shadow-soft-value: 0 1px 2px rgba(40, 32, 16, 0.04), 0 8px 24px -12px rgba(40, 32, 16, 0.12);
@@ -124,7 +125,7 @@
   --line-strong: rgba(255, 255, 255, 0.13);
   --ink: #ece9f1;
   --ink-2: #9a9fb2;
-  --ink-3: #5f6579;
+  --ink-3: #878ea3;
   --accent: #f2c46d;
   --accent-soft: rgba(242, 196, 109, 0.12);
   --accent-ink: #1b1405;
@@ -135,6 +136,7 @@
   --phase-long: #aba4f7;
   --danger: #f07a68;
   --success: #73d19a;
+  --mastery-familiar-ink: #80b2ff;
   --chart: #b88a3a;
   --shadow-soft-value: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
   --shadow-lift-value: 0 1px 4px rgba(0, 0, 0, 0.35), 0 20px 44px -22px rgba(0, 0, 0, 0.7);
@@ -681,3 +683,13 @@ circle.atlas-pulse {
     animation: none;
   }
 }
+
+/* Typography roles: display faces stop at large headings; all operational/map/quiz text stays Manrope. */
+.type-operational { font-family: var(--font-sans); font-size: .875rem; line-height: 1.45; font-weight: 600; }
+.type-body { font-family: var(--font-sans); line-height: 1.65; }
+.type-heading { font-family: var(--font-display); font-size: clamp(1.75rem, 3vw, 2.25rem); line-height: 1.15; letter-spacing: -.025em; }
+.type-numeric { font-family: var(--font-sans); font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+.type-map { font-family: var(--font-sans); line-height: 1.25; }
+.type-quiz { font-family: var(--font-sans); line-height: 1.7; }
+.tars-presence { transition: opacity var(--dur-base) var(--motion-ease-out); }
+@media (prefers-reduced-motion: reduce) { .tars-presence { transition: none; } }

@@ -1,7 +1,8 @@
 /**
  * Mastery comes only from recall, never from time spent:
  *
- *   Discovered  reached by exploring
+ *   Accessible  no recall yet (travel is tracked separately)
+ *   discovered  legacy internal key for travel or recall started
  *   Familiar    1 correct answer
  *   Strong      3 correct, of at least 2 question types, on at least 2 days
  *   Mastered    5 correct, including a locate or ordering question, spread over
@@ -17,8 +18,8 @@ import { addDaysKey, type DayKey } from '@/lib/time'
 export type MasteryLevel = 'unknown' | 'discovered' | 'familiar' | 'strong' | 'mastered'
 export const MASTERY_ORDER: MasteryLevel[] = ['unknown', 'discovered', 'familiar', 'strong', 'mastered']
 export const MASTERY_LABEL: Record<MasteryLevel, string> = {
-  unknown: 'Unknown',
-  discovered: 'Discovered',
+  unknown: 'Accessible',
+  discovered: 'Recall started',
   familiar: 'Familiar',
   strong: 'Strong',
   mastered: 'Mastered',
@@ -40,7 +41,7 @@ export interface PlaceMastery {
   firstDate: DayKey | null
   /** Day the next review is due (null when never reviewed). */
   due: DayKey | null
-  types: Set<QuestionType>
+  types: Set<QuestionType | 'pyq'>
   /** When the place first became Familiar / Strong (for gates and challenges). */
   familiarAt: number | null
   strongAt: number | null
@@ -114,8 +115,12 @@ export type MasteryMap = Map<string, PlaceMastery>
 export function computeMastery(recalls: RecallAttempt[], today: DayKey): MasteryMap {
   const byPlace = new Map<string, RecallAttempt[]>()
   for (const r of recalls) {
-    if (!byPlace.has(r.placeId)) byPlace.set(r.placeId, [])
-    byPlace.get(r.placeId)!.push(r)
+    // PYQs credit only their explicit snapshot of eligible primary relations, never the context place or distractors.
+    const ids = r.type === 'pyq' ? r.pyq?.eligiblePlaceIds ?? [] : [r.placeId]
+    for (const id of new Set(ids.filter(Boolean))) {
+      if (!byPlace.has(id)) byPlace.set(id, [])
+      byPlace.get(id)!.push(r)
+    }
   }
   const out: MasteryMap = new Map()
   for (const [id, list] of byPlace) {
@@ -158,6 +163,8 @@ export function dueForReview(discovered: Map<string, { at: number }>, mastery: M
     else if (m.due && m.due <= today) overdue.push({ id, overdue: daysBetween(m.due, today) })
   }
   const prio = priority ?? (() => 0)
+  // A freely accessible place tested before travelling still belongs in spaced review.
+  for (const [id, m] of mastery) if (!discovered.has(id) && m.due && m.due <= today) overdue.push({ id, overdue: daysBetween(m.due, today) })
   overdue.sort((a, b) => b.overdue - a.overdue || prio(b.id) - prio(a.id))
   fresh.sort((a, b) => prio(b.id) - prio(a.id) || b.overdue - a.overdue)
   return [...overdue, ...fresh.slice(0, Math.max(0, NEW_PER_DAY - newToday))]

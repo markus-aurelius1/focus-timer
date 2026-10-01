@@ -107,13 +107,13 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
       }}
       className={cn(
         'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors duration-200 disabled:opacity-40',
-        checked ? 'border-transparent bg-accent' : 'border-line-strong bg-surface-3',
+        checked ? 'border-transparent bg-accent' : 'border-ink-3 bg-surface-3',
       )}
     >
       <motion.span
         layout
         transition={{ type: 'spring', stiffness: 600, damping: 35 }}
-        className={cn('block size-5 rounded-full shadow-sm', checked ? 'bg-accent-ink' : 'bg-surface')}
+        className={cn('block size-5 rounded-full shadow-sm', checked ? 'bg-accent-ink' : 'bg-ink-3')}
         style={{ marginLeft: checked ? 24 : 3 }}
       />
     </button>
@@ -279,7 +279,7 @@ export function Row({ icon, title, subtitle, right, onClick, className }: { icon
 }
 
 export function Card({ children, className, as: As = 'section' }: { children: ReactNode; className?: string; as?: 'section' | 'div' | 'article' }) {
-  return <As className={cn('rounded-card border border-line bg-surface shadow-soft', className)}>{children}</As>
+  return <As className={cn('rounded-card bg-surface/50', className)}>{children}</As>
 }
 
 export function SectionTitle({ children, action, className }: { children: ReactNode; action?: ReactNode; className?: string }) {

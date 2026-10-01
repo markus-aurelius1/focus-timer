@@ -176,6 +176,36 @@ if (entered) {
   check('immersive mode opened (full screen unavailable headless)', await page.getByRole('dialog', { name: /immersive focus/i }).isVisible())
 }
 
+// The real runtime chooses a compatible countdown before mutating a stopwatch task.
+const profileAction = await page.evaluate(async () => {
+  const { db } = await import('/src/data/db.ts')
+  const { create, remove } = await import('/src/data/repo.ts')
+  const { blankTask } = await import('/src/planner/tasks.ts')
+  const { executeProposal } = await import('/src/tars/runtime.ts')
+  const { useTimer } = await import('/src/timer/store.ts')
+  if (useTimer.getState().timer.status !== 'idle') await executeProposal('timer.stop', { discard: true })
+  const before = JSON.stringify(useTimer.getState().timer)
+  const invalid = await executeProposal('timer.start', { taskId: 'missing-task', minutes: 50 })
+  const unchanged = before === JSON.stringify(useTimer.getState().timer)
+  const stopwatch = (await db.profiles.toArray()).find(p => p.mode === 'stopwatch')
+  const task = await create('tasks', blankTask({ title: 'Profile action fixture', profileId: stopwatch.id }))
+  const result = await executeProposal('timer.start', { taskId: task.id, minutes: 50 })
+  const timer = useTimer.getState().timer
+  const valid = result.ok && timer.status === 'running' && timer.targetMs === 3000000 && timer.context.taskId === task.id
+  await executeProposal('timer.stop', { discard: true })
+  await remove('tasks', task.id)
+  const event = await create('events', { title:'Unlinked block fixture', kind:'block', date:task.plannedFor ?? '2026-10-01', start:'09:00', end:'10:00', color:null, labelId:null, taskId:null, notes:'', location:'', reminderMinutes:null, recurrence:null })
+  const blockResult = await executeProposal('calendar.startBlock', { eventId:event.id })
+  const blockTimer = useTimer.getState().timer
+  const cleared = blockResult.ok && blockTimer.status === 'running' && blockTimer.context.taskId === null && blockTimer.context.projectId === null && blockTimer.context.labelId === null
+  await executeProposal('timer.stop', { discard:true })
+  await remove('events', event.id)
+  return { valid, invalid: !invalid.ok && unchanged, cleared }
+})
+check('invalid action references leave timer state unchanged', profileAction.invalid)
+check('duration action safely overrides a task stopwatch profile', profileAction.valid)
+check('an unlinked calendar block cannot inherit the previous task', profileAction.cleared)
+
 check('no page errors', errors.length === 0, errors.join(' | '))
 await browser.close()
 const failed = results.filter((r) => !r.ok).length
