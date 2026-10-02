@@ -19,7 +19,7 @@ export const PRIORITY_NAME = ['None', 'Low', 'Medium', 'High'] as const
 export function TaskCheck({ task, size = 'md' }: { task: Task; size?: 'sm' | 'md' }) {
   const [pending, setPending] = useState(false)
   const checked = !!task.done || pending
-  const s = size === 'sm' ? 'size-6' : 'size-7'
+  const s = size === 'sm' ? 'size-6' : 'size-[25px]'
   return (
     <button
       type="button"
@@ -50,8 +50,8 @@ export function TaskCheck({ task, size = 'md' }: { task: Task; size?: 'sm' | 'md
           void toggleTask(task)
         }
       }}
-      className={cn('group relative flex shrink-0 items-center justify-center rounded-full border-2 transition-colors', s)}
-      style={{ borderColor: checked ? 'var(--success)' : task.priority ? PRIORITY_COLOR[task.priority] : 'var(--ink-3)', background: checked ? 'var(--success)' : task.priority ? `color-mix(in oklab, ${PRIORITY_COLOR[task.priority]} 10%, transparent)` : undefined }}
+      className={cn('group relative flex shrink-0 items-center justify-center rounded-full border-[1.75px] transition-[border-color,background-color,transform] duration-150 active:scale-90', s)}
+      style={{ borderColor: checked ? 'var(--success)' : task.priority ? PRIORITY_COLOR[task.priority] : 'var(--ink-3)', background: checked ? 'var(--success)' : undefined }}
     >
       <motion.span initial={false} animate={{ scale: checked ? 1 : 0.4, opacity: checked ? 1 : 0 }} transition={{ type: 'spring', stiffness: 600, damping: 26 }}>
         <Check className="size-3.5 text-white dark:text-bg" strokeWidth={3.2} />
@@ -87,7 +87,7 @@ export function TaskItem({ task, project, label, sessions = 0, showDate = true, 
 
   return (
     <div
-      className={cn('group flex items-start gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-surface-2/60', task.done && 'opacity-55', className)}
+      className={cn('group flex items-start gap-3 rounded-xl px-2 py-2.5 transition-colors duration-150 hover:bg-surface-2/70', task.done && 'opacity-55', className)}
       onClick={() => useUi.getState().openTask(task.id)}
       role="button"
       tabIndex={0}
@@ -112,7 +112,7 @@ export function TaskItem({ task, project, label, sessions = 0, showDate = true, 
         <TaskCheck task={task} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className={cn('text-[15px] leading-snug font-semibold break-words', task.done && 'line-through decoration-ink-3')}>{task.title}</p>
+        <p className={cn('text-[15px] leading-snug font-semibold tracking-[-0.005em] break-words', task.done && 'line-through decoration-ink-3')}>{task.title}</p>
         {hasMeta && (
           <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs font-medium text-ink-2">
             {project && (
@@ -160,9 +160,9 @@ export function TaskItem({ task, project, label, sessions = 0, showDate = true, 
             haptics.press()
             void focusOnTask(task)
           }}
-          className="-mr-1 flex size-9 shrink-0 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-accent-soft hover:text-accent"
+          className="press flex size-9 shrink-0 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-accent-soft hover:text-accent sm:opacity-60 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
         >
-          <Play className="size-4 fill-current" />
+          <Play className="size-[15px] fill-current" />
         </button>
       )}
     </div>

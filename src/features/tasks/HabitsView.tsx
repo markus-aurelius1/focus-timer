@@ -12,10 +12,12 @@ import { habitEvaluator, habitStreak } from '@/planner/habits'
 import { haptics } from '@/services/haptics'
 import { Button, Card, Field, IconButton, Segmented, Stepper, TextInput, Select } from '@/ui/controls'
 import { ColorPicker } from '@/ui/ColorPicker'
-import { confirmDialog, EmptyState } from '@/ui/feedback'
+import { EmptyState } from '@/ui/feedback'
 import { Ring } from '@/ui/Ring'
 import { Sheet, SheetActions, SheetFooter } from '@/ui/Sheet'
 import { flattenLabels } from '@/features/shared/labels'
+import { deleteHabit } from '@/data/deletion'
+import { toast } from '@/ui/toast'
 
 export function HabitsView() {
   const habits = useHabits()
@@ -153,11 +155,9 @@ function HabitSheet({ habit, onClose }: { habit: Habit | 'new' | null; onClose: 
 
   const del = async () => {
     if (!habit || habit === 'new') return
-    if (!(await confirmDialog({ title: `Delete “${habit.name}”?`, body: 'Its check-ins are removed too.', confirmLabel: 'Delete', danger: true }))) return
-    const logs = await db.habitLogs.where('habitId').equals(habit.id).primaryKeys()
-    await remove('habitLogs', logs as string[])
-    await remove('habits', habit.id)
+    const deleted = await deleteHabit(habit.id)
     onClose()
+    if (deleted) toast({ title: `“${habit.name}” deleted`, body: 'Its check-ins went with it.', action: { label: 'Undo', run: () => void deleted.undo() } })
   }
 
   const order = weekdayOrder(settings.weekStartsOn)

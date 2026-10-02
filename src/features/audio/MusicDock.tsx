@@ -5,6 +5,7 @@ import { onTimerSound } from '@/audio/follow'
 import { useAudio } from '@/audio/store'
 import { embedUrl, parseMediaUrl, playerCommand } from '@/audio/youtube'
 import { cn } from '@/lib/cn'
+import { IconButton, Pressable } from '@/ui/controls'
 import { T } from '@/ui/motion'
 import { openExternal, useMusic } from './music'
 
@@ -89,35 +90,35 @@ export function MusicDock() {
           animate={{ opacity: 1, y: 0, transition: T.base }}
           exit={{ opacity: 0, y: 20, transition: T.exit }}
           className={cn(
-            'fixed right-4 z-30 overflow-hidden rounded-2xl border border-line bg-surface shadow-dialog',
-            'bottom-[calc(80px+env(safe-area-inset-bottom))] lg:bottom-6',
+            'layer-floating elev-2 fixed right-4 overflow-hidden rounded-card bg-surface',
+            'bottom-[calc(var(--nav-bottom)+16px)] md:right-6 md:bottom-6',
             minimized ? 'w-auto' : 'left-4 sm:left-auto sm:w-[380px]',
           )}
         >
           <div className="flex items-center gap-2 py-1.5 pr-1.5 pl-3">
             <Music2 className="size-4 shrink-0 text-accent" />
-            <button type="button" className="min-w-0 flex-1 truncate text-left text-[13px] font-bold" onClick={() => minimized && setMinimized(false)}>
+            <Pressable className="min-w-0 flex-1 truncate rounded-field py-1 text-left text-[13px] font-bold" aria-label={minimized ? `Show ${current.title}` : undefined} onClick={() => minimized && setMinimized(false)}>
               {current.title}
-            </button>
-            <button type="button" aria-label="Open in YouTube" onClick={() => openExternal(current.url)} className="rounded-full p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink">
-              <ExternalLink className="size-4" />
-            </button>
+            </Pressable>
+            <IconButton size="sm" tip="top" label="Open in YouTube" onClick={() => openExternal(current.url)}>
+              <ExternalLink />
+            </IconButton>
             {!minimized && (
-              <button
-                type="button"
-                aria-label="Pause and minimise"
+              <IconButton
+                size="sm"
+                tip="top"
+                label="Pause and minimise"
                 onClick={() => {
                   playerCommand(frame.current, 'pauseVideo')
                   setMinimized(true)
                 }}
-                className="rounded-full p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink"
               >
-                <ChevronDown className="size-4" />
-              </button>
+                <ChevronDown />
+              </IconButton>
             )}
-            <button type="button" aria-label="Close player" onClick={close} className="rounded-full p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink">
-              <X className="size-4" />
-            </button>
+            <IconButton size="sm" tip="top" label="Close player" onClick={close}>
+              <X />
+            </IconButton>
           </div>
           {/* Minimised = unloaded, so nothing ever plays out of sight. */}
           {!minimized && (

@@ -1,0 +1,10 @@
+dist
+node_modules
+android
+ios
+public
+tools/perf/out
+tools/atlas-build/content/generated
+tools/atlas-build/reports
+package-lock.json
+*.md

@@ -1,17 +1,18 @@
 import { Play, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useLabels, useOpenTasks } from '@/data/hooks'
-import { create, patch, remove } from '@/data/repo'
+import { create, patch } from '@/data/repo'
 import type { CalendarEvent, EventKind, RecurrenceRule } from '@/data/types'
 import { weekdayOf } from '@/lib/time'
 import { RECURRENCE_PRESETS } from '@/planner/recurrence'
 import { executeAction } from '@/tars/runtime'
 import { Button, Field, IconButton, Segmented, Select, TextArea, TextInput, Toggle } from '@/ui/controls'
 import { ColorPicker } from '@/ui/ColorPicker'
-import { confirmDialog } from '@/ui/feedback'
 import { Sheet, SheetActions } from '@/ui/Sheet'
 import { flattenLabels } from '@/features/shared/labels'
 import { REMINDER_OPTIONS } from './calendarModel'
+import { deleteEvent } from '@/data/deletion'
+import { toast } from '@/ui/toast'
 
 export type EventDraft = Partial<CalendarEvent> & { date: string }
 
@@ -74,9 +75,9 @@ export function EventSheet({ draft, onClose }: { draft: EventDraft | null; onClo
 
   const del = async () => {
     if (!ev.id) return
-    if (!(await confirmDialog({ title: 'Delete this item?', body: ev.recurrence ? 'This removes every occurrence in the series.' : undefined, confirmLabel: 'Delete', danger: true }))) return
-    await remove('events', ev.id)
+    const deleted = await deleteEvent(ev.id)
     onClose()
+    if (deleted) toast({ title: ev.recurrence ? 'Series deleted' : 'Calendar item deleted', body: ev.title || undefined, action: { label: 'Undo', run: () => void deleted.undo() } })
   }
 
   const startNow = async () => { if(ev.id) { const result = await executeAction('calendar.startBlock',{eventId:ev.id}); if(result.ok) onClose() } }

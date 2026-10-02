@@ -25,6 +25,7 @@ export const SHORTCUTS: ShortcutGroup[] = [
     items: [
       { keys: [`${modKey}K`], label: 'Search and commands' },
       { keys: ['N'], label: 'New task' },
+      { keys: ['C'], label: 'Quick capture – a note or a task' },
       { keys: [`${modKey}\\`], label: 'Collapse or expand the sidebar' },
       { keys: ['?'], label: 'Show keyboard shortcuts' },
       { keys: ['Esc'], label: 'Close a dialog' },
@@ -33,12 +34,14 @@ export const SHORTCUTS: ShortcutGroup[] = [
   {
     title: 'Go to',
     items: [
+      { keys: ['G', 'H'], label: 'Home' },
       { keys: ['G', 'F'], label: 'Focus' },
-      { keys: ['G', 'T'], label: 'Tasks' },
-      { keys: ['G', 'A'], label: 'Atlas' },
+      { keys: ['G', 'T'], label: 'Plan' },
       { keys: ['G', 'C'], label: 'Calendar' },
+      { keys: ['G', 'W'], label: 'Current Affairs' },
+      { keys: ['G', 'A'], label: 'Atlas' },
+      { keys: ['G', 'N'], label: 'Notes' },
       { keys: ['G', 'I'], label: 'Insights' },
-      { keys: ['G', 'W'], label: 'News' },
       { keys: ['G', 'S'], label: 'Settings' },
     ],
   },
@@ -60,7 +63,7 @@ export const SHORTCUTS: ShortcutGroup[] = [
   },
 ]
 
-const GO: Record<string, RouteName> = { f: 'focus', t: 'tasks', a: 'atlas', c: 'calendar', i: 'insights', s: 'settings', w: 'current-affairs' }
+const GO: Record<string, RouteName> = { h: 'home', f: 'focus', t: 'tasks', a: 'atlas', c: 'calendar', i: 'insights', s: 'settings', w: 'current-affairs', n: 'notes' }
 
 /** True when a key press is meant for a text field, not for a shortcut. */
 export function isTyping(target: EventTarget | null): boolean {
@@ -108,6 +111,9 @@ export function useGlobalShortcuts() {
       } else if (key === 'n' && !e.shiftKey) {
         e.preventDefault()
         void executeAction('task.create', { plannedFor:null })
+      } else if (key === 'c' && !e.shiftKey) {
+        e.preventDefault()
+        ui.set({ captureOpen: true })
       }
     }
     window.addEventListener('keydown', onKey)

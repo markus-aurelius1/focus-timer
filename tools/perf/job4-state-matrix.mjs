@@ -70,14 +70,17 @@ try {
       const row = gazetteer.getByRole('button').filter({ has: page.getByText(f.name, { exact: true }) })
       const label = row.getByText(f.level[0].toUpperCase() + f.level.slice(1), { exact: true })
       await label.waitFor()
+      // A resting pointer would put the row in its hover fill (a translucent oklab colour this parser can't read).
+      await page.mouse.move(1, 1)
       const ratio = await label.evaluate(el => {
         const luminance = s => { const c = s.match(/[\d.]+/g).slice(0, 3).map(Number).map(n => n / 255).map(n => n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4); return c[0] * .2126 + c[1] * .7152 + c[2] * .0722 }
         let parent = el.parentElement, background
         while (parent && (!background || background === 'rgba(0, 0, 0, 0)')) { background = getComputedStyle(parent).backgroundColor; parent = parent.parentElement }
         const a = luminance(getComputedStyle(el).color), b = luminance(background)
+        el.dataset.contrastEvidence = `${getComputedStyle(el).color} on ${background}`
         return (Math.max(a, b) + .05) / (Math.min(a, b) + .05)
       })
-      assert(ratio >= 4.5, `${width}-${theme} Gazetteer ${f.level}: ${ratio}`)
+      assert(ratio >= 4.5, `${width}-${theme} Gazetteer ${f.level}: ${ratio} (${await label.getAttribute('data-contrast-evidence')})`)
       gazetteerChecks.push({ width, theme, ...f, ratio })
     }
     await ctx.close()

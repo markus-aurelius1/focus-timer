@@ -47,8 +47,9 @@ export function computeExploration(atlas: AtlasData, sessions: Session[], runs: 
   return value
 }
 
-export function useExploration(): Exploration | null {
-  const atlas = useAtlas()
+/** `load: false` – use the Atlas state if the gazetteer is already here, without asking for it (see useAtlas). */
+export function useExploration(load = true): Exploration | null {
+  const atlas = useAtlas(load)
   const sessions = useSessions()
   const runs = useExpeditionRuns()
   const recalls = useRecalls()

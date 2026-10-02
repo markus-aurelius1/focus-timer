@@ -1,14 +1,15 @@
 import { Star, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useLabels, useOpenTasks, useProjects, useTasks } from '@/data/hooks'
-import { create, patch, remove } from '@/data/repo'
+import { create, patch } from '@/data/repo'
 import type { Session } from '@/data/types'
 import { cn } from '@/lib/cn'
 import { atTime, dayKey, hhmm, todayKey } from '@/lib/time'
 import { Button, Field, IconButton, Select, Stepper, TextArea, TextInput, Toggle } from '@/ui/controls'
-import { confirmDialog } from '@/ui/feedback'
 import { Sheet, SheetActions } from '@/ui/Sheet'
 import { flattenLabels } from '@/features/shared/labels'
+import { deleteSession } from '@/data/deletion'
+import { toast } from '@/ui/toast'
 
 /** Edit a recorded session or log one by hand (e.g. study done away from the app). */
 export function SessionSheet({ session, onClose }: { session: Session | 'new' | null; onClose: () => void }) {
@@ -83,9 +84,9 @@ export function SessionSheet({ session, onClose }: { session: Session | 'new' | 
 
   const del = async () => {
     if (!session || session === 'new') return
-    if (!(await confirmDialog({ title: 'Delete this session?', body: 'It will be removed from your statistics, XP and Atlas progress.', confirmLabel: 'Delete', danger: true }))) return
-    await remove('sessions', session.id)
+    const deleted = await deleteSession(session.id)
     onClose()
+    if (deleted) toast({ title: 'Session deleted', body: 'It no longer counts towards your statistics, XP or Atlas progress.', action: { label: 'Undo', run: () => void deleted.undo() } })
   }
 
   return (
@@ -158,7 +159,7 @@ export function SessionSheet({ session, onClose }: { session: Session | 'new' | 
           </Field>
         </div>
         <div>
-          <p className="mb-1.5 text-xs font-bold tracking-wide text-ink-2 uppercase">Focus quality</p>
+          <p className="mb-1.5 t-label">Focus quality</p>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((r) => (
               <button key={r} type="button" aria-label={`${r} of 5`} aria-pressed={rating === r} onClick={() => setRating(rating === r ? null : r)} className="rounded-full p-1">

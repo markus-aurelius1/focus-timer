@@ -1,20 +1,31 @@
 /** Search, deterministic intents and contextual ranking all produce registry actions. */
 import { useMemo } from 'react'
-import { CalendarDays, CheckCircle2, Expand, Headphones, Keyboard, ListTodo, Map as MapIcon, Moon, PanelLeft, Pause, Play, Plus, Settings2, SlidersHorizontal, Square, Sun, SunMoon, Target, Timer, type LucideIcon } from 'lucide-react'
+import { CalendarDays, ChartNoAxesColumn, CheckCircle2, Expand, Headphones, House, Keyboard, ListTodo, Map as MapIcon, Moon, Newspaper, NotebookPen, PanelLeft, Pause, Play, Plus, Settings2, SlidersHorizontal, Square, StickyNote, Sun, SunMoon, Target, Timer, Undo2, type LucideIcon } from 'lucide-react'
 import { useLabels, useOpenTasks, useSettings } from '@/data/hooks'
 import { useAtlas } from '@/atlas/data'
 import { useUi } from '@/app/ui-store'
 import { todayKey } from '@/lib/time'
 import { parseQuickAdd } from '@/planner/quickAdd'
-import { toast } from '@/ui/toast'
+import { currentUndoable, toast, undoLast, useToasts } from '@/ui/toast'
 import { ambiguousPlaceRequest, isControlRequest, parseIntent, searchScore } from './intents'
 import { suggestActions } from './context'
 import { actions, type ActionId } from './registry'
 import { executeProposal } from './runtime'
 import { useTarsContext } from './useContext'
+/** The commands a learner ran most recently, newest first – offered again when the palette opens. */
+const RECENT_KEY='tars.palette.recent'
+const RECENT_MAX=4
+export function recentCommands():string[] {
+  try { const v=JSON.parse(localStorage.getItem(RECENT_KEY)??'[]'); return Array.isArray(v)?v.filter((x):x is string=>typeof x==='string').slice(0,RECENT_MAX):[] } catch { return [] }
+}
+/** Only the fixed commands are remembered: a search hit or a suggestion is for that moment. */
+export function rememberCommand(id:string):void {
+  if(/^(context-|place-|task-|recent-|intent$|add$|undo$|timer$|stop$)/.test(id))return
+  try { localStorage.setItem(RECENT_KEY,JSON.stringify([id,...recentCommands().filter(x=>x!==id)].slice(0,RECENT_MAX))) } catch { /* storage unavailable */ }
+}
 export interface Command { id:string;section:string;label:string;hint?:string;keywords?:string;icon:LucideIcon;keys?:string;requiresChoice?:boolean;run:()=>void|Promise<void> }
 export function useCommands(query:string):Command[] {
-  const context=useTarsContext(),tasks=useOpenTasks(),labels=useLabels(),settings=useSettings(),atlas=useAtlas(),collapsed=useUi(s=>s.sidebarCollapsed)
+  const context=useTarsContext(),tasks=useOpenTasks(),labels=useLabels(),settings=useSettings(),atlas=useAtlas(),collapsed=useUi(s=>s.sidebarCollapsed),undoable=useToasts(s=>s.undoable)
   return useMemo(()=>{
     const command=(id:string,label:string,action:ActionId,input:Record<string,unknown>={},section='Go to',icon:LucideIcon=Target,hint?:string,keywords?:string):Command=>({id,label,section,icon,hint,keywords,run:async()=>{const r=await executeProposal(action,input);if(!r.ok)toast({title:r.message??'Action unavailable'})}})
     const t=context.timer,today=todayKey()
@@ -25,13 +36,17 @@ export function useCommands(query:string):Command[] {
       command('context','What are you working on?','ui.open',{surface:'context'},'Timer',Target,'Pick a subject, task and intention'),
       command('sounds','Sounds','ui.open',{surface:'sounds'},'Timer',Headphones,'Soundscapes and music','ambient rain noise music'),
       command('profiles','Timer profiles','ui.open',{surface:'profiles'},'Timer',SlidersHorizontal,'Pomodoro, countdown, stopwatch'),
-      command('new-task','New task…','task.create',{plannedFor:today},'Tasks',Plus,'With subject, tags, dates and more','add create todo'),
+      command('new-task','New task…','task.create',{plannedFor:today},'Capture',Plus,'With subject, tags, dates and more','add create todo'),
+      command('capture','Capture a note','ui.open',{surface:'capture'},'Capture',NotebookPen,'One short thought, dated and kept','quick note sticky jot write'),
+      command('go-home','Home','navigation.open',{route:'home'},'Go to',House,'What to do right now','overview next'),
       command('go-focus','Focus','navigation.open',{route:'focus'},'Go to',Timer),
-      ...['today','upcoming','inbox','projects','habits'].map(view=>command('go-'+view,'Tasks · '+view[0].toUpperCase()+view.slice(1),'navigation.open',{route:'tasks',view},'Go to',ListTodo)),
+      ...['today','upcoming','inbox','projects','habits'].map(view=>command('go-'+view,'Plan · '+view[0].toUpperCase()+view.slice(1),'navigation.open',{route:'tasks',view},'Go to',ListTodo,undefined,'tasks')),
       command('go-atlas','Atlas','atlas.open',{},'Go to',MapIcon,'Freely explore every place','map geography'),
       command('go-pyq','Previous questions','pyq.reviewForPlace',{},'Atlas',CheckCircle2,'149 curated canonical questions','pyq cse pcs cds'),
       command('go-calendar','Calendar','calendar.openDay',{day:today},'Go to',CalendarDays,'Plan your time','schedule events'),
-      command('go-insights','Insights','navigation.open',{route:'insights'}),command('go-news','Current Affairs','navigation.open',{route:'current-affairs'},'Go to',ListTodo,'News · original links','news current affairs'),command('go-settings','Settings','settings.open',{},'Go to',Settings2,'Preferences'),
+      command('go-news','Current Affairs','navigation.open',{route:'current-affairs'},'Go to',Newspaper,'Today’s reading · original links','news current affairs'),
+      command('go-notes','Notes','navigation.open',{route:'notes'},'Go to',StickyNote,'Your short dated notes','sticky notes'),
+      command('go-insights','Insights','navigation.open',{route:'insights'},'Go to',ChartNoAxesColumn,'Focus time, patterns and progress','progress stats analytics'),command('go-settings','Settings','settings.open',{},'Go to',Settings2,'Preferences'),
       ...(context.route==='atlas'?[command('atlas-full','Full-screen map','ui.open',{surface:'atlasFullscreen'},'Atlas',Expand)]:[]),
       command('theme-light','Theme: Paper (light)','appearance.theme',{theme:'light'},'Appearance',Sun,undefined,'light mode theme'),
       command('theme-dark','Theme: Night (dark)','appearance.theme',{theme:'dark'},'Appearance',Moon,undefined,'dark mode theme'),
@@ -40,7 +55,11 @@ export function useCommands(query:string):Command[] {
       command('shortcuts','Keyboard shortcuts','ui.open',{surface:'shortcuts'},'Help',Keyboard),
     ]
     const q=query.trim()
-    if(!q)return [...suggestActions(context).map((s,i)=>command('context-'+i,s.title,s.action as ActionId,s.input,'Next',Target)),...base.filter(c=>c.section!=='Appearance'||c.id==='sidebar'||c.id==='theme-'+(settings.theme==='dark'?'light':'dark'))]
+    // The last thing that offered Undo can still be taken back from here after its toast has gone.
+    const pending=undoable&&currentUndoable()
+    const undo:Command[]=pending?[{id:'undo',section:'Undo',label:'Undo: '+pending.title,hint:'Take back the last action',keywords:'undo revert restore',icon:Undo2,run:()=>{undoLast()}}]:[]
+    const recent=recentCommands().map(id=>base.find(c=>c.id===id)).filter((c):c is Command=>!!c).map(c=>({...c,id:'recent-'+c.id,section:'Recent'}))
+    if(!q)return [...undo,...suggestActions(context).map((s,i)=>command('context-'+i,s.title,s.action as ActionId,s.input,'Next',Target)),...recent,...base.filter(c=>c.section!=='Appearance'||c.id==='sidebar'||c.id==='theme-'+(settings.theme==='dark'?'light':'dark'))]
     const intent=parseIntent(q,context,labels,atlas?.places??[])
     const ambiguousPlace=!intent&&ambiguousPlaceRequest(q,atlas?.places??[])
     const proposal=intent&&actions.find(a=>a.id===intent.action)?.availability(context)?[command('intent',intent.title,intent.action,intent.input as Record<string,unknown>,'Command',Target,'Run this action')]:[]
@@ -52,6 +71,7 @@ export function useCommands(query:string):Command[] {
     // Failed control requests should not accidentally become captured tasks.
     const controlRequest=isControlRequest(q)
     const add=parsed.title&&!controlRequest?[command('add',`Add task “${parsed.title}”`,'task.create',{text:q},'Create',Plus,'Capture with dates, subjects and tags')]:[]
-    return [...proposal,...placeHits,...taskHits,...matches,...add].map(c=>ambiguousPlace?{...c,requiresChoice:true,section:c.section==='Places'?'Choose a place':c.section}:c)
-  },[query,context,tasks,labels,settings.theme,atlas,collapsed])
+    const undoHit=undo.filter(c=>searchScore(c.label+' '+c.keywords,q)>0)
+    return [...proposal,...undoHit,...placeHits,...taskHits,...matches,...add].map(c=>ambiguousPlace?{...c,requiresChoice:true,section:c.section==='Places'?'Choose a place':c.section}:c)
+  },[query,context,tasks,labels,settings.theme,atlas,collapsed,undoable])
 }

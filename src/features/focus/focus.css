@@ -1,0 +1,400 @@
+/* ── The Focus stage ────────────────────────────────────────────────────────
+ * A study room rather than a dashboard: a picture, a very large clock, one
+ * line of words and a few controls. Everything on the stage reads its colours
+ * from the --focus-* variables below, so the same markup works over a
+ * wallpaper (light ink on a dimmed picture) and on the plain stage (the app's
+ * own Paper or Night colours).                                                */
+
+/* In the components layer: a utility on the same element still wins. */
+@layer components {
+  .focus-stage {
+    --focus-ink: var(--ink);
+    --focus-ink-2: var(--ink-2);
+    --focus-ink-3: var(--ink-3);
+    --focus-well: var(--surface-2);
+    --focus-well-strong: var(--surface-3);
+    --focus-line: var(--line-strong);
+    --focus-main: var(--primary);
+    --focus-main-ink: var(--primary-ink);
+    --focus-phase: var(--phase, var(--accent));
+    position: relative;
+    isolation: isolate;
+    /* Sizes inside are in container units (cqw), so the clock fits the stage itself – also when a side panel narrows it. */
+    container-type: inline-size;
+    display: flex;
+    min-height: calc(100svh - var(--nav-bottom));
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--focus-ink);
+  }
+  @media (min-width: 768px) {
+    .focus-stage {
+      height: 100%;
+      min-height: 0;
+    }
+  }
+  /* Over a picture: white ink, translucent wells (solid colour, no backdrop blur). */
+  .focus-stage[data-wallpaper] {
+    --focus-ink: #fff;
+    --focus-ink-2: rgba(255, 255, 255, 0.78);
+    --focus-ink-3: rgba(255, 255, 255, 0.6);
+    --focus-well: rgba(10, 12, 22, 0.46);
+    --focus-well-strong: rgba(10, 12, 22, 0.66);
+    --focus-line: rgba(255, 255, 255, 0.22);
+    --focus-main: #fff;
+    --focus-main-ink: #12141f;
+    --focus-phase: #fff;
+    background: #0b0d16;
+  }
+
+  /* The picture, and the dimming that keeps the clock legible on any of them. */
+  .focus-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+  }
+  .focus-backdrop img {
+    position: absolute;
+    inset: -3%;
+    width: 106%;
+    height: 106%;
+    max-width: none;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--dur-calm) var(--motion-ease-in-out);
+    will-change: opacity, transform;
+  }
+  .focus-backdrop img[data-shown] {
+    opacity: 1;
+  }
+  /* A very slow drift, so the picture is alive without ever being noticed moving. */
+  .ambience-drift {
+    animation: ambience-drift 90s ease-in-out infinite alternate;
+  }
+  @keyframes ambience-drift {
+    from {
+      transform: scale(1) translate3d(0, 0, 0);
+    }
+    to {
+      transform: scale(1.05) translate3d(-1.2%, -0.8%, 0);
+    }
+  }
+  .focus-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 50% 46%, rgba(6, 8, 16, calc(var(--dim, 0.5) * 0.9)) 0%, rgba(6, 8, 16, calc(var(--dim, 0.5) * 0.5)) 60%, rgba(6, 8, 16, calc(var(--dim, 0.5) * 0.95)) 100%),
+      linear-gradient(to bottom, rgba(6, 8, 16, 0.45), transparent 22%, transparent 70%, rgba(6, 8, 16, 0.6));
+  }
+
+  /* ── Chrome: the bar at the top, the bar at the bottom ───────────────────── */
+  /* The same column as every workspace header (HEADER_COLUMN in app/Workspace.tsx), so the title does not move between screens. */
+  .focus-bar {
+    display: flex;
+    width: 100%;
+    min-height: 3.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline: 1rem;
+    transition: opacity var(--dur-calm) var(--motion-ease-in-out);
+  }
+  @media (min-width: 640px) {
+    .focus-bar {
+      padding-inline: 1.5rem;
+    }
+  }
+  @media (min-width: 768px) {
+    /* Other workspaces lose a scrollbar's width on the right (--stage-gutter, set by App.tsx); allowing for it here keeps the two in line. */
+    .focus-bar {
+      max-width: calc(72rem + var(--stage-gutter, 0px));
+      margin-inline: auto;
+      padding-right: calc(1.5rem + var(--stage-gutter, 0px));
+    }
+  }
+  @media (min-width: 1024px) {
+    .focus-bar {
+      padding-left: 2rem;
+      padding-right: calc(2rem + var(--stage-gutter, 0px));
+    }
+  }
+  /* In a running session the chrome recedes; it returns on hover, focus, pause or stop. */
+  .focus-stage[data-quiet] .focus-recede:not(:hover):not(:focus-within) {
+    opacity: 0.34;
+  }
+  /* Immersive and idle for a few seconds: gone, and out of the tab order (the element is also made inert). */
+  .focus-stage[data-hidden] .focus-recede {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .focus-stage[data-hidden] {
+    cursor: none;
+  }
+
+  /* A control on the stage: an icon button, a capsule. */
+  .focus-ctl {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    color: var(--focus-ink-2);
+    font-size: 0.8125rem;
+    font-weight: 650;
+  }
+  .focus-ctl[data-shape='icon'] {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .focus-ctl[data-shape='pill'] {
+    height: 2.25rem;
+    max-width: 100%;
+    padding-inline: 0.875rem;
+    background: var(--focus-well);
+  }
+  .focus-ctl[data-active] {
+    color: var(--focus-ink);
+    background: var(--focus-well-strong);
+  }
+  @media (hover: hover) {
+    .focus-ctl:hover {
+      color: var(--focus-ink);
+    }
+  }
+
+  /* The phase tabs: Focus · Short break · Long break. */
+  .focus-stage .segmented {
+    background: var(--focus-well);
+  }
+  .focus-stage .segment {
+    color: var(--focus-ink-2);
+  }
+  .focus-stage .segment[aria-selected='true'] {
+    color: var(--focus-main-ink);
+  }
+  .focus-stage .segment-pill {
+    background: var(--focus-main);
+    box-shadow: none;
+  }
+  .focus-stage:not([data-wallpaper]) .segment[aria-selected='true'] {
+    color: var(--ink);
+  }
+  .focus-stage:not([data-wallpaper]) .segment-pill {
+    background: var(--surface);
+    box-shadow: var(--shadow-soft-value);
+  }
+
+  /* ── The clock ───────────────────────────────────────────────────────────── */
+  .focus-center {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem 1rem;
+    text-align: center;
+  }
+  .focus-phase {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: clamp(0.75rem, 1.4cqw, 0.9375rem);
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--focus-phase);
+  }
+  .focus-phase > span {
+    color: var(--focus-ink-3);
+  }
+  .focus-digits {
+    display: block;
+    margin-top: clamp(0.25rem, 1.2vh, 0.875rem);
+    font-size: clamp(5.25rem, min(23.5cqw, 33vh), 17rem);
+    line-height: 0.92;
+    font-weight: 600;
+    color: var(--focus-ink);
+  }
+  .focus-digits[data-long] {
+    font-size: clamp(4rem, min(17cqw, 28vh), 13rem);
+  }
+  .focus-stage[data-wallpaper] .focus-digits {
+    text-shadow: 0 2px 30px rgba(4, 6, 14, 0.45);
+  }
+  /* Paused: the time breathes slowly. */
+  .focus-stage[data-state='paused'] .focus-digits {
+    animation: dial-blink 2.4s ease-in-out infinite;
+  }
+  @keyframes dial-blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+  /* Progress: a hairline under the clock, filled by a compositor animation (timer/useProgressAnimation.ts). */
+  .focus-progress {
+    width: min(26rem, 62cqw);
+    height: 3px;
+    margin-top: clamp(0.75rem, 2.4vh, 1.5rem);
+    overflow: hidden;
+    border-radius: 9999px;
+    background: var(--focus-line);
+    transition: opacity var(--dur-slow) var(--motion-ease-in-out);
+  }
+  .focus-stage[data-state='idle'] .focus-progress {
+    opacity: 0;
+  }
+  .focus-progress > div {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--focus-phase);
+    transform: scaleX(0);
+    transform-origin: left center;
+    will-change: transform;
+    transition: opacity var(--dur-slow);
+  }
+  .focus-stage[data-state='paused'] .focus-progress > div {
+    opacity: 0.45;
+  }
+  .focus-status {
+    display: flex;
+    min-height: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    margin-top: clamp(0.5rem, 1.6vh, 1rem);
+    font-size: clamp(0.8125rem, 1.5cqw, 0.9375rem);
+    font-weight: 600;
+    color: var(--focus-ink-2);
+  }
+  .focus-slabs {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+  }
+  .focus-slabs > span {
+    width: 5px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--focus-line);
+    transition:
+      height var(--dur-base) var(--motion-ease-out),
+      background-color var(--dur-base) var(--motion-ease-out);
+  }
+  .focus-slabs > span[data-on] {
+    height: 12px;
+    background: var(--focus-phase);
+  }
+
+  /* ── Controls ────────────────────────────────────────────────────────────── */
+  .focus-controls {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.75rem, 3cqw, 1.5rem);
+    margin-top: clamp(1rem, 3.2vh, 2rem);
+  }
+  /* Start / Pause / Resume: the one control that matters. */
+  .focus-main {
+    display: inline-flex;
+    height: 3.75rem;
+    min-width: 11rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    border-radius: 9999px;
+    padding-inline: 2rem;
+    background: var(--focus-main);
+    color: var(--focus-main-ink);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: 0 10px 30px -12px rgba(4, 6, 14, 0.55);
+    --state-hover: 0.08;
+    --state-press: 0.16;
+  }
+  .focus-main[data-phase='break'] {
+    background: var(--focus-phase);
+  }
+  .focus-stage[data-wallpaper] .focus-main[data-phase='break'] {
+    background: #fff;
+  }
+  .focus-side {
+    display: inline-flex;
+    width: 3.25rem;
+    height: 3.25rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: var(--focus-well);
+    color: var(--focus-ink);
+  }
+  .focus-side:disabled {
+    opacity: 0.3;
+  }
+
+  /* The line under everything. */
+  .focus-quote {
+    max-width: 44rem;
+    text-align: center;
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-size: clamp(0.9375rem, 1.7cqw, 1.1875rem);
+    line-height: 1.4;
+    font-weight: 400;
+    color: var(--focus-ink-2);
+    text-wrap: balance;
+  }
+  .focus-stage[data-wallpaper] .focus-quote {
+    text-shadow: 0 1px 14px rgba(4, 6, 14, 0.5);
+  }
+
+  /* The completion moment and the "how did it go?" card sit where the clock was. */
+  .focus-card {
+    width: min(27rem, 100%);
+    border-radius: var(--radius-panel);
+    background: var(--surface);
+    color: var(--ink);
+    text-align: left;
+    box-shadow:
+      0 0 0 1px var(--line),
+      var(--shadow-dialog-value);
+  }
+
+  /* ── Wallpaper picker ────────────────────────────────────────────────────── */
+  .wall-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: 0.5rem;
+  }
+  .wall-thumb {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: var(--radius-field);
+    background: var(--surface-3);
+  }
+  .wall-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--motion-ease-out);
+  }
+  .wall-thumb img[data-loaded] {
+    opacity: 1;
+  }
+  .wall-thumb[aria-checked='true'] {
+    box-shadow:
+      0 0 0 2px var(--surface),
+      0 0 0 4px var(--accent);
+  }
+}

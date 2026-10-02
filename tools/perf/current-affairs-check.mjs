@@ -6,23 +6,31 @@ import { fileURLToPath } from 'node:url'
 import { resolve, sep } from 'node:path'
 import { chromium } from 'playwright-core'
 import { prepare } from './lib.mjs'
-const dist = resolve(fileURLToPath(new URL('../../dist/', import.meta.url))), out = new URL('./out/current-affairs-workspace/', import.meta.url)
+const dist = resolve(fileURLToPath(new URL('../../dist/', import.meta.url))), out = new URL('./out/current-affairs-direct/', import.meta.url)
 mkdirSync(out, { recursive: true })
 const fetchedAt = new Date().toISOString()
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
-const publishedAt = today + 'T06:00:00Z', yesterday = new Date(Date.parse(publishedAt) - 86400000).toISOString()
+const publishedAt = new Date(Date.now() - 2 * 3600000).toISOString(), yesterday = new Date(Date.now() - 30 * 3600000).toISOString()
+const pastYear = `${Number(today.slice(0, 4)) - 1}-01-15`, pastMonth = `${today.slice(0, 4)}-01-15`
 const stateKey = 'tars.current-affairs.state.v1'
 const row = (title, sourceId, publisher, url) => ({ title, sourceId, publisher, url, section: 'Explained', description: '', publishedAt })
-const fixture = { version: 1, fetchedAt, sources: [{ sourceId: 'ie-explained', status: 'ok', count: 5 }, { sourceId: 'sebi', status: 'failed', count: 0 }], items: [
-  row('RBI revises banking liquidity regulation framework', 'ie-explained', 'Indian Express', 'https://indianexpress.com/article/fixture-rbi'),
-  row('RBI revises banking liquidity regulation framework today', 'rbi-notifications', 'RBI', 'https://www.rbi.org.in/fixture'),
-  row('Ramsar protected area conservation expands', 'guardian-environment', 'Guardian', 'https://www.theguardian.com/fixture-environment'),
+const fixture = { version: 1, fetchedAt, sources: [{ sourceId: 'ie-explained', status: 'ok', count: 5 }, { sourceId: 'ht-india', status: 'failed', count: 0 }], items: [
+  { ...row('RBI revises banking liquidity regulation framework', 'ie-explained', 'Indian Express', 'https://indianexpress.com/article/fixture-rbi'), thumbnailUrl: 'https://images.example.org/fixture-thumbnail.jpg' },
+  row('RBI revises banking liquidity regulation framework today', 'hindu-national', 'The Hindu', 'https://www.thehindu.com/fixture-rbi'),
+  row('RBI master circular on credit facilities', 'rbi-notifications', 'RBI', 'https://www.rbi.org.in/fixture-old-circular'),
+  { ...row('Ramsar protected area conservation expands', 'guardian-environment', 'Guardian', 'https://www.theguardian.com/fixture-environment'), thumbnailUrl: 'https://images.example.org/broken.jpg' },
   row('ISRO launches important lunar space mission', 'ie-explained', 'Indian Express', 'https://indianexpress.com/article/fixture-space'),
   { ...row('Supreme Court ruling on constitutional fundamental rights', 'hindu-national', 'The Hindu', 'https://www.thehindu.com/fixture-rights'), section: 'National', description: 'Feed supplied excerpt about the constitutional ruling.' },
   { ...row('Government scheme expands Ayushman Bharat coverage', 'hindu-national', 'The Hindu', 'https://www.thehindu.com/fixture-health'), section: 'National' },
   { ...row('RBI monetary policy holds repo rate', 'mint-economy', 'Mint', 'https://www.livemint.com/fixture-old'), publishedAt: yesterday, section: 'Economy' },
   { ...row('ISRO launches new space mission', 'hindu-national', 'The Hindu', 'https://www.thehindu.com/fixture-undated'), publishedAt: null },
+  { ...row('New GDP series uses double deflation', 'ie-economy', 'Indian Express', 'https://indianexpress.com/article/fixture-gdp'), section: 'Economy' },
+  { ...row('UPSC Key: Poompuhar, NCERT Textbooks and Article 370', 'ie-upsc', 'Indian Express', 'https://indianexpress.com/article/fixture-key'), section: 'UPSC Current Affairs' },
+  { ...row('El Niño-driven wildfires threaten orangutan habitat', 'guardian-environment', 'Guardian', 'https://www.theguardian.com/fixture-wildfire'), thumbnailUrl: 'https://images.example.org/fixture-wildfire.jpg' },
+  { ...row('WHO public health vaccination framework expands', 'ht-science', 'Hindustan Times', 'https://www.hindustantimes.com/fixture-recent-prior-day'), publishedAt: new Date(Date.now() - 23 * 3600000).toISOString() },
   row('Cricket score: India wins', 'ie-explained', 'Indian Express', 'https://indianexpress.com/article/fixture-cricket'),
+  { ...row('Ramsar wetland conservation framework expands', 'dte-news', 'Down To Earth', 'https://www.downtoearth.org.in/fixture-past-year'), publishedAt: pastYear + 'T06:00:00Z' },
+  { ...row('ISRO launches important lunar space mission', 'ie-explained', 'Indian Express', 'https://indianexpress.com/article/fixture-past-month'), publishedAt: pastMonth + 'T06:00:00Z' },
 ] }
 let mode = 'ok'
 const mime = { '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.html': 'text/html', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2' }
@@ -34,7 +42,7 @@ const server = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json')
     res.setHeader('Cache-Control', 'no-store')
     res.writeHead(state === 'fail' ? 503 : 200)
-    res.end(JSON.stringify(state === 'fail' ? { error: 'Fixture failure' } : state === 'stale' ? { ...fixture, fetchedAt: new Date(Date.now() - 7200000).toISOString() } : fixture)); return
+    res.end(JSON.stringify(state === 'fail' ? { error: 'Fixture failure' } : state === 'stale' ? { ...fixture, fetchedAt: new Date(Date.now() - 7200000).toISOString() } : state === 'trimmed' ? { ...fixture, items: fixture.items.filter(i => i.publishedAt === publishedAt) } : fixture)); return
   }
   const file = resolve(dist, '.' + (path === '/' ? '/index.html' : decodeURIComponent(path)))
   if (!file.startsWith(dist + sep) || !existsSync(file)) { res.writeHead(404); res.end(); return }
@@ -48,188 +56,102 @@ const checks = [], errors = []
 const check = (tag, name, evidence = true) => { assert(evidence, `${tag}: ${name}`); checks.push({ tag, name }); console.log(`PASS ${tag}: ${name}`) }
 try {
   for (const width of process.argv.includes('--workbox-only') ? [] : [375, 1366]) for (const theme of ['light', 'dark']) {
-    const tag = width + '-' + theme, desktop = width >= 1024
+    const tag = width + '-' + theme
     const ctx = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, timezoneId: 'Asia/Kolkata', serviceWorkers: 'block' }), page = await ctx.newPage()
     page.on('pageerror', e => errors.push(e.message))
     await ctx.route('https://**/*fixture*', route => route.fulfill({ contentType: 'text/html', body: '<h1>Original publisher fixture</h1>' }))
-    const rows = page.locator('[data-news-event]'), reading = page.getByRole('group', { name: 'Reading filter' }), subject = page.getByRole('group', { name: 'Subject filter' })
-    const setSubject = async name => { if (desktop) await subject.getByRole('button', { name, exact: true }).click(); else await page.getByLabel('Subject filter', { exact: true }).selectOption(name) }
-    const inspect = async title => {
-      await rows.filter({ hasText: title }).getByRole('button', { name: /^Inspect / }).click()
-      if (!desktop) await page.getByRole('dialog', { name: 'Article context' }).waitFor()
-      return desktop ? page.locator('[data-desktop-inspector]') : page.getByRole('dialog', { name: 'Article context' })
-    }
-    const back = async () => { if (!desktop) { await page.getByRole('button', { name: '← Back', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' }) } }
-    const overflow = async () => {
-      check(tag, 'no horizontal overflow', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll('[role=dialog]')].every(e => e.scrollWidth <= e.clientWidth)))
-    }
+    await ctx.route('https://images.example.org/**', route => route.request().url().includes('broken') ? route.fulfill({ status: 404 }) : route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"><rect width="160" height="100" fill="#bac9c9"/><path d="M0 100L65 20L120 100Z" fill="#647b6f"/></svg>' }))
+    const rows = page.locator('[data-news-event]'), reading = page.getByRole('group', { name: 'Reading filter' })
+    const queue = async name => reading.getByRole('button', { name, exact: true }).click()
+    const showFilters = async () => { const b = page.getByRole('button', { name: 'Filters', exact: true }); if (await b.getAttribute('aria-expanded') === 'false') await b.click() }
+    const hideFilters = async () => { const b = page.getByRole('button', { name: 'Filters', exact: true }); if (await b.getAttribute('aria-expanded') === 'true') await b.click() }
+    const rbi = () => rows.filter({ hasText: 'RBI revises' })
+    const read = row => row.getByRole('button', { name: /^Mark (?:as read|unread):/ })
+    const save = row => row.getByRole('button', { name: /^(?:Save|Unsave) / })
+    const overflow = async () => check(tag, 'no horizontal overflow', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
     mode = 'fail'
-    await prepare(page, base, { sample: false, route: '#/current-affairs' })
-    await page.getByRole('alert').waitFor()
+    await prepare(page, base, { sample: false, route: '#/current-affairs' }); await page.getByRole('alert').waitFor()
     check(tag, 'first-load failure is visible')
-    if (!desktop) {
-      const nav = page.getByRole('navigation', { name: 'Main', exact: true })
-      check(tag, 'six bottom-navigation targets remain usable', await nav.getByRole('button').count() === 6 && await nav.getByRole('button').evaluateAll(buttons => buttons.every(el => { const r = el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.x >= 0 && r.right <= innerWidth })))
-      await nav.getByRole('button', { name: 'Tasks', exact: true }).click()
-      await nav.getByRole('button', { name: 'News', exact: true }).click()
-    } else {
-      await page.getByRole('navigation', { name: 'Screens' }).getByRole('button', { name: 'Tasks', exact: true }).click()
-      await page.getByRole('navigation', { name: 'Screens' }).getByRole('button', { name: 'News', exact: true }).click()
-    }
-    check(tag, 'News navigation reaches workspace', page.url().endsWith('#/current-affairs'))
-    await page.getByRole('alert').waitFor()
-    mode = 'slow'; await page.getByRole('button', { name: 'Refresh news' }).click()
-    await page.getByText('Loading trusted feeds…', { exact: true }).waitFor()
-    check(tag, 'loading status')
-    await rows.first().waitFor()
-    check(tag, 'today edition has five events, clustering/noise preserved', await rows.count() === 5 && await page.getByLabel('Edition date').inputValue() === today)
-    check(tag, 'daily progress and unread time', (await page.locator('[data-edition-progress]').innerText()) === '0 / 5 read' && (await page.locator('[data-edition-summary]').innerText()).includes('min left today'))
-    if (desktop) check(tag, '42/58 desktop split and independent pane scrolling', await page.evaluate(() => { const list = document.querySelector('[data-news-list]'), pane = document.querySelector('[data-desktop-inspector]'), a = list.getBoundingClientRect(), b = pane.getBoundingClientRect(); return a.right <= b.left + 2 && Math.abs(a.width / (a.width + b.width) - .42) < .02 && getComputedStyle(list).overflowY === 'auto' && getComputedStyle(pane).overflowY === 'auto' }))
-    else check(tag, 'mobile starts with compact list only', await page.locator('[data-desktop-inspector]').count() === 0 && await page.getByRole('dialog').count() === 0)
-    for (const value of ['Prelims', 'Mains', 'Both']) { await page.getByLabel('Exam filter').selectOption(value); check(tag, value + ' filter', await rows.count() > 0) }
-    await page.getByLabel('Exam filter').selectOption('All')
-    await setSubject('Environment')
-    check(tag, 'subject filter', await rows.count() === 1)
-    await setSubject('All subjects')
-    await page.getByLabel('Publisher filter').selectOption('RBI')
-    check(tag, 'publisher filter across cluster members', await rows.count() === 1)
-    await page.getByLabel('Publisher filter').selectOption('All sources')
-    const search = page.getByRole('searchbox')
-    await search.fill('Ayushman')
-    check(tag, 'client metadata search', await rows.count() === 1)
-    await search.fill('')
-    await reading.getByRole('button', { name: '★ Must Read', exact: true }).click()
-    check(tag, 'Must Read is deterministic and selective', await rows.count() > 0 && await rows.count() < 5 && await rows.getByLabel('Must Read', { exact: true }).count() === await rows.count())
-    await reading.getByRole('button', { name: 'All CA', exact: true }).click()
-    for (const budget of [15, 30, 60]) {
-      const button = page.getByRole('group', { name: 'Reading time budget' }).getByRole('button', { name: budget + ' min', exact: true })
-      await button.click()
-      check(tag, budget + ' min highest-value unread plan', await rows.count() > 0 && (await page.locator('[data-news-list]').innerText()).includes('min plan'))
-      await button.click()
-    }
-    let pane = await inspect('RBI revises')
-    check(tag, 'selection opens correct headline', (await pane.getByRole('heading', { level: 2 }).last().innerText()).startsWith('RBI revises'))
-    check(tag, 'normal UI hides scores', await pane.locator('pre').count() === 0)
-    await pane.getByRole('tab', { name: 'Related coverage', exact: true }).click()
-    check(tag, 'related alternate original coverage', await pane.getByRole('link', { name: /RBI revises/ }).getAttribute('href') === 'https://indianexpress.com/article/fixture-rbi')
-    await pane.getByRole('tab', { name: 'References', exact: true }).click()
-    check(tag, 'exact reference only', await pane.getByRole('link', { name: /RBI · Official/ }).getAttribute('href') === 'https://www.rbi.org.in/')
-    check(tag, 'no generic static search URLs', await page.locator('.ca-workspace a, [role=dialog] a').evaluateAll(links => links.every(a => !/google|[?&](search|q|query)=|\/search/.test(a.href))))
-    await pane.getByRole('tab', { name: 'Overview', exact: true }).click()
-    const original = pane.getByRole('link', { name: /Open original/ }), headline = await pane.getByRole('heading', { level: 2 }).last().innerText()
-    check(tag, 'primary original link retains publisher URL and safe new tab', await original.getAttribute('href') === 'https://www.rbi.org.in/fixture' && await original.getAttribute('target') === '_blank' && (await original.getAttribute('rel')).includes('noopener'))
-    const popupPromise = page.waitForEvent('popup'); await original.click(); const popup = await popupPromise; await popup.waitForLoadState(); await popup.close()
-    check(tag, 'return from original retains selection', await pane.getByRole('heading', { level: 2 }).last().innerText() === headline)
-    await pane.getByRole('button', { name: 'Mark as read', exact: true }).click()
-    check(tag, 'mark read keeps current article', await pane.getByRole('heading', { level: 2 }).last().innerText() === headline)
-    await pane.getByRole('button', { name: 'Save article', exact: true }).click()
-    await pane.getByRole('tab', { name: 'Notes', exact: true }).click()
-    await pane.getByLabel('Your notes').fill('Recall the monetary policy framework.')
-    check(tag, 'read/save/note stored as personal fields only', await page.evaluate(key => { const s = JSON.parse(localStorage.getItem(key)); return s.version === 1 && Object.values(s.entries).some(e => e.readAt && e.savedAt && e.note) && Object.values(s.entries).every(e => Object.keys(e).every(k => ['readAt', 'savedAt', 'note'].includes(k))) }, stateKey))
-    const sibling = await ctx.newPage()
-    await sibling.goto(base + 'manifest.webmanifest')
-    await sibling.evaluate(key => { const state = JSON.parse(localStorage.getItem(key)); for (const entry of Object.values(state.entries)) if (entry.note) entry.note = 'Note from another tab'; localStorage.setItem(key, JSON.stringify(state)) }, stateKey)
-    await pane.getByLabel('Your notes').waitFor()
-    await page.waitForFunction(() => document.querySelector('#ca-note')?.value === 'Note from another tab')
-    check(tag, 'cross-tab personal state refreshes', await pane.getByLabel('Your notes').inputValue() === 'Note from another tab')
-    await pane.getByLabel('Your notes').fill('Recall the monetary policy framework.')
-    await sibling.close()
-    await overflow()
-    await back()
-    check(tag, 'progress advances without losing selection', await page.locator('[data-edition-progress]').innerText() === '1 / 5 read')
-    await page.reload(); await rows.first().waitFor()
-    await reading.getByRole('button', { name: 'Saved', exact: true }).click()
-    check(tag, 'saved/read survive reload', await rows.count() === 1 && (await rows.first().innerText()).includes('Read'))
-    pane = await inspect('RBI revises')
-    await pane.getByRole('tab', { name: 'Notes', exact: true }).click()
-    check(tag, 'note survives reload', await pane.getByLabel('Your notes').inputValue() === 'Recall the monetary policy framework.')
-    await pane.getByRole('button', { name: 'Mark unread', exact: true }).click()
-    await pane.getByRole('button', { name: 'Unsave article', exact: true }).click()
-    await back()
-    check(tag, 'unread/unsave remove saved item', await rows.count() === 0)
-    await reading.getByRole('button', { name: 'All CA', exact: true }).click()
-    pane = await inspect('Ayushman')
-    check(tag, 'empty references section is absent', await pane.getByRole('tab', { name: 'References' }).count() === 0)
-    await back()
-    pane = await inspect('Supreme Court')
-    check(tag, 'feed excerpt is labelled separately', await pane.getByText('From the feed', { exact: true }).isVisible() && await pane.getByText('Feed supplied excerpt about the constitutional ruling.', { exact: true }).isVisible())
-    await back()
-    if (!desktop) {
-      await page.evaluate(() => scrollTo(0, document.querySelector('[data-news-list]').getBoundingClientRect().top + scrollY))
-      const before = await page.evaluate(() => scrollY)
-      pane = await inspect('Ramsar'); await back()
-      check(tag, 'mobile back restores same list scroll position', Math.abs(await page.evaluate(() => scrollY) - before) <= 2)
-    }
-    await page.getByRole('button', { name: 'Previous day', exact: true }).click()
-    check(tag, 'previous edition by publication date', await rows.count() === 1 && (await rows.innerText()).includes('repo rate'))
-    pane = await inspect('repo rate'); await pane.getByRole('button', { name: 'Mark as read', exact: true }).click(); await back()
-    check(tag, 'daily completion', await page.locator('[data-edition-progress]').innerText() === 'Complete ✓')
-    await page.getByRole('button', { name: 'Next day', exact: true }).click()
-    check(tag, 'next day returns to today', await rows.count() === 5)
-    await page.getByLabel('Edition date').fill('2026-01-01')
-    check(tag, 'date picker with explicit empty edition', await page.getByText('No edition available for this date', { exact: true }).isVisible())
-    await page.getByRole('button', { name: 'Today', exact: true }).click()
-    await reading.getByRole('button', { name: 'Unread', exact: true }).click()
-    await page.getByRole('button', { name: 'Study mode', exact: true }).click()
-    const study = page.getByRole('dialog', { name: 'Study mode', exact: true }), studyTitle = study.getByRole('heading', { level: 2 }).last()
-    await study.waitFor()
-    const firstTitle = await studyTitle.innerText()
-    await page.getByRole('dialog').evaluate(el => el.focus())
-    await study.getByRole('button', { name: 'Mark as read', exact: true }).click()
-    check(tag, 'study queue stays stable after mark read', await studyTitle.innerText() === firstTitle && (await study.innerText()).includes('1 / 5'))
-    await study.getByRole('button', { name: 'Next →', exact: true }).click()
-    check(tag, 'study next', await studyTitle.innerText() !== firstTitle)
-    await study.getByRole('button', { name: '← Previous', exact: true }).click()
-    check(tag, 'study previous', await studyTitle.innerText() === firstTitle)
-    if (desktop) {
-      await page.keyboard.press('j'); check(tag, 'J shortcut next', await studyTitle.innerText() !== firstTitle)
-      await page.keyboard.press('ArrowUp'); check(tag, 'ArrowUp shortcut previous', await studyTitle.innerText() === firstTitle)
-      await page.keyboard.press('k'); check(tag, 'K clamps at start', await studyTitle.innerText() === firstTitle)
-      await page.keyboard.press('r'); check(tag, 'R toggles unread', await study.getByRole('button', { name: 'Mark as read', exact: true }).isVisible())
-      await page.keyboard.press('s'); check(tag, 'S toggles save', await study.getByRole('button', { name: 'Unsave', exact: true }).isVisible())
-      const opened = page.waitForEvent('popup'); await page.keyboard.press('o'); const tab = await opened; await tab.close(); check(tag, 'O opens publisher and keeps position', await studyTitle.innerText() === firstTitle)
-      await page.keyboard.press('ArrowDown'); check(tag, 'ArrowDown shortcut next', await studyTitle.innerText() !== firstTitle)
-    }
-    while (await study.getByRole('button', { name: '← Previous', exact: true }).isEnabled()) await study.getByRole('button', { name: '← Previous', exact: true }).click()
-    for (let i = 0; i < 5; i++) {
-      const mark = study.getByRole('button', { name: 'Mark as read', exact: true })
-      if (await mark.isVisible()) await mark.click()
-      if (i < 4) await study.getByRole('button', { name: 'Next →', exact: true }).click()
-    }
-    check(tag, 'finish today through sequential study workflow', await study.getByText('Reading set complete ✓', { exact: true }).isVisible() && await page.locator('[data-edition-progress]').innerText() === 'Complete ✓')
-    await overflow()
-    await page.waitForTimeout(450); await page.screenshot({ path: fileURLToPath(new URL(tag + '-study.png', out)) })
-    await study.getByRole('button', { name: 'Close', exact: true }).click(); await study.waitFor({ state: 'hidden' })
-    await reading.getByRole('button', { name: 'All CA', exact: true }).click()
-    if (desktop) {
-      const before = await page.locator('[data-desktop-inspector] h2').innerText()
-      await search.focus(); await page.keyboard.type('jrsko')
-      check(tag, 'shortcuts do not intercept typing', await search.inputValue() === 'jrsko')
-      await search.fill(''); pane = await inspect('RBI revises'); await pane.getByRole('tab', { name: 'Notes', exact: true }).click()
-      const note = pane.getByLabel('Your notes'); await note.fill(''); await note.focus(); await page.keyboard.type('jrsko')
-      check(tag, 'note typing does not trigger shortcuts', await note.inputValue() === 'jrsko')
-      await pane.getByRole('tab', { name: 'Overview', exact: true }).click()
-    }
-    mode = 'stale'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText(/Stale feed/).waitFor()
-    check(tag, 'stale feed timestamp remains explicit')
-    await page.evaluate(async data => { const cache = await caches.open('current-affairs-fixture'); await cache.put('/api/current-affairs', new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } })) }, fixture)
-    await ctx.setOffline(true); await page.getByText(/Offline – cached feed/).waitFor(); await page.waitForTimeout(400)
-    check(tag, 'offline cached metadata renders', await rows.count() === 5)
-    await overflow()
-    await ctx.setOffline(false); mode = 'ok'; await page.waitForTimeout(1400)
-    for (const dismiss of await page.getByRole('button', { name: 'Dismiss', exact: true }).all()) await dismiss.click()
-    await page.evaluate(() => scrollTo(0, 0))
-    await page.waitForTimeout(450)
-    for (const dismiss of await page.getByRole('button', { name: 'Dismiss', exact: true }).all()) await dismiss.click()
-    await page.waitForTimeout(450)
-    await page.screenshot({ path: fileURLToPath(new URL(tag + '.png', out)), fullPage: true })
-    if (!desktop) { await inspect('RBI revises'); await page.waitForTimeout(450); await page.screenshot({ path: fileURLToPath(new URL(tag + '-detail.png', out)) }); await back() }
-    await page.goto(base + '#/current-affairs?debug=1'); await rows.first().waitFor()
-    await inspect('RBI revises'); await page.locator('pre').first().waitFor()
-    check(tag, 'debug preserves raw classifier/priority evidence', (await page.locator('pre').first().innerText()).includes('mustReadScore') && await page.getByText('Debug · 1 rejected links', { exact: true }).count() === 1)
-    await ctx.close()
+    if (width === 375) check(tag, 'bottom navigation remains usable', await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('button').evaluateAll(buttons => buttons.length === 5 && buttons.every(el => { const r = el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.x >= 0 && r.right <= innerWidth })))
+    mode = 'slow'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText('Loading trusted feeds…').waitFor(); check(tag, 'loading status')
+    await rows.first().waitFor(); mode = 'ok'
+    check(tag, 'only three views and To be Read is default', await reading.getByRole('button').count() === 3 && await reading.getByRole('button', { name: 'To be Read', exact: true }).getAttribute('aria-pressed') === 'true')
+    check(tag, 'nine rolling-24-hour articles including previous calendar day', await rows.count() === 9 && await rows.filter({ hasText: 'vaccination' }).count() === 1 && await rows.filter({ hasText: 'repo rate' }).count() === 0)
+    check(tag, 'removed official feed is absent', await page.locator('a[href*="rbi.org.in"]').count() === 0)
+    check(tag, 'single list without article popup or Study mode', await page.getByRole('dialog').count() === 0 && await page.getByRole('button', { name: 'Study mode' }).count() === 0)
+    check(tag, 'archive is a top-corner header action', await page.locator('.ca-workspace header').getByRole('button', { name: 'Archive', exact: true }).count() === 1)
+    check(tag, 'filters and analytics start collapsed', !await page.locator('#ca-filters').isVisible() && await page.locator('[data-reading-analytics]').count() === 0)
+    await rbi().locator('[data-related-coverage] summary').click(); check(tag, 'grouped alternate original link', await rbi().locator('[data-related-coverage] a').getAttribute('href') === 'https://www.thehindu.com/fixture-rbi'); await rbi().locator('[data-related-coverage] summary').click()
+    await page.waitForFunction(() => { const img = document.querySelector('[data-news-event] img'); return img && img.complete && img.naturalWidth > 0 })
+    check(tag, 'RSS thumbnail loads lazily', await rbi().locator('img').getAttribute('loading') === 'lazy')
+    await rows.filter({ hasText: 'Ramsar' }).scrollIntoViewIfNeeded(); await rows.filter({ hasText: 'Ramsar' }).locator('img').waitFor({ state: 'detached' }); check(tag, 'broken image disappears')
+    await showFilters()
+    for (const exam of ['Prelims', 'Mains', 'Both']) { await page.getByLabel('Exam filter').selectOption(exam); check(tag, exam + ' excludes unsupported curated coverage', await rows.count() > 0 && await rows.filter({ hasText: 'UPSC Key' }).count() === 0) }
+    await page.getByLabel('Exam filter').selectOption('All'); await page.getByLabel('Subject filter').selectOption('Economy'); check(tag, 'subject filter', await rows.count() >= 1)
+    await hideFilters(); check(tag, 'hidden filters stay resettable', await page.getByRole('button', { name: 'Reset filters', exact: true }).isVisible()); await page.getByRole('button', { name: 'Reset filters', exact: true }).click()
+    await showFilters(); await page.getByLabel('Publisher filter').selectOption('The Hindu'); check(tag, 'publisher filter includes grouped alternate coverage', await rbi().count() === 1); await page.getByLabel('Publisher filter').selectOption('All sources')
+    for (const budget of [15, 30, 60]) { const b = page.getByRole('button', { name: budget + ' min', exact: true }); await b.click(); check(tag, budget + ' minute unread plan', await rows.count() > 0 && (await page.locator('[data-news-list]').innerText()).includes('min plan')); await b.click() }
+    await hideFilters()
+    const search = page.getByLabel('Search articles, topics or sources'); await search.fill('GDP'); check(tag, 'metadata search', await rows.count() === 1); await search.fill(''); await search.focus(); await page.keyboard.type('jrsko'); check(tag, 'typing is uninterrupted', await search.inputValue() === 'jrsko'); await search.fill('')
+    const original = rbi().locator('[data-news-original]'); check(tag, 'direct safe original publisher link', await original.getAttribute('target') === '_blank' && (await original.getAttribute('rel')).includes('noopener'))
+    await original.scrollIntoViewIfNeeded(); const position = await page.evaluate(() => scrollY), wait = page.waitForEvent('popup'); await original.click(); const publisher = await wait; await publisher.waitForLoadState(); await publisher.close(); check(tag, 'return preserves list position', Math.abs(await page.evaluate(() => scrollY) - position) <= 2)
+    const unreadWeight = await rbi().locator('h3').evaluate(el => getComputedStyle(el).fontWeight)
+    await read(rbi()).click(); check(tag, 'marking done moves out of To be Read', await rows.count() === 8 && await rbi().count() === 0)
+    await queue('Read'); check(tag, 'read article moves into Read', await rows.count() === 1 && await rbi().count() === 1)
+    check(tag, 'read typography is lighter', Number(await rbi().locator('h3').evaluate(el => getComputedStyle(el).fontWeight)) < Number(unreadWeight))
+    await save(rbi()).click(); check(tag, 'saving a read article moves it out of Read', await rows.count() === 0)
+    await queue('Saved'); check(tag, 'Saved owns a read saved article', await rows.count() === 1 && await read(rbi()).getAttribute('aria-pressed') === 'true')
+    await page.reload(); await rows.first().waitFor(); check(tag, 'reload defaults to pending with read/save persisted', await rows.count() === 8)
+    await queue('Saved'); check(tag, 'read saved state survives reload', await rows.count() === 1 && await read(rbi()).getAttribute('aria-pressed') === 'true')
+    const other = await ctx.newPage(); await other.goto(base); await other.evaluate(key => { const s = JSON.parse(localStorage.getItem(key)); s.entries['https://indianexpress.com/article/fixture-rbi'].note = 'Legacy note preserved'; localStorage.setItem(key, JSON.stringify(s)) }, stateKey); await other.close(); await page.waitForTimeout(100)
+    await save(rbi()).click(); await queue('Read'); await read(rbi()).click(); await queue('To be Read'); check(tag, 'unsave and unread restore pending', await rows.count() === 9)
+    check(tag, 'legacy notes survive new actions', await page.evaluate(key => JSON.parse(localStorage.getItem(key)).entries['https://indianexpress.com/article/fixture-rbi'].note, stateKey) === 'Legacy note preserved')
+    await save(rbi()).click(); await queue('Saved'); await read(rbi()).click(); check(tag, 'marking saved article read keeps it in Saved', await rows.count() === 1)
+    await page.getByRole('button', { name: 'Analytics', exact: true }).click()
+    check(tag, 'analytics deduplicates related links and includes saved read items', await page.locator('[data-metric="Articles read"]').innerText() === '1' && await page.locator('[data-metric="Articles saved"]').innerText() === '1')
+    check(tag, 'new reading actions count immediately in day week month and streak', (await page.locator('[data-reading-analytics]').innerText()).includes('Read today: 1') && await page.locator('[data-metric="Read this week"]').innerText() === '1' && await page.locator('[data-metric="Read this month"]').innerText() === '1' && await page.locator('[data-metric="Reading streak"]').innerText() === '1 day')
+    check(tag, 'analytics has activity subject and time evidence', await page.getByRole('img', { name: /read/ }).count() === 1 && await page.getByText('Read by subject', { exact: true }).count() === 1 && (await page.locator('[data-reading-analytics]').innerText()).includes('not measured time'))
+    await page.screenshot({ path: fileURLToPath(new URL(tag + '-analytics.png', out)), fullPage: true }); await page.getByRole('button', { name: 'Analytics', exact: true }).click()
+    await rbi().getByRole('button', { name: /^Remove article:/ }).click(); check(tag, 'removing saved article hides it immediately', await rows.count() === 0)
+    await page.getByRole('button', { name: 'Undo', exact: true }).click(); check(tag, 'Undo restores saved article and progress', await rows.count() === 1 && await read(rbi()).getAttribute('aria-pressed') === 'true')
+    await queue('To be Read'); const gdp = rows.filter({ hasText: 'GDP' }); await gdp.getByRole('button', { name: /^Remove article:/ }).click(); check(tag, 'remove pending persists ignoredAt', await rows.count() === 7 && await page.evaluate(key => JSON.parse(localStorage.getItem(key)).entries['https://indianexpress.com/article/fixture-gdp'].ignoredAt > 0, stateKey))
+    await page.reload(); await rows.first().waitFor(); check(tag, 'removed article stays absent after reload', await rows.count() === 7 && await rows.filter({ hasText: 'GDP' }).count() === 0)
+    await page.getByRole('button', { name: 'Archive', exact: true }).click(); check(tag, 'archive excludes every rolling-Today item', await rows.count() === 4 && await rbi().count() === 0 && await rows.filter({ hasText: 'vaccination' }).count() === 0)
+    check(tag, 'archive starts newest first with undated last', (await rows.first().innerText()).includes('repo rate') && (await rows.last().innerText()).includes('Undated'))
+    await showFilters()
+    for (const grouping of ['Daily', 'Weekly', 'Monthly', 'Yearly']) { await page.getByLabel('Archive grouping').selectOption(grouping); const options = await page.getByLabel('Archive period').locator('option').count(); check(tag, grouping + ' archive filters are available', options > 1) }
+    await page.getByLabel('Archive period').selectOption(pastYear.slice(0, 4)); check(tag, 'prior year filtering', await rows.count() === 1 && (await rows.innerText()).includes('Down To Earth')); await page.getByRole('button', { name: 'Reset filters', exact: true }).click(); await hideFilters()
+    const old = rows.filter({ hasText: 'repo rate' }); await old.getByRole('button', { name: /^Remove article:/ }).click(); check(tag, 'archive removal hides irrelevant older item', await rows.count() === 3)
+    await page.getByRole('button', { name: 'Undo', exact: true }).last().click(); check(tag, 'archive Undo restores original ordering', (await rows.first().innerText()).includes('repo rate'))
+    await rows.filter({ hasText: 'Down To Earth' }).getByRole('button', { name: /^Save / }).click(); await queue('Saved'); check(tag, 'prior-year saved item is accessible in Archive', await rows.count() === 1)
+    await page.screenshot({ path: fileURLToPath(new URL(tag + '-archive.png', out)), fullPage: true })
+    mode = 'trimmed'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText('Loading trusted feeds…').waitFor({ state: 'hidden' }); await page.reload(); await page.getByRole('button', { name: 'Archive', exact: true }).click(); await queue('Saved'); await rows.first().waitFor(); check(tag, 'old saved metadata survives feed omission and reload', (await rows.innerText()).includes('Down To Earth'))
+    await page.getByRole('button', { name: 'Back to Today', exact: true }).click(); check(tag, 'Back restores Today pending queue', await rows.count() === 7)
+    await page.getByRole('button', { name: 'Short notes', exact: true }).click(); const dialog = page.getByRole('dialog', { name: 'Short notes' }), note = dialog.getByLabel('Short note')
+    check(tag, 'small notes Sheet has short limit and disabled blank save', await note.getAttribute('maxlength') === '300' && !await dialog.getByRole('button', { name: 'Save note', exact: true }).isEnabled())
+    await note.fill('x'.repeat(350)); check(tag, 'notes enforce 300 characters', (await note.inputValue()).length === 300)
+    const text = 'A short connection: <script>window.bad=1</script> & constitutional rights.'
+    await note.fill(text); await dialog.getByRole('button', { name: 'Save note', exact: true }).click(); await dialog.locator('[data-sticky-note]').waitFor()
+    const notesState = await page.evaluate(() => JSON.parse(localStorage.getItem('tars.current-affairs.notes.v1'))), savedNote = Object.values(notesState.entries)[0]
+    check(tag, 'saved note has immutable system date and user text only', savedNote.text === text && savedNote.createdDate === today && savedNote.createdAt > 0 && Object.keys(savedNote).length === 4)
+    check(tag, 'note content is escaped', await page.evaluate(() => !window.bad) && await dialog.locator('script').count() === 0)
+    await page.screenshot({ path: fileURLToPath(new URL(tag + '-notes.png', out)), fullPage: true })
+    await page.evaluate(() => { window.print = () => { window.__notesPrintCalled = true } }); await dialog.getByRole('button', { name: 'Print notes', exact: true }).click(); await page.emulateMedia({ media: 'print' })
+    check(tag, 'print action contains only dated notes', await page.evaluate(() => window.__notesPrintCalled && getComputedStyle(document.body).backgroundColor === 'rgb(255, 255, 255)' && getComputedStyle(document.querySelector('#root')).display === 'none' && getComputedStyle(document.querySelector('.ca-print-root')).display === 'block' && document.querySelector('.ca-print-root').textContent.includes('<script>')))
+    if (width === 1366 && theme === 'light') await page.pdf({ path: fileURLToPath(new URL('notes-print.pdf', out)), format: 'A4', printBackground: true })
+    await page.evaluate(() => dispatchEvent(new Event('afterprint'))); await page.emulateMedia({ media: 'screen' }); check(tag, 'print cleanup restores the app', await page.evaluate(() => !document.body.classList.contains('ca-printing-notes')))
+    await dialog.getByRole('button', { name: /^Remove note from/ }).click(); check(tag, 'note removal hides it', await dialog.locator('[data-sticky-note]').count() === 0)
+    // Undo toast is behind the modal. Close it before restoring through the standard toast action.
+    await dialog.getByRole('button', { name: 'Close', exact: true }).click(); await page.getByRole('button', { name: 'Undo', exact: true }).last().click(); await page.getByRole('button', { name: 'Short notes', exact: true }).click(); check(tag, 'note Undo preserves creation date', await page.getByRole('dialog').locator('[data-sticky-note] time').getAttribute('datetime') === savedNote.createdDate)
+    await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click(); await page.reload(); await rows.first().waitFor(); await page.getByRole('button', { name: 'Short notes', exact: true }).click(); check(tag, 'dated notes survive reload', (await page.getByRole('dialog').locator('[data-sticky-note]').innerText()).includes('constitutional rights')); await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click()
+    mode = 'stale'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText(/Stale feed/).waitFor(); check(tag, 'stale metadata is explicit')
+    await ctx.setOffline(true); await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByRole('alert').waitFor(); check(tag, 'offline preserves pending queue and state', await rows.count() === 7); await overflow()
+    await ctx.setOffline(false); mode = 'ok'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText('Loading trusted feeds…').waitFor({ state: 'hidden' }); await hideFilters(); for (const b of await page.getByRole('button', { name: 'Dismiss', exact: true }).all()) await b.click(); await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(400); await page.screenshot({ path: fileURLToPath(new URL(tag + '.png', out)), fullPage: true })
+    await page.goto(base + '#/current-affairs?debug=1'); await rows.first().waitFor(); await rows.first().getByText('Evidence', { exact: true }).click(); check(tag, 'debug preserves classifier evidence', (await page.locator('pre').first().innerText()).includes('mustReadScore'))
+    check(tag, 'no generic search references', await page.locator('a[href*="google.com/search"], a[href*="wikipedia.org/w/index.php"]').count() === 0); await overflow(); await ctx.close()
   }
   mode = 'ok'
+
   const ctx = await browser.newContext(), page = await ctx.newPage()
   page.on('pageerror', e => errors.push(e.message))
   page.on('console', msg => { if (msg.type() === 'error') console.log('Browser:', msg.text()) })
@@ -244,7 +166,13 @@ try {
   const cdp = await ctx.newCDPSession(page); await cdp.send('Network.clearBrowserCache'); await cdp.send('Network.setCacheDisabled', { cacheDisabled: true })
   await ctx.setOffline(true); await page.reload(); await page.locator('[data-news-event]').first().waitFor()
   await page.getByText(/Offline – cached feed|Cached feed – offline/).waitFor()
-  check('Workbox', 'offline reload with HTTP cache disabled shows today cached events', await page.locator('[data-news-event]').count() === 5)
+  check('Workbox', 'offline reload with HTTP cache disabled shows today cached events', await page.locator('[data-news-event]').count() === 9)
+  await page.getByRole('button', { name: 'Archive', exact: true }).click()
+  check('Workbox', 'offline archive includes earlier months and years', await page.locator('[data-news-event]').count() === 4)
+  await page.evaluate(async () => (await caches.open('current-affairs-v1')).delete('/api/current-affairs'))
+  await page.reload(); await page.locator('[data-news-event]').first().waitFor()
+  check('Archive', 'offline metadata survives without the latest Workbox API response', await page.locator('[data-news-event]').count() === 9)
+  await page.getByText(/Offline – local archive|Refresh unavailable – local archive/).waitFor()
   await ctx.close()
   assert.deepEqual(errors, [])
   writeFileSync(new URL('results.json', out), JSON.stringify({ checks, errors }, null, 2) + '\n')

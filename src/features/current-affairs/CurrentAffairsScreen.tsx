@@ -1,150 +1,246 @@
-/** Daily original-link workspace with independent desktop panes, mobile details and a stable study queue. */
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Bookmark, BookOpen, RefreshCw, Search } from 'lucide-react'
+/** Direct-to-publisher daily reading list; RSS thumbnails and local read/save actions need no article popup. */
+import { useEffect, useMemo, useState } from 'react'
+import { Archive, ArrowLeft, BarChart3, Bookmark, Check, RefreshCw, Search, SlidersHorizontal, StickyNote, X } from 'lucide-react'
 import { useRoute } from '@/app/router'
-import { chordPending, isTyping } from '@/app/shortcuts'
+import { Workspace } from '@/app/Workspace'
 import { cn } from '@/lib/cn'
 import { classify } from '@/current-affairs/relevance'
 import { clusterItems } from '@/current-affairs/cluster'
-import { NEWS_SOURCES } from '@/current-affairs/sources'
+import { NEWS_SOURCES, activeFeedItems, isActiveSource } from '@/current-affairs/sources'
 import { eventPersonalState } from '@/current-affairs/personal-state'
-import { buildWorkspace, dailyGroups, editionLabel, editionProgress, filterWorkspace, publicationDay, shiftDay, UNDATED, type WorkspaceFilters, type WorkspaceEvent } from '@/current-affairs/workspace'
-import { Sheet, anyLayerOpen } from '@/ui/Sheet'
-import { useIsDesktop } from '@/ui/useMedia'
-import { ArticleActions, ArticleInspector, actionClass, examLabel } from './ArticleInspector'
+import { buildWorkspace, editionProgress, filterWorkspace, publicationDay, UNDATED, type WorkspaceFilters } from '@/current-affairs/workspace'
+import { thumbnailUrl } from '@/current-affairs/feed'
 import { useFeeds, relativeAge } from './useFeeds'
 import { usePersonalState } from './usePersonalState'
+import { useArchive } from './useArchive'
+import { archiveDays, archivePeriods, periodKey, periodLabel, type ArchivePeriod } from '@/current-affairs/archive'
+import type { NewsItem } from '@/current-affairs/types'
+import { queueCounts, readingScopes, recentCoverage, latestPublication } from '@/current-affairs/analytics'
+import { NotesSheet } from './NotesSheet'
+import { ReadingAnalytics } from './ReadingAnalytics'
+import { toast } from '@/ui/toast'
 import './workspace.css'
-const tabs = ['All CA', 'Must Read', 'Unread', 'Saved'] as const
-const subjects = ['All subjects', 'Polity', 'Economy', 'Environment', 'Sci-Tech', 'Geography', 'International relations', 'Governance', 'Security', 'History & Culture']
-const control = 'press min-h-11 rounded-xl px-3 text-xs font-semibold text-ink-2 hover:bg-surface-2 disabled:opacity-40'
+import { useRouteState } from '@/app/routeState'
+const tabs = ['To be Read', 'Read', 'Saved'] as const
+const subjects = ['All subjects', 'Polity', 'Economy', 'Environment', 'Sci-Tech', 'Geography', 'International relations', 'Governance', 'Security', 'History & Culture', 'General studies']
+const control = 'press min-h-11 rounded-xl px-3 text-[13px] font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink disabled:opacity-40'
+const iconControl = 'press flex size-11 shrink-0 items-center justify-center rounded-full text-ink-2 hover:bg-surface-2 hover:text-ink disabled:opacity-40'
+const rowAction = 'press flex size-11 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink'
+function FeedThumbnail({ url }: { url?: string }) {
+  const [failed, setFailed] = useState(false)
+  const safe = url && thumbnailUrl(url)
+  useEffect(() => setFailed(false), [url])
+  if (!safe || failed) return null
+  return <img src={safe} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="size-16 shrink-0 rounded-[10px] bg-surface-2 object-cover sm:h-[68px] sm:w-[104px]" />
+}
 export default function CurrentAffairsScreen() {
-  const route = useRoute(), desktop = useIsDesktop(), debug = route.params.get('debug') === '1' || new URLSearchParams(location.search).get('debug') === '1'
+  const route = useRoute(), debug = route.params.get('debug') === '1' || new URLSearchParams(location.search).get('debug') === '1'
   const { data, index, loading, error, cached, now, online, reload } = useFeeds()
   const { state, stateError, patch } = usePersonalState()
-  const today = publicationDay(now), lastToday = useRef(today)
-  const [filters, setFilters] = useState<WorkspaceFilters>(() => ({ day: publicationDay(Date.now()), tab: 'All CA', exam: 'All', subject: 'All subjects', publisher: 'All sources', query: '', budget: null }))
-  const [selectedKey, setSelectedKey] = useState<string | null>(null), [mobileOpen, setMobileOpen] = useState(false)
-  const [studyQueue, setStudyQueue] = useState<WorkspaceEvent[] | null>(null), [studyPosition, setStudyPosition] = useState(0)
-  const listRef = useRef<HTMLDivElement>(null), inspectorRef = useRef<HTMLDivElement>(null)
+  const today = publicationDay(now)
+  // The tab, filters and archive position are kept while the app is open (app/routeState.ts); the day always starts as today.
+  const [filters, setFilters] = useRouteState<WorkspaceFilters>('current-affairs:filters', () => ({ day: publicationDay(Date.now()), tab: 'To be Read', exam: 'All', subject: 'All subjects', publisher: 'All sources', query: '', budget: null }))
   useEffect(() => {
-    if (lastToday.current === today) return
-    const prior = lastToday.current
-    lastToday.current = today
-    setFilters(f => f.day === prior ? { ...f, day: today } : f)
-  }, [today])
-  const classified = useMemo(() => data && index ? data.items.map(item => ({ ...item, relevance: classify(item, index) })) : [], [data, index])
+    const day = publicationDay(Date.now())
+    setFilters(f => (f.day === day ? f : { ...f, day }))
+  }, [setFilters])
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false), [analyticsOpen, setAnalyticsOpen] = useState(false)
+  const [view, setView] = useRouteState<'Today' | 'Archive'>('current-affairs:view', 'Today')
+  const [period, setPeriod] = useRouteState<ArchivePeriod>('current-affairs:period', 'Daily'), [archiveKey, setArchiveKey] = useRouteState('current-affairs:archive', 'all')
+  const [visibleCount, setVisibleCount] = useState(50)
+  useEffect(() => setVisibleCount(50), [filters, view, period, archiveKey])
+  const current = useMemo(() => data && index ? activeFeedItems(data.items).map(item => ({ ...item, relevance: classify(item, index) })) : [], [data, index])
+  const { archived, archiveError } = useArchive(current, data?.fetchedAt)
+  const classified = useMemo(() => {
+    if (!index) return []
+    const items = new Map<string, NewsItem>(archived.map(item => [item.url, item]))
+    const retained = new Map(archived.map(item => [item.url, item]))
+    for (const item of activeFeedItems(data?.items ?? [])) {
+      const prior = retained.get(item.url)
+      if (!prior || prior.lastSeenAt <= Date.parse(data!.fetchedAt)) items.set(item.url, item)
+    }
+    return [...items.values()].map(item => ({ ...item, relevance: classify(item, index) }))
+  }, [data, index, archived])
   const events = useMemo(() => index ? buildWorkspace(clusterItems(classified), index) : [], [classified, index])
-  const editions = useMemo(() => dailyGroups(events), [events])
-  const filtered = useMemo(() => filterWorkspace(events, state, filters), [events, state, filters])
-  const findEvent = (key: string | null) => events.find(e => e.id === key || e.members.some(m => m.url === key))
-  const selected = findEvent(selectedKey) ?? filtered[0]
-  const studyEvents = studyQueue ?? []
-  const studyEvent = studyEvents[Math.min(studyPosition, studyEvents.length - 1)]
-  const active = studyQueue ? studyEvent : selected
-  const progress = editionProgress(editions.get(filters.day) ?? [], state)
-  const personal = active ? eventPersonalState(active, state) : {}
+  const scopes = useMemo(() => readingScopes(events, now), [events, now])
+  const base = view === 'Today' ? scopes.today : scopes.archive
+  const periods = [...new Set(scopes.archive.map(e => periodKey(e.day, period)))].sort((a, b) => a === UNDATED ? 1 : b === UNDATED ? -1 : b.localeCompare(a))
+  const scope = useMemo(() => { if (view !== 'Archive' || archiveKey === 'all') return base; const included = new Set(archiveDays(base, period, archiveKey)); return base.filter(e => included.has(e.day)) }, [view, archiveKey, base, period])
+  const days = useMemo(() => [...new Set(scope.map(e => e.day))], [scope])
+  const filtered = useMemo(() => {
+    const rows = filterWorkspace(scope, state, { ...filters, days })
+    return view === 'Archive' ? rows.sort((a, b) => latestPublication(b) - latestPublication(a) || a.id.localeCompare(b.id)) : rows
+  }, [scope, state, filters, days, view])
+  const visibleScope = scope.filter(e => !eventPersonalState(e, state).ignoredAt)
+  const progress = editionProgress(visibleScope, state), counts = queueCounts(scope, state)
   const stale = !!data && (!online || cached || now - Date.parse(data.fetchedAt) > 3600000)
-  const unavailable = data?.sources.filter(s => s.status !== 'ok') ?? []
+  const unavailable = data?.sources.filter(s => isActiveSource(s.sourceId) && s.status !== 'ok') ?? []
   const publishers = [...new Set(events.flatMap(e => e.members.map(m => m.publisher)))].sort()
-  const recentDays = [...editions.keys()].filter(day => day !== UNDATED && day !== today).sort().reverse().slice(0, 4)
-  const updateFilters = (value: Partial<WorkspaceFilters>) => { setFilters(f => ({ ...f, ...value })); setSelectedKey(null); if (listRef.current) listRef.current.scrollTop = 0 }
-  const choose = (key: string) => { setSelectedKey(key); if (!desktop) setMobileOpen(true); if (inspectorRef.current) inspectorRef.current.scrollTop = 0 }
-  const markRead = (event: WorkspaceEvent) => { setSelectedKey(event.id); patch(event, { readAt: eventPersonalState(event, state).readAt ? undefined : Date.now() }) }
-  const toggleRead = () => { if (active) markRead(active) }
-  const toggleSave = () => { if (active) patch(active, { savedAt: personal.savedAt ? undefined : Date.now() }) }
-  const move = (delta: number) => {
-    if (studyQueue) {
-      const next = Math.max(0, Math.min(studyEvents.length - 1, studyPosition + delta))
-      setStudyPosition(next)
-      if (studyEvents[next]) setSelectedKey(studyEvents[next].id)
-    } else {
-      const position = filtered.findIndex(e => e.id === selected?.id)
-      const next = position < 0 ? (delta > 0 ? 0 : filtered.length - 1) : Math.max(0, Math.min(filtered.length - 1, position + delta))
-      if (filtered[next]) choose(filtered[next].id)
-    }
+  const updateFilters = (value: Partial<WorkspaceFilters>) => setFilters(f => ({ ...f, ...value }))
+  const activeFilterCount = [view === 'Archive' && archiveKey !== 'all', filters.subject !== 'All subjects', filters.publisher !== 'All sources', filters.exam !== 'All', !!filters.budget].filter(Boolean).length
+  const resetFilters = () => { setArchiveKey('all'); updateFilters({ day: today, subject: 'All subjects', publisher: 'All sources', exam: 'All', budget: null }) }
+  const changeView = () => { setView(v => v === 'Today' ? 'Archive' : 'Today'); setArchiveKey('all'); setFiltersOpen(false); updateFilters({ tab: 'To be Read', query: '', subject: 'All subjects', publisher: 'All sources', exam: 'All', budget: null }) }
+  const remove = (event: typeof events[number]) => {
+    const ignoredAt = eventPersonalState(event, state).ignoredAt
+    if (patch(event, { ignoredAt: Date.now() })) toast({ title: 'Article removed', action: { label: 'Undo', run: () => { patch(event, { ignoredAt }) } } })
   }
-  useEffect(() => {
-    if (!desktop) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey || isTyping(e.target) || chordPending() || !active) return
-      if (anyLayerOpen() && (!studyQueue || !document.querySelector('[data-ca-study]') || document.querySelectorAll('[role="dialog"][aria-modal="true"]').length > 1)) return
-      const key = e.key.toLowerCase()
-      if (!['j', 'arrowdown', 'k', 'arrowup', 'r', 's', 'o'].includes(key)) return
-      e.preventDefault()
-      if (key === 'j' || key === 'arrowdown') move(1)
-      else if (key === 'k' || key === 'arrowup') move(-1)
-      else if (key === 'r') toggleRead()
-      else if (key === 's') toggleSave()
-      else window.open(active.primary.url, '_blank', 'noopener,noreferrer')
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  })
-  const startStudy = () => {
-    const queue = filterWorkspace(events, state, { ...filters, day: today })
-    updateFilters({ day: today }); setStudyQueue(queue); setStudyPosition(0); setMobileOpen(false)
-    if (queue[0]) setSelectedKey(queue[0].id)
-  }
-  const studyCount = editionProgress(studyEvents, state)
-  const studyAvailable = filterWorkspace(events, state, { ...filters, day: today }).length > 0
-  const inspector = (event: WorkspaceEvent, actions = true) => <ArticleInspector key={event.id} event={event} personal={eventPersonalState(event, state)} onRead={() => markRead(event)} onSave={() => patch(event, { savedAt: eventPersonalState(event, state).savedAt ? undefined : Date.now() })} onNote={note => patch(event, { note })} debug={debug} actions={actions} />
-  return <section className="ca-workspace mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-7 lg:px-8" aria-labelledby="news-title">
-    <header className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="mb-1 text-[10px] font-bold tracking-[.18em] text-ink-3 uppercase">Your daily UPSC reading</p><h1 id="news-title" className="font-display text-3xl tracking-tight sm:text-4xl">Current Affairs</h1></div>
-      <div className="flex max-w-full items-center gap-2"><p role="status" className="max-w-56 text-xs leading-relaxed text-ink-3">{data ? `Updated ${relativeAge(data.fetchedAt, now)}` : 'Trusted publisher feeds'}{data && stale && <span className="block">{!online ? 'Offline – cached feed' : cached ? 'Cached feed – offline or refresh unavailable' : 'Stale feed'}</span>}</p><button type="button" aria-label="Refresh news" onClick={reload} disabled={loading} className={control}><RefreshCw className={cn('size-4', loading && 'animate-spin motion-reduce:animate-none')} /></button></div>
-    </header>
-    <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
-      <div className="flex min-w-0 flex-wrap items-center gap-1">
-        <button type="button" aria-label="Previous day" disabled={filters.day === UNDATED} onClick={() => updateFilters({ day: shiftDay(filters.day, -1) })} className={control}><ArrowLeft className="size-4" /></button>
-        <button type="button" onClick={() => updateFilters({ day: today })} className={cn(control, filters.day === today && 'bg-accent-soft text-accent')}>Today</button>
-        <label className="sr-only" htmlFor="ca-date">Edition date</label><input id="ca-date" type="date" aria-label="Edition date" value={filters.day === UNDATED ? '' : filters.day} onChange={e => e.target.value && updateFilters({ day: e.target.value })} className="min-h-11 min-w-0 max-w-[124px] rounded-xl border border-line bg-surface px-2 text-xs text-ink-2 sm:max-w-[154px]" />
-        <button type="button" aria-label="Next day" disabled={filters.day === UNDATED || filters.day >= today} onClick={() => updateFilters({ day: shiftDay(filters.day, 1) })} className={control}><ArrowRight className="size-4" /></button>
-      </div>
-      <button type="button" aria-label="Study mode" title="Study mode" onClick={startStudy} disabled={!studyAvailable} className={cn(control, 'inline-flex items-center gap-2 border border-line-strong')}><BookOpen className="size-4" /><span className="hidden sm:inline">Study mode</span></button>
-    </div>
-    <div className="mt-4 border-y border-line py-4">
-      <div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="text-xs font-bold tracking-wider uppercase">{filters.day === today ? `Today – ${editionLabel(today)}` : editionLabel(filters.day)}</h2><p data-edition-summary className="mt-1.5 text-xs text-ink-2">{progress.mustRead} Must Read · {progress.total} relevant · ~{progress.minutesLeft} min left{filters.day === today ? ' today' : ''}</p></div><p data-edition-progress className="text-xs font-semibold text-ink-2">{progress.total > 0 && progress.unread === 0 ? 'Complete ✓' : `${progress.read} / ${progress.total} read`}</p></div>
-      <div role="progressbar" aria-label="Daily reading progress" aria-valuemin={0} aria-valuemax={Math.max(progress.total, 1)} aria-valuenow={progress.read} className="mt-3 h-1 overflow-hidden rounded-full bg-surface-3"><div className="h-full rounded-full bg-accent" style={{ width: `${progress.total ? progress.read / progress.total * 100 : 0}%` }} /></div>
-      {(recentDays.length > 0 || editions.has(UNDATED)) && <nav aria-label="Recent editions" className="mt-2 flex flex-wrap gap-x-3">{[...recentDays, ...(editions.has(UNDATED) ? [UNDATED] : [])].map(day => { const p = editionProgress(editions.get(day) ?? [], state); return <button key={day} type="button" onClick={() => updateFilters({ day })} className={cn('press min-h-10 text-[11px] text-ink-3', filters.day === day && 'text-accent')}><span className="font-semibold">{editionLabel(day)}</span> · {p.unread ? `${p.unread} unread` : 'Complete ✓'}</button> })}</nav>}
-    </div>
-    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-      <div role="group" aria-label="Reading filter" className="flex flex-wrap gap-1">{tabs.map(value => <button key={value} type="button" aria-pressed={filters.tab === value} onClick={() => updateFilters({ tab: value })} className={cn(control, filters.tab === value && 'bg-accent-soft text-accent')}>{value === 'Must Read' ? '★ Must Read' : value}</button>)}</div>
-      <div role="group" aria-label="Reading time budget" className="flex gap-1">{[15, 30, 60].map(value => <button key={value} type="button" aria-pressed={filters.budget === value} onClick={() => updateFilters({ budget: filters.budget === value ? null : value })} className={cn(control, 'px-2.5', filters.budget === value && 'bg-accent-soft text-accent')}>{value} min</button>)}</div>
-    </div>
-    <div className="mt-3 flex flex-wrap gap-2">
-      <label className="flex min-h-11 min-w-0 flex-[1_1_280px] items-center gap-2 rounded-xl border border-line-strong bg-surface px-3"><Search className="size-4 shrink-0 text-ink-3" /><input type="search" aria-label="Search articles, topics or sources" placeholder="Search articles, topics or sources…" value={filters.query} onChange={e => updateFilters({ query: e.target.value })} className="w-full min-w-0 bg-transparent text-sm outline-none" /></label>
-      <select aria-label="Exam filter" value={filters.exam} onChange={e => updateFilters({ exam: e.target.value as WorkspaceFilters['exam'] })} className="min-h-11 min-w-0 rounded-xl border border-line bg-surface px-3 text-xs text-ink-2">{['All', 'Prelims', 'Mains', 'Both'].map(value => <option key={value} value={value}>{value === 'All' ? 'All exams' : value}</option>)}</select>
-      <select aria-label="Publisher filter" value={filters.publisher} onChange={e => updateFilters({ publisher: e.target.value })} className="min-h-11 min-w-0 max-w-full rounded-xl border border-line bg-surface px-3 text-xs text-ink-2">{['All sources', ...publishers].map(value => <option key={value}>{value}</option>)}</select>
-    </div>
-    {desktop ? <div className="mt-2 flex flex-wrap gap-x-1" role="group" aria-label="Subject filter">{subjects.map(value => <button type="button" key={value} aria-pressed={filters.subject === value} onClick={() => updateFilters({ subject: value })} className={cn(control, 'px-2.5', filters.subject === value && 'bg-surface-2 text-ink')}>{value === 'International relations' ? 'IR' : value}</button>)}</div> : <select aria-label="Subject filter" value={filters.subject} onChange={e => updateFilters({ subject: e.target.value })} className="mt-2 min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-xs text-ink-2">{subjects.map(value => <option key={value}>{value}</option>)}</select>}
-    {loading && <p role="status" className="py-3 text-sm text-ink-2">Loading trusted feeds…</p>}
-    {error && <p role="alert" className="py-3 text-sm text-ink-2">{error}</p>}
-    {stateError && <p role="alert" className="py-3 text-sm text-danger">{stateError}</p>}
-    {unavailable.length > 0 && <p className="py-2 text-[11px] text-ink-3">Some sources are unavailable or empty: {[...new Set(unavailable.map(s => NEWS_SOURCES.find(n => n.id === s.sourceId)?.publisher ?? s.sourceId))].join(', ')}.</p>}
-    <div className="ca-panes mt-3 overflow-hidden rounded-xl border border-line bg-surface">
-      <div ref={listRef} data-news-list className="ca-list min-w-0">
-        <div className="flex min-h-11 items-center justify-between border-b border-line px-4 text-[11px] text-ink-3"><span>{filtered.length} {filtered.length === 1 ? 'article' : 'articles'}{filters.budget ? ` · ~${filtered.reduce((n, e) => n + e.minutes, 0)} min plan` : ''}</span><span>{filters.tab === 'All CA' ? 'Priority first' : filters.tab}</span></div>
-        {!loading && filtered.length === 0 && <div className="px-5 py-12"><p className="text-sm font-semibold">{progress.total === 0 ? 'No edition available for this date' : 'No articles match these filters'}</p><p className="mt-2 text-xs leading-relaxed text-ink-3">{progress.total === 0 ? 'Choose a recent edition or refresh later. Only dates in the cached feeds are available.' : 'Try All CA, another subject or a larger reading budget.'}</p></div>}
-        {filtered.map(event => { const p = eventPersonalState(event, state), item = event.primary; return <article key={event.id} data-news-event data-selected={selected?.id === event.id} className={cn('ca-row relative flex min-w-0 items-stretch border-b border-line', selected?.id === event.id && 'bg-accent-soft')}>
-          <button type="button" onClick={() => choose(event.id)} aria-label={`Inspect ${item.title}`} aria-pressed={selected?.id === event.id} className="ca-row-main min-w-0 flex-1 px-4 py-3 text-left">
-            <div className="flex items-start gap-2"><span className={cn('mt-0.5 shrink-0 text-xs', event.mustRead ? 'text-accent' : 'text-ink-3')} aria-label={event.mustRead ? 'Must Read' : 'Relevant'}>{event.mustRead ? '★' : '·'}</span><h3 className={cn('ca-headline text-[13px] leading-snug font-semibold', p.readAt ? 'text-ink-2' : 'text-ink')}>{item.title}</h3></div>
-            <p className="mt-1.5 text-[10px] text-ink-3">{item.publisher} · {item.publishedAt ? relativeAge(item.publishedAt, now) : 'Undated'}{p.readAt && <span className="ml-2 text-success">✓ Read</span>}</p>
-            <p className="ca-row-meta mt-1 text-[10px] text-ink-3">{item.relevance.subjects.join(' · ')} · {item.relevance.topics[0]} · {examLabel(item.relevance.exam)}</p>
+  const field = 'mt-1.5 min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold text-ink outline-none focus:border-accent/60'
+  const emptyTitle = filters.query || activeFilterCount ? 'No articles match these filters' : filters.tab === 'To be Read' ? 'Your reading queue is clear' : filters.tab === 'Read' ? 'No read articles here yet' : 'No saved articles here yet'
+  return (
+    <section className="ca-workspace" aria-labelledby="news-title">
+      <Workspace
+        width="lg"
+        titleId="news-title"
+        title={view === 'Archive' ? 'Archive' : 'Current Affairs'}
+        actions={
+          <>
+            <button type="button" aria-label="Short notes" title="Short notes" onClick={() => setNotesOpen(true)} className={iconControl}>
+              <StickyNote className="size-[18px]" />
+            </button>
+            <button type="button" aria-label="Analytics" title="Reading analytics" aria-expanded={analyticsOpen} aria-controls="ca-analytics" onClick={() => setAnalyticsOpen(v => !v)} className={cn(iconControl, analyticsOpen && 'bg-accent-soft text-accent')}>
+              <BarChart3 className="size-[18px]" />
+            </button>
+            <button type="button" aria-label={view === 'Archive' ? 'Back to Today' : 'Archive'} onClick={changeView} className={cn(control, 'inline-flex shrink-0 items-center gap-2', view === 'Archive' && 'text-accent')}>
+              {view === 'Archive' ? <ArrowLeft className="size-4" /> : <Archive className="size-4" />}
+              <span className="hidden sm:inline">{view === 'Archive' ? 'Today' : 'Archive'}</span>
+            </button>
+          </>
+        }
+      >
+        <div className="flex items-start gap-1">
+          <p role="status" className="t-meta min-w-0 flex-1 py-3 leading-relaxed">
+            {data ? `Updated ${relativeAge(data.fetchedAt, now)}` : archived.length ? 'Local archive' : 'Trusted publisher feeds'}
+            {((data && stale) || (!data && cached && archived.length > 0)) && <span className="block">{!data ? !online ? 'Offline – local archive' : 'Refresh unavailable – local archive' : !online ? 'Offline – cached feed' : cached ? 'Cached feed – offline or refresh unavailable' : 'Stale feed'}</span>}
+            {!!unavailable.length && <span className="block">Some sources unavailable</span>}
+          </p>
+          <button type="button" aria-label="Refresh news" onClick={reload} disabled={loading} className={cn(iconControl, '-mr-2')}>
+            <RefreshCw className={cn('size-4', loading && 'animate-spin motion-reduce:animate-none')} />
           </button>
-          <div className="flex w-12 shrink-0 flex-col items-center justify-center"><button type="button" onClick={() => patch(event, { savedAt: p.savedAt ? undefined : Date.now() })} aria-label={`${p.savedAt ? 'Unsave' : 'Save'} ${item.title}`} aria-pressed={!!p.savedAt} className="press flex size-11 items-center justify-center text-ink-3"><Bookmark className={cn('size-3.5', p.savedAt && 'fill-current text-accent')} /></button><span title="Approximate reading time" className="pb-2 text-[10px] text-ink-3">{event.minutes} min</span></div>
-        </article> })}
-      </div>
-      {desktop && <div ref={inspectorRef} data-desktop-inspector className="ca-inspector min-w-0 border-l border-line p-6 lg:p-7">{selected ? inspector(selected) : <p className="py-12 text-sm text-ink-3">Choose an article to inspect its UPSC context.</p>}</div>}
-    </div>
-    {desktop && selected && <div className="mt-3 flex items-center justify-between gap-3"><p className="text-[10px] text-ink-3">J / K · Next / previous &nbsp; R · Read &nbsp; S · Save &nbsp; O · Open</p><div className="flex gap-1"><button type="button" className={control} onClick={() => move(-1)} disabled={filtered.findIndex(e => e.id === selected.id) === 0 || !filtered.length}>← Previous</button><button type="button" className={control} onClick={() => move(1)} disabled={filtered.findIndex(e => e.id === selected.id) === filtered.length - 1 || !filtered.length}>Next →</button></div></div>}
-    {debug && <details className="mt-4 text-xs"><summary className="min-h-11 cursor-pointer py-3">Debug · {classified.filter(i => !i.relevance.accepted).length} rejected links</summary><ul className="space-y-2 text-ink-2">{classified.filter(i => !i.relevance.accepted).map(i => <li key={i.url}>{i.title} · {i.relevance.rejectionReason} · {i.relevance.signals.join(', ')}</li>)}</ul></details>}
-    <p className="mt-5 text-[11px] leading-relaxed text-ink-3">Read on the original publisher’s website. Time estimates use feed type; some articles require a subscription.</p>
-    <Sheet open={!desktop && mobileOpen && !!selected && !studyQueue} onClose={() => setMobileOpen(false)} title="Article context" headerAction={<button type="button" onClick={() => setMobileOpen(false)} className={control}>← Back</button>} footer={selected && <ArticleActions event={selected} personal={eventPersonalState(selected, state)} onRead={toggleRead} onSave={toggleSave} />}>
-      {selected && inspector(selected, false)}
-    </Sheet>
-    <Sheet open={!!studyQueue} onClose={() => setStudyQueue(null)} title="Study mode" subtitle={`Today · ${studyEvents.length ? Math.min(studyPosition + 1, studyEvents.length) : 0} / ${studyEvents.length} · ${studyCount.read} read`} size="lg" footer={studyEvent && <div className="flex flex-wrap items-center justify-between gap-2"><button type="button" className={control} onClick={() => move(-1)} disabled={studyPosition === 0}>← Previous</button><button type="button" onClick={toggleRead} className={cn(actionClass, 'bg-primary text-primary-ink')}>{personal.readAt ? 'Mark unread' : 'Mark as read'}</button><button type="button" className={control} onClick={() => move(1)} disabled={studyPosition >= studyEvents.length - 1}>Next →</button></div>}>
-      <div data-ca-study className="pb-4">{studyEvent ? <><p className="mb-4 text-xs text-ink-3">{studyCount.total > 0 && studyCount.unread === 0 ? 'Reading set complete ✓' : `~${studyCount.minutesLeft} min left in this reading set`}</p><p className="text-xs text-ink-3">{studyEvent.primary.publisher} · {studyEvent.minutes} min</p><h2 className="mt-4 font-display text-[28px] leading-tight">{studyEvent.primary.title}</h2><p className="mt-4 text-sm text-ink-2">{studyEvent.primary.relevance.subjects.join(' · ')} · {studyEvent.mustRead ? '★ Must Read' : 'Relevant'} · {examLabel(studyEvent.primary.relevance.exam)}</p><div className="mt-6"><a data-study-original href={studyEvent.primary.url} target="_blank" rel="noopener noreferrer" className={cn(actionClass, 'bg-primary text-primary-ink')}>Open original ↗</a><button type="button" onClick={toggleSave} className={actionClass}>{personal.savedAt ? 'Unsave' : 'Save'}</button></div>{desktop && <p className="mt-6 text-xs text-ink-3">J / ↓ next · K / ↑ previous · R read · S save · O open</p>}</> : <p className="py-8 text-sm text-ink-2">No matching articles in today’s edition.</p>}</div>
-    </Sheet>
-  </section>
+        </div>
+
+        {analyticsOpen && <ReadingAnalytics events={events} state={state} now={now} />}
+
+        <div className="pt-1 pb-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="t-heading">{view === 'Archive' ? archiveKey === 'all' ? 'Older articles · newest first' : periodLabel(archiveKey, period) : 'Today · past 24 hours'}</h2>
+            <p data-edition-progress className="t-num text-[13px] text-ink-2">{progress.total > 0 && progress.unread === 0 ? 'Complete ✓' : `${progress.read} / ${progress.total} read`}</p>
+          </div>
+          <div role="progressbar" aria-label="Daily reading progress" aria-valuemin={0} aria-valuemax={Math.max(progress.total, 1)} aria-valuenow={progress.read} className="mt-2.5 h-1 overflow-hidden rounded-full bg-surface-3">
+            <div className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out" style={{ width: `${progress.total ? progress.read / progress.total * 100 : 0}%` }} />
+          </div>
+          <p data-edition-summary className="t-meta mt-2.5">{progress.total} articles · ~{progress.minutesLeft} min left{view === 'Today' ? ' in the past 24 hours' : ''}</p>
+          <p data-reading-tracker className="t-meta mt-0.5">{counts['To be Read']} to be read · {counts.Read} read · {counts.Saved} saved</p>
+        </div>
+
+        <div role="group" aria-label="Reading filter" className="flex gap-1 rounded-2xl bg-surface-2/70 p-1">
+          {tabs.map(value => (
+            <button key={value} type="button" aria-label={value} aria-pressed={filters.tab === value} onClick={() => updateFilters({ tab: value })} className={cn('press min-h-11 min-w-11 flex-1 rounded-xl px-3 text-[13.5px] font-semibold transition-colors', filters.tab === value ? 'bg-bg text-ink shadow-[0_0_0_1px_var(--line),var(--shadow-soft-value)]' : 'text-ink-3 hover:text-ink')}>
+              {value}
+              <span className={cn('t-num ml-1.5 text-[11.5px]', filters.tab === value ? 'text-accent' : 'text-ink-3')}>{counts[value]}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="my-4 flex items-center gap-2">
+          <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-surface px-3 transition-colors focus-within:border-accent/60">
+            <Search className="size-4 shrink-0 text-ink-3" />
+            <input type="search" aria-label="Search articles, topics or sources" placeholder="Search articles…" value={filters.query} onChange={e => updateFilters({ query: e.target.value })} className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-ink-3" />
+          </label>
+          <button type="button" aria-label="Filters" title="Filters" aria-expanded={filtersOpen} aria-controls="ca-filters" onClick={() => setFiltersOpen(value => !value)} className={cn(control, 'inline-flex shrink-0 items-center gap-2', (filtersOpen || activeFilterCount > 0) && 'bg-accent-soft text-accent')}>
+            <SlidersHorizontal className="size-4" />
+            <span className="hidden sm:inline">Filters</span>
+            {activeFilterCount > 0 && <span>{activeFilterCount}</span>}
+          </button>
+        </div>
+
+        <div id="ca-filters" hidden={!filtersOpen} className="mb-5 rounded-2xl bg-surface-2/60 p-4">
+          {view === 'Archive' && (
+            <div data-archive-controls className="mb-3 flex flex-wrap items-center gap-2">
+              <label className="t-label text-[12px] text-ink-3">View
+                <select aria-label="Archive grouping" value={period} onChange={e => { setPeriod(e.target.value as ArchivePeriod); setArchiveKey('all') }} className="ml-2 min-h-11 rounded-xl border border-line bg-surface px-2 text-[13px] font-semibold text-ink">{archivePeriods.map(p => <option key={p}>{p}</option>)}</select>
+              </label>
+              <select aria-label="Archive period" value={archiveKey} onChange={e => setArchiveKey(e.target.value)} className="min-h-11 max-w-full min-w-0 rounded-xl border border-line bg-surface px-2 text-[13px] font-semibold text-ink">
+                <option value="all">All older dates</option>
+                {periods.map(key => <option key={key} value={key}>{periodLabel(key, period)}</option>)}
+              </select>
+            </div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="t-label text-[12px] text-ink-3">Subject<select aria-label="Subject filter" value={filters.subject} onChange={e => updateFilters({ subject: e.target.value })} className={field}>{subjects.map(value => <option key={value}>{value}</option>)}</select></label>
+            <label className="t-label text-[12px] text-ink-3">Exam<select aria-label="Exam filter" value={filters.exam} onChange={e => updateFilters({ exam: e.target.value as WorkspaceFilters['exam'] })} className={field}>{['All', 'Prelims', 'Mains', 'Both'].map(value => <option key={value} value={value}>{value === 'All' ? 'All exams' : value}</option>)}</select></label>
+            <label className="t-label text-[12px] text-ink-3">Publisher<select aria-label="Publisher filter" value={filters.publisher} onChange={e => updateFilters({ publisher: e.target.value })} className={field}>{['All sources', ...publishers].map(value => <option key={value}>{value}</option>)}</select></label>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <div role="group" aria-label="Reading time budget" className="flex items-center gap-1">
+              <span className="t-label mr-1 text-[12px] text-ink-3">Time</span>
+              {[15, 30, 60].map(value => <button key={value} type="button" aria-pressed={filters.budget === value} onClick={() => updateFilters({ budget: filters.budget === value ? null : value })} className={cn(control, 'px-2.5', filters.budget === value && 'bg-accent-soft text-accent')}>{value} min</button>)}
+            </div>
+            {activeFilterCount > 0 && <button type="button" onClick={resetFilters} className={control}>Reset filters</button>}
+          </div>
+          {unavailable.length > 0 && <p className="t-meta mt-3 leading-relaxed">Unavailable or empty sources: {[...new Set(unavailable.map(s => NEWS_SOURCES.find(n => n.id === s.sourceId)?.publisher ?? s.sourceId))].join(', ')}.</p>}
+        </div>
+
+        {activeFilterCount > 0 && !filtersOpen && (
+          <p className="t-meta mb-4">
+            {[view === 'Archive' && archiveKey !== 'all' && periodLabel(archiveKey, period), filters.subject !== 'All subjects' && filters.subject, filters.publisher !== 'All sources' && filters.publisher, filters.exam !== 'All' && filters.exam, filters.budget && `${filters.budget} min plan`].filter(Boolean).join(' · ')}
+            <button type="button" onClick={resetFilters} className="press ml-2 min-h-10 px-2 font-semibold text-accent">Reset filters</button>
+          </p>
+        )}
+        {loading && <p role="status" className="py-3 text-sm text-ink-2">Loading trusted feeds…</p>}
+        {error && <p role="alert" className="py-3 text-sm text-ink-2">{error}</p>}
+        {stateError && <p role="alert" className="py-3 text-sm text-danger">{stateError}</p>}
+        {archiveError && <p role="alert" className="py-3 text-sm text-danger">{archiveError}</p>}
+
+        <div data-news-list className="ca-list">
+          {(filters.query || filters.tab !== 'To be Read' || activeFilterCount > 0) && <p className="t-meta pb-2">{filtered.length} {filtered.length === 1 ? 'article' : 'articles'}{filters.budget ? ` · ~${filtered.reduce((n, e) => n + e.minutes, 0)} min plan` : ''}</p>}
+          {!loading && filtered.length === 0 && (
+            <div className="py-12 text-center">
+              <p className="text-[15px] font-bold">{emptyTitle}</p>
+              <p className="t-meta mx-auto mt-2 max-w-sm leading-relaxed">{view === 'Today' ? 'Today contains only articles published in the past 24 hours. Older articles are in Archive.' : 'Archive contains older retained articles. Change the queue or filters to find more.'}</p>
+            </div>
+          )}
+          {filtered.slice(0, visibleCount).map(event => {
+            const p = eventPersonalState(event, state), item = event.primary, related = (view === 'Today' ? recentCoverage(event, now) : event.members).filter(member => member.url !== item.url)
+            return (
+              <article key={event.id} data-news-event className="ca-row flex min-w-0 flex-wrap items-center gap-x-2 border-t border-line py-2.5 first:border-t-0">
+                <a data-news-original href={item.url} target="_blank" rel="noopener noreferrer" className="ca-row-main -mx-2 flex w-[calc(100%+1rem)] min-w-0 items-center gap-3.5 rounded-xl px-2 py-2 sm:mr-0 sm:w-auto sm:flex-1">
+                  <div className="min-w-0 flex-1">
+                    <h3 className={cn('ca-headline text-[15px] leading-snug tracking-[-0.005em] sm:text-[15.5px]', p.readAt ? 'font-medium text-ink-3' : 'font-bold text-ink')}>
+                      {event.mustRead && <span className="mr-1.5 text-xs text-accent" aria-label="Must Read">★</span>}
+                      {item.title}
+                    </h3>
+                    <div className="t-meta mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-semibold text-ink-2">{item.publisher}</span>
+                      <span>· {item.publishedAt ? view === 'Archive' ? periodLabel(publicationDay(item.publishedAt), 'Daily') : relativeAge(item.publishedAt, now) : 'Undated'}</span>
+                      <span>· {item.relevance.subjects[0]}</span>
+                      <span title="Approximate reading time">· {event.minutes} min</span>
+                    </div>
+                  </div>
+                  <FeedThumbnail url={item.thumbnailUrl} />
+                </a>
+                <div className="-mt-1 -mr-2.5 ml-auto flex shrink-0 sm:mt-0 sm:ml-0">
+                  <button type="button" onClick={() => patch(event, { readAt: p.readAt ? undefined : Date.now() })} aria-label={`${p.readAt ? 'Mark unread' : 'Mark as read'}: ${item.title}`} title={p.readAt ? 'Mark unread' : 'Mark as read'} aria-pressed={!!p.readAt} className={cn(rowAction, p.readAt && 'text-success')}><Check className="size-4" /></button>
+                  <button type="button" onClick={() => patch(event, { savedAt: p.savedAt ? undefined : Date.now() })} aria-label={`${p.savedAt ? 'Unsave' : 'Save'} ${item.title}`} title={p.savedAt ? 'Unsave' : 'Save'} aria-pressed={!!p.savedAt} className={rowAction}><Bookmark className={cn('size-4', p.savedAt && 'fill-current text-accent')} /></button>
+                  <button type="button" onClick={() => remove(event)} aria-label={`Remove article: ${item.title}`} title="Remove irrelevant article" className={rowAction}><X className="size-4" /></button>
+                </div>
+                {related.length > 0 && (
+                  <details data-related-coverage className="w-full text-xs text-ink-2">
+                    <summary className="press min-h-10 cursor-pointer py-2 font-semibold text-ink-3 hover:text-ink">{related.length} more {related.length === 1 ? 'article' : 'articles'} on this topic</summary>
+                    <p className="pb-1 text-[11px] text-ink-3">Preferred using section and feed metadata. Reading progress tracks this topic.</p>
+                    <ul className="divide-y divide-line">{related.map(member => <li key={member.url}><a href={member.url} target="_blank" rel="noopener noreferrer" className="block min-h-11 py-3 leading-relaxed hover:text-accent"><span className="font-semibold">{member.publisher} ↗</span><span className="ml-2">{member.title}</span></a></li>)}</ul>
+                  </details>
+                )}
+                {debug && <details className="w-full text-xs"><summary className="min-h-11 py-3">Evidence</summary><pre className="break-words whitespace-pre-wrap">{JSON.stringify({ ...item.relevance, mustReadScore: event.priority, members: event.members.map(m => m.url) }, null, 2)}</pre></details>}
+              </article>
+            )
+          })}
+        </div>
+        {filtered.length > visibleCount && <button type="button" onClick={() => setVisibleCount(n => n + 50)} className={cn(control, 'mt-4 w-full bg-surface-2')}>Show more · {filtered.length - visibleCount} remaining</button>}
+        {debug && <details className="mt-4 text-xs"><summary className="min-h-11 cursor-pointer py-3">Debug · {classified.filter(i => !i.relevance.accepted).length} rejected links</summary><ul className="space-y-2 text-ink-2">{classified.filter(i => !i.relevance.accepted).map(i => <li key={i.url}>{i.title} · {i.relevance.rejectionReason} · {i.relevance.signals.join(', ')}</li>)}</ul></details>}
+        <p className="t-meta mt-8 leading-relaxed">Read on the original publisher’s website. Reading times are approximate. Older metadata is retained on this device as you use Tars.</p>
+        <NotesSheet open={notesOpen} onClose={() => setNotesOpen(false)} />
+      </Workspace>
+    </section>
+  )
 }

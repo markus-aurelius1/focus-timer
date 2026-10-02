@@ -112,7 +112,7 @@ export function Review({ ex, request, onClose, compact }: { ex: Exploration; req
           </button>
         )}
       </div>
-      <p className="mt-4 text-[11px] font-bold tracking-[0.12em] text-ink-3 uppercase">
+      <p className="mt-4 t-label text-[12px] text-ink-3">
         {request.title ?? 'Field review'} · {TYPE_LABEL[q.type]}
       </p>
       <AnimatePresence mode="wait">
@@ -182,7 +182,7 @@ function OrderInput({ q, result, onSubmit }: { q: Question; result?: Result; onS
   return (
     <div className="mt-4">
       {q.orderHint && (
-        <p className="mb-2 flex justify-between text-[12px] font-bold text-ink-3 uppercase">
+        <p className="mb-2 flex justify-between t-label text-[12px] text-ink-3">
           <span>{q.orderHint[0]}</span>
           <span>{q.orderHint[1]}</span>
         </p>

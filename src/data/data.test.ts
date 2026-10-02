@@ -136,7 +136,7 @@ describe('Atlas migration (v1 → v2)', () => {
     expect(s.atlasStyle).toBe('physical')
     const b = await createBackup()
     expect(b.app).toBe('tars')
-    expect(b.version).toBe(2)
+    expect(b.version).toBe(3)
     expect(Object.keys(b.tables)).toEqual(expect.arrayContaining(['recalls', 'expeditions']))
   })
 })

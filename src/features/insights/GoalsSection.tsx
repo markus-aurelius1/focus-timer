@@ -1,15 +1,17 @@
 import { Pencil, Plus, Target, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useGoals, useLabels, useProjects, useSessions, useSettings } from '@/data/hooks'
-import { create, nextOrder, patch, remove } from '@/data/repo'
+import { create, nextOrder, patch } from '@/data/repo'
 import type { Goal, GoalPeriod } from '@/data/types'
 import { formatDuration, todayKey } from '@/lib/time'
 import { goalProgress } from '@/stats/aggregate'
 import { Button, Field, IconButton, Segmented, Select, Stepper, TextInput } from '@/ui/controls'
-import { confirmDialog, EmptyState } from '@/ui/feedback'
+import { EmptyState } from '@/ui/feedback'
 import { Ring } from '@/ui/Ring'
 import { Sheet, SheetActions, SheetFooter } from '@/ui/Sheet'
 import { flattenLabels } from '@/features/shared/labels'
+import { deleteGoal } from '@/data/deletion'
+import { toast } from '@/ui/toast'
 
 const PERIOD_NAME: Record<GoalPeriod, string> = { day: 'Today', week: 'This week', month: 'This month' }
 
@@ -25,23 +27,23 @@ export function GoalsSection() {
   const progress = useMemo(() => active.map((g) => goalProgress(g, sessions, labels, today, settings.weekStartsOn)), [active, sessions, labels, today, settings.weekStartsOn])
 
   return (
-    <section className="rounded-card border border-line bg-surface p-4 shadow-soft sm:p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-[15px] font-bold">Goals</h3>
-        <Button size="sm" icon={<Plus className="size-3.5" />} onClick={() => setEditing('new')}>
+    <section className="border-t border-line py-5 sm:py-6">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="t-heading">Goals</h3>
+        <Button size="sm" variant="ghost" icon={<Plus className="size-3.5" />} onClick={() => setEditing('new')}>
           Add goal
         </Button>
       </div>
       {progress.length === 0 ? (
         <EmptyState icon={<Target className="size-6" />} title="Set a target" body="Daily or weekly focus goals – overall or for one subject – keep effort steady." className="py-6" />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-x-10 gap-y-1 sm:grid-cols-2">
           {progress.map((p) => {
             const label = labels.find((l) => l.id === p.goal.labelId)
             const project = projects.find((x) => x.id === p.goal.projectId)
             const color = label?.color ?? project?.color ?? 'var(--chart)'
             return (
-              <li key={p.goal.id} className="flex items-center gap-3.5 rounded-2xl bg-surface-2/60 p-3">
+              <li key={p.goal.id} className="flex items-center gap-3.5 py-2">
                 <Ring value={p.ratio} size={52} stroke={5} color={p.met ? 'var(--success)' : color} label={`${Math.round(p.ratio * 100)}%`}>
                   <span className="text-[11px] font-bold">{Math.min(999, Math.round(p.ratio * 100))}%</span>
                 </Ring>
@@ -98,9 +100,9 @@ function GoalSheet({ goal, onClose }: { goal: Goal | 'new' | null; onClose: () =
 
   const del = async () => {
     if (!goal || goal === 'new') return
-    if (!(await confirmDialog({ title: 'Delete this goal?', confirmLabel: 'Delete', danger: true }))) return
-    await remove('goals', goal.id)
+    const deleted = await deleteGoal(goal.id)
     onClose()
+    if (deleted) toast({ title: 'Goal deleted', action: { label: 'Undo', run: () => void deleted.undo() } })
   }
 
   return (

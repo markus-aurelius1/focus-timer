@@ -3,7 +3,7 @@
  * worker for offline use. Static geographic data only – user progress lives in
  * IndexedDB and refers to places by id.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import type { CountryInfo, Expedition, Place, PlacesFile, SheetId, StateInfo } from './types'
 
 export interface AtlasData {
@@ -66,6 +66,7 @@ export function indexAtlas(file: PlacesFile): AtlasData {
 
 let pending: Promise<AtlasData> | null = null
 let loaded: AtlasData | null = null
+const waiting = new Set<() => void>()
 
 export function loadAtlas(): Promise<AtlasData> {
   if (pending) return pending
@@ -74,25 +75,36 @@ export function loadAtlas(): Promise<AtlasData> {
       if (!r.ok) throw new Error(`Atlas places: ${r.status}`)
       return r.json() as Promise<PlacesFile>
     })
-    .then((f) => (loaded = indexAtlas(f)))
+    .then((f) => {
+      loaded = indexAtlas(f)
+      waiting.forEach((l) => l())
+      return loaded
+    })
   pending.catch(() => (pending = null))
   return pending
 }
 
-/** The gazetteer, or null while it loads. */
-export function useAtlas(): AtlasData | null {
-  const [data, setData] = useState<AtlasData | null>(loaded)
+const subscribe = (cb: () => void) => {
+  waiting.add(cb)
+  return () => waiting.delete(cb)
+}
+const snapshot = () => loaded
+
+/**
+ * The gazetteer, or null until it has loaded.
+ *
+ * With `load` (the default) the caller needs it and the download starts now:
+ * the Atlas, a place search, a review. With `load: false` the caller only
+ * wants it if it is there (Home's review count, the action context): it is
+ * told when the gazetteer arrives but never causes the 2.5 MB request itself.
+ * The app asks for it once in idle time after start-up (App.tsx), so those
+ * callers fill in a moment later without Home or Focus paying for the Atlas.
+ */
+export function useAtlas(load = true): AtlasData | null {
+  const data = useSyncExternalStore(subscribe, snapshot, snapshot)
   useEffect(() => {
-    if (loaded) return
-    let alive = true
-    loadAtlas().then(
-      (d) => alive && setData(d),
-      (e) => console.error('[atlas]', e),
-    )
-    return () => {
-      alive = false
-    }
-  }, [])
+    if (load && !loaded) loadAtlas().catch((e) => console.error('[atlas]', e))
+  }, [load])
   return data
 }
 

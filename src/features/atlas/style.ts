@@ -11,8 +11,8 @@ export const WATER_LINE = '#3a7fc1'
 export const PHYSICAL = '#6e3a12'
 export const SEA_FLAT = '#c6e1f2'
 export const NEIGHBOUR_FILL = '#f5f2ea'
-export const FOG_FILL = '#d9dcdc'
-export const FOG_HATCH = '#8d9294'
+/** Where the learner has travelled: a warm edge and ring. Nothing marks the places they haven't. */
+export const TRAVELLED = '#b8781b'
 export const HIGHLIGHT = '#d9480f'
 export const ROUTE = '#8f2d16'
 

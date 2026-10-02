@@ -23,7 +23,7 @@ export function PlaceQuestions({ placeId, onOpen }: { placeId: string; onOpen: (
     }).catch(() => { if (live) setError(true) })
     return () => { live = false }
   }, [placeId, retry])
-  return <section className="mt-7 border-t border-line pt-5" aria-label="Previous questions"><h3 className="text-xs font-bold tracking-wide text-ink-3 uppercase">Previous questions</h3>
+  return <section className="mt-7 border-t border-line pt-5" aria-label="Previous questions"><h3 className="t-label text-ink-3">Previous questions</h3>
     {summary && <p className="mt-2 text-sm font-bold">{summary}</p>}
     {error ? <div><p className="mt-2 text-sm text-ink-2">Questions couldn’t load. Let the initial offline download finish and try again.</p><Button size="sm" onClick={() => setRetry((n) => n + 1)}>Try again</Button></div> : !questions ? <p className="mt-2 text-sm text-ink-3" role="status">Loading linked questions…</p> : !questions.length ? <p className="mt-2 text-sm text-ink-3">No curated questions mapped as meaningful learning relations.</p> : <ul className="mt-2 divide-y divide-line">{questions.map((q) => <li key={q.id}><button type="button" className="flex w-full items-center justify-between gap-3 py-3 text-left text-sm hover:text-accent" onClick={() => onOpen(q.id)}><span>{q.family} · {q.exam.year} · Question {q.question.number}</span><span className="text-xs text-ink-3">{q.question.type.replaceAll('-', ' ')} →</span></button></li>)}</ul>}
   </section>

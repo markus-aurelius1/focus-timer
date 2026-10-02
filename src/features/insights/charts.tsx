@@ -52,8 +52,8 @@ export function ChartCard({ title, subtitle, children, table, action, className 
     <section className={cn('min-w-0 border-t border-line py-5 sm:py-6', className)}>
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-[15px] font-bold">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-[13px] text-ink-2">{subtitle}</p>}
+          <h3 className="t-heading">{title}</h3>
+          {subtitle && <p className="t-meta mt-0.5">{subtitle}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {action}
@@ -304,7 +304,7 @@ export function BarList({ rows, formatValue = fmtSeconds, limit = 8, empty }: { 
                 <span className="ml-1.5 font-semibold text-ink-3">{total ? Math.round((r.value / total) * 100) : 0}%</span>
               </span>
             </div>
-            <div className="h-2 rounded-full bg-surface-2">
+            <div className="h-1.5 rounded-full bg-surface-2">
               <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${(r.value / max) * 100}%`, background: r.color ?? 'var(--chart)' }} />
             </div>
           </li>
@@ -406,9 +406,9 @@ export function StatTile({ label, value, delta, deltaGood = true, sub }: { label
   const up = (delta ?? 0) >= 0
   const good = up === deltaGood
   return (
-    <div className="min-w-0 border-l-2 border-line px-4 py-2">
-      <p className="text-xs font-semibold text-ink-2">{label}</p>
-      <p className="tabular mt-1 text-[26px] leading-tight font-semibold tracking-tight">{value}</p>
+    <div className="min-w-0 py-1">
+      <p className="t-meta">{label}</p>
+      <p className="t-num mt-1 text-[26px] leading-tight">{value}</p>
       <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-ink-3">
         {showDelta && (
           <span className={cn('font-bold', Math.abs(delta!) < 0.005 ? 'text-ink-3' : good ? 'text-success' : 'text-danger')}>

@@ -10,13 +10,9 @@ import { Sheet, SheetActions, SheetFooter } from '@/ui/Sheet'
 import { toast } from '@/ui/toast'
 import { useUi } from '@/app/ui-store'
 import { useTimer } from '@/timer/store'
+import { MODES, rememberProfile, switchMode } from './mode'
+import { profileSummary } from './profileSummary'
 
-export function profileSummary(p: Pick<TimerProfile, 'mode' | 'focusMinutes' | 'shortBreakMinutes' | 'longBreakMinutes' | 'longBreakEvery'>): string {
-  if (p.mode === 'countdown') return `Single ${p.focusMinutes}-minute block`
-  if (p.mode === 'stopwatch') return 'Count up · break scales with your focus'
-  const long = p.longBreakEvery > 0 ? ` · ${p.longBreakMinutes}m long every ${p.longBreakEvery}` : ''
-  return `${p.focusMinutes}m focus · ${p.shortBreakMinutes}m break${long}`
-}
 
 const QUICK: Array<{ label: string; focus: number; rest: number; long: number }> = [
   { label: '25 / 5', focus: 25, rest: 5, long: 15 },
@@ -31,6 +27,11 @@ export function ProfileSheet() {
   const settings = useSettings()
   const [editing, setEditing] = useState<TimerProfile | 'new' | null>(null)
   const running = useTimer((s) => s.timer.status !== 'idle')
+  const mode = useTimer((s) => s.timer.config.mode)
+  const active = profiles.find((p) => p.id === settings.activeProfileId)
+  useEffect(() => {
+    if (active) rememberProfile(active)
+  }, [active])
 
   useEffect(() => {
     if (!open) setEditing(null)
@@ -76,6 +77,10 @@ export function ProfileSheet() {
         />
       ) : (
         <div className="space-y-5">
+          <div>
+            <p className="t-label mb-2">Mode</p>
+            <Segmented<TimerMode> size="sm" layoutId="mode-tabs" label="Timer mode" value={mode} onChange={(m) => void switchMode(m, profiles)} options={MODES} />
+          </div>
           <div className="flex gap-2">
             {QUICK.map((q) => (
               <button key={q.label} type="button" onClick={() => void quick(q)} className="tabular flex-1 rounded-2xl border border-line bg-surface-2 py-3 text-center text-sm font-bold hover:border-line-strong">

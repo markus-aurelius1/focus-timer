@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import type { ThemePreference } from '@/data/types'
 import { isNative } from '@/lib/platform'
@@ -10,12 +10,33 @@ export function useResolvedDark(pref: ThemePreference): boolean {
   return pref === 'dark' || (pref === 'system' && systemDark)
 }
 
+/**
+ * What sits behind the status bar / title bar: the stage on a phone, the canvas
+ * around it in the window. Twins of --bg and --canvas in index.css (and of the
+ * pre-paint script in index.html).
+ */
+export const CHROME_COLOR = {
+  light: { stage: '#f6f2e9', canvas: '#ebe6da' },
+  dark: { stage: '#0c0e16', canvas: '#07090f' },
+} as const
+
 /** Apply the theme class, browser chrome colour and native status bar style. */
 export function useApplyTheme(pref: ThemePreference, override?: 'dark' | null) {
   const dark = useResolvedDark(pref) || override === 'dark'
+  const framed = useMediaQuery('(min-width: 768px)')
+  const applied = useRef<boolean | null>(null)
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark)
-    const color = dark ? '#0a0c14' : '#f4f0e7'
+    const root = document.documentElement
+    // A deliberate switch cross-fades (see .theme-fade in index.css); the first paint does not.
+    let fade: ReturnType<typeof setTimeout> | undefined
+    if (applied.current !== null && applied.current !== dark) {
+      root.classList.add('theme-fade')
+      fade = setTimeout(() => root.classList.remove('theme-fade'), 320)
+    }
+    applied.current = dark
+    root.classList.toggle('dark', dark)
+    const palette = CHROME_COLOR[dark ? 'dark' : 'light']
+    const color = framed ? palette.canvas : palette.stage
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
     try {
       migrateLegacyKeys()
@@ -27,6 +48,12 @@ export function useApplyTheme(pref: ThemePreference, override?: 'dark' | null) {
       void StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light }).catch(() => {})
       void StatusBar.setBackgroundColor({ color }).catch(() => {})
     }
-  }, [dark, pref])
+    return () => {
+      if (fade !== undefined) {
+        clearTimeout(fade)
+        root.classList.remove('theme-fade')
+      }
+    }
+  }, [dark, pref, framed])
   return dark
 }

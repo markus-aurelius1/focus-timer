@@ -28,7 +28,7 @@ export function BaseCampPicker({ atlas, current, onDone, compact }: { atlas: Atl
       <div className={cn('space-y-3', !compact && 'max-h-[46dvh] overflow-y-auto pr-1')}>
         {byZone.map((z) => (
           <div key={z.id}>
-            <p className="mb-1.5 text-[11px] font-bold tracking-[0.12em] text-ink-3 uppercase">{z.label}</p>
+            <p className="mb-1.5 t-label text-[12px] text-ink-3">{z.label}</p>
             <div className="flex flex-wrap gap-1.5">
               {z.states.map((s) => (
                 <button

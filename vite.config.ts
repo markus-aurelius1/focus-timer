@@ -31,10 +31,22 @@ export default defineConfig({
     tailwindcss(),
     { name: 'current-affairs-gateway', configureServer(server) { server.middlewares.use('/api/current-affairs', currentAffairs) }, configurePreviewServer(server) { server.middlewares.use('/api/current-affairs', currentAffairs) } },
     { name: 'site-url', transformIndexHtml: (html) => html.replaceAll('%SITE_URL%', siteUrl) },
+    {
+      // The UI font is needed for the very first text: preload it, so nothing reflows when it arrives and the Atlas measures its names once.
+      name: 'preload-ui-font',
+      transformIndexHtml: {
+        order: 'post',
+        handler(_html, ctx) {
+          const font = Object.keys(ctx.bundle ?? {}).find((name) => /manrope-latin-wght-normal[^/]*\.woff2$/.test(name))
+          return font ? [{ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: base + font, crossorigin: '' }, injectTo: 'head' }] : []
+        },
+      },
+    },
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'sw-notifications.js', 'og-image.png'],
+      // og-image.png is a social preview: crawlers fetch it, the installed app never does, so it is not precached.
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'sw-notifications.js'],
       manifest: {
         // The manifest id is the installed app's identity. It predates the rename to
         // Tars and must stay, or browsers would treat Tars as a different app and
@@ -49,8 +61,9 @@ export default defineConfig({
         display: 'standalone',
         display_override: ['window-controls-overlay', 'standalone'],
         orientation: 'any',
-        background_color: '#0a0c14',
-        theme_color: '#0a0c14',
+        // Night's stage colour (--bg in index.css): the splash a launched app fades in from.
+        background_color: '#0c0e16',
+        theme_color: '#0c0e16',
         categories: ['education', 'productivity'],
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -87,6 +100,7 @@ export default defineConfig({
       workbox: {
         // The Atlas (sheets, relief plates, gazetteer) is precached so the map works offline from the first launch.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest,json,webp}', 'atlas/**/*.txt'],
+        globIgnores: ['**/og-image.png'],
         // The measured curated subset is <0.6 MiB: precache data for first-launch offline,
         // while application loading/validation stays paper-lazy. Hash queries select the same precached bytes.
         ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^hash$/],
@@ -130,7 +144,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Logic tests run in node. Component tests (*.test.tsx) opt into a DOM with a `@vitest-environment happy-dom` docblock.
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
 })

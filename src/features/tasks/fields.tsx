@@ -15,7 +15,7 @@ import { haptics } from '@/services/haptics'
 import { Chip, Select, Stepper } from '@/ui/controls'
 import { Popover } from '@/ui/Popover'
 import { flattenLabels } from '@/features/shared/labels'
-import { profileSummary } from '@/features/focus/ProfileSheet'
+import { profileSummary } from '@/features/focus/profileSummary'
 import { PRIORITY_COLOR, PRIORITY_NAME } from './TaskItem'
 
 /** One labelled field row: label beside the control on wider screens, above it on phones. */

@@ -8,123 +8,35 @@
  * app is in the background.
  */
 import { seededRandom } from '@/lib/random'
+import { burst, chain, filter, flushGrains, gain, noiseBuffer, noiseSource, panner, seamGain, tone } from './dsp'
+import { MORE_SOUNDS } from './sounds-more'
 
-export type SoundCategory = 'nature' | 'places' | 'noise'
-
+/** How a sound is made. Its name and category are in catalog.ts (kept apart so listing sounds never loads this file). */
 export interface SoundDef {
   id: string
-  name: string
-  category: SoundCategory
   /** Loop length in seconds. */
   duration: number
-  /** Crossfade the loop seam (disable for rhythmic sounds). */
+  /** Seconds of equal-power crossfade across the loop seam (default 1.5). */
   crossfade?: number
+  /**
+   * For sounds with a rhythm: instead of a crossfade, this many seconds are
+   * rendered past the loop point and added onto the start, so whatever is still
+   * ringing carries over. Events are scheduled within `loop` only, and anything
+   * continuous uses `seamGain` (or stops at `loop` after a whole number of cycles).
+   */
+  fold?: number
   /** Output trim so sounds sit at similar loudness. */
   trim: number
-  render: (ctx: OfflineAudioContext, out: AudioNode, rand: () => number) => void
+  /** `loop` is the loop length in seconds; the context is longer by the crossfade or fold. */
+  render: (ctx: OfflineAudioContext, out: AudioNode, rand: () => number, loop: number) => void
 }
 
-
-// ───────────────────────── building blocks ─────────────────────────
-
-function noiseBuffer(ctx: BaseAudioContext, kind: 'white' | 'pink' | 'brown', seconds: number, rand: () => number): AudioBuffer {
-  const length = Math.ceil(seconds * ctx.sampleRate)
-  const buf = ctx.createBuffer(2, length, ctx.sampleRate)
-  for (let ch = 0; ch < 2; ch++) {
-    const data = buf.getChannelData(ch)
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0
-    let last = 0
-    for (let i = 0; i < length; i++) {
-      const white = rand() * 2 - 1
-      if (kind === 'white') data[i] = white * 0.5
-      else if (kind === 'pink') {
-        // Paul Kellet's refined pink filter
-        b0 = 0.99886 * b0 + white * 0.0555179
-        b1 = 0.99332 * b1 + white * 0.0750759
-        b2 = 0.969 * b2 + white * 0.153852
-        b3 = 0.8665 * b3 + white * 0.3104856
-        b4 = 0.55 * b4 + white * 0.5329522
-        b5 = -0.7616 * b5 - white * 0.016898
-        data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11
-        b6 = white * 0.115926
-      } else {
-        last = (last + 0.02 * white) / 1.02
-        data[i] = last * 3.5
-      }
-    }
-  }
-  return buf
-}
-
-function noiseSource(ctx: BaseAudioContext, kind: 'white' | 'pink' | 'brown', seconds: number, rand: () => number) {
-  const src = ctx.createBufferSource()
-  src.buffer = noiseBuffer(ctx, kind, seconds, rand)
-  return src
-}
-
-function filter(ctx: BaseAudioContext, type: BiquadFilterType, frequency: number, Q = 0.7) {
-  const f = ctx.createBiquadFilter()
-  f.type = type
-  f.frequency.value = frequency
-  f.Q.value = Q
-  return f
-}
-
-function gain(ctx: BaseAudioContext, value: number) {
-  const g = ctx.createGain()
-  g.gain.value = value
-  return g
-}
-
-function panner(ctx: BaseAudioContext, pan: number): AudioNode {
-  if ('createStereoPanner' in ctx) {
-    const p = ctx.createStereoPanner()
-    p.pan.value = Math.max(-1, Math.min(1, pan))
-    return p
-  }
-  return gain(ctx, 1)
-}
-
-function chain(...nodes: AudioNode[]) {
-  for (let i = 0; i < nodes.length - 1; i++) nodes[i].connect(nodes[i + 1])
-  return nodes[nodes.length - 1]
-}
-
-/** Short filtered noise burst – raindrops, crackles, clicks. */
-function burst(ctx: OfflineAudioContext, out: AudioNode, noise: AudioBuffer, at: number, opts: { freq: number; q: number; gain: number; decay: number; pan: number; type?: BiquadFilterType }) {
-  const src = ctx.createBufferSource()
-  src.buffer = noise
-  const f = filter(ctx, opts.type ?? 'bandpass', opts.freq, opts.q)
-  const g = ctx.createGain()
-  g.gain.setValueAtTime(0, at)
-  g.gain.linearRampToValueAtTime(opts.gain, at + 0.0015)
-  g.gain.exponentialRampToValueAtTime(0.0001, at + opts.decay)
-  chain(src, f, g, panner(ctx, opts.pan), out)
-  src.start(at, (at * 7.31) % 0.5)
-  src.stop(at + opts.decay + 0.02)
-}
-
-function tone(ctx: OfflineAudioContext, out: AudioNode, at: number, opts: { from: number; to: number; dur: number; gain: number; pan: number; type?: OscillatorType }) {
-  const osc = ctx.createOscillator()
-  osc.type = opts.type ?? 'sine'
-  osc.frequency.setValueAtTime(opts.from, at)
-  osc.frequency.exponentialRampToValueAtTime(opts.to, at + opts.dur)
-  const g = ctx.createGain()
-  g.gain.setValueAtTime(0, at)
-  g.gain.linearRampToValueAtTime(opts.gain, at + Math.min(0.012, opts.dur / 4))
-  g.gain.exponentialRampToValueAtTime(0.0001, at + opts.dur)
-  chain(osc, g, panner(ctx, opts.pan), out)
-  osc.start(at)
-  osc.stop(at + opts.dur + 0.02)
-}
 
 // ───────────────────────── sound definitions ─────────────────────────
 
 export const SOUNDS: SoundDef[] = [
   {
     id: 'rain',
-    name: 'Rain',
-    category: 'nature',
     duration: 12,
     trim: 1,
     render(ctx, out, rand) {
@@ -149,8 +61,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'thunder',
-    name: 'Thunder',
-    category: 'nature',
     duration: 40,
     trim: 1.1,
     render(ctx, out, rand) {
@@ -175,8 +85,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'waves',
-    name: 'Ocean',
-    category: 'nature',
     duration: 24,
     trim: 1,
     render(ctx, out, rand) {
@@ -206,8 +114,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'wind',
-    name: 'Wind',
-    category: 'nature',
     duration: 24,
     trim: 1.2,
     render(ctx, out, rand) {
@@ -228,8 +134,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'stream',
-    name: 'Stream',
-    category: 'nature',
     duration: 16,
     trim: 1,
     render(ctx, out, rand) {
@@ -249,8 +153,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'fire',
-    name: 'Fireplace',
-    category: 'nature',
     duration: 18,
     trim: 1,
     render(ctx, out, rand) {
@@ -283,8 +185,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'birds',
-    name: 'Birdsong',
-    category: 'nature',
     duration: 30,
     trim: 3.2,
     render(ctx, out, rand) {
@@ -312,15 +212,12 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'night',
-    name: 'Night crickets',
-    category: 'nature',
     duration: 12,
     trim: 1.4,
-    crossfade: 0,
-    render(ctx, out, rand) {
-      const D = ctx.length / ctx.sampleRate
-      const bed = noiseSource(ctx, 'brown', D, rand)
-      chain(bed, filter(ctx, 'lowpass', 300), gain(ctx, 0.2), out)
+    fold: 2,
+    render(ctx, out, rand, D) {
+      const bed = noiseSource(ctx, 'brown', D + 2, rand)
+      chain(bed, filter(ctx, 'lowpass', 300), seamGain(ctx, 0.2, D, 2), out)
       bed.start()
       const crickets = Array.from({ length: 3 }, (_, i) => ({ f: 4200 + i * 380 + rand() * 200, every: 0.7 + rand() * 0.6, pulses: 3 + Math.floor(rand() * 2), pan: (i - 1) * 0.6, g: 0.02 + rand() * 0.02 }))
       for (const c of crickets) {
@@ -334,8 +231,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'cafe',
-    name: 'Café murmur',
-    category: 'places',
     duration: 24,
     trim: 1.1,
     render(ctx, out, rand) {
@@ -377,8 +272,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'clock',
-    name: 'Study clock',
-    category: 'places',
     duration: 8,
     crossfade: 0,
     trim: 6,
@@ -392,8 +285,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'white',
-    name: 'White noise',
-    category: 'noise',
     duration: 10,
     trim: 0.45,
     render(ctx, out, rand) {
@@ -404,8 +295,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'pink',
-    name: 'Pink noise',
-    category: 'noise',
     duration: 10,
     trim: 0.8,
     render(ctx, out, rand) {
@@ -416,8 +305,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'brown',
-    name: 'Brown noise',
-    category: 'noise',
     duration: 10,
     trim: 0.9,
     render(ctx, out, rand) {
@@ -428,8 +315,6 @@ export const SOUNDS: SoundDef[] = [
   },
   {
     id: 'drone',
-    name: 'Alpha drone',
-    category: 'noise',
     duration: 20,
     trim: 0.7,
     render(ctx, out) {
@@ -460,6 +345,7 @@ export const SOUNDS: SoundDef[] = [
       }
     },
   },
+  ...MORE_SOUNDS,
 ]
 
 export const SOUND_BY_ID = new Map(SOUNDS.map((s) => [s.id, s]))
@@ -474,7 +360,7 @@ export function renderSound(id: string, sampleRate: number): Promise<AudioBuffer
   const def = SOUND_BY_ID.get(id)
   if (!def) return Promise.reject(new Error(`Unknown sound ${id}`))
   const p = (async () => {
-    const xf = def.crossfade ?? 1.5
+    const xf = def.fold ?? def.crossfade ?? 1.5
     const total = Math.ceil((def.duration + xf) * sampleRate)
     const ctx = new OfflineAudioContext(2, total, sampleRate)
     const out = ctx.createGain()
@@ -484,9 +370,21 @@ export function renderSound(id: string, sampleRate: number): Promise<AudioBuffer
     comp.threshold.value = -10
     comp.ratio.value = 4
     out.connect(comp).connect(ctx.destination)
-    def.render(ctx, out, seededRandom(`sound:${id}`))
+    def.render(ctx, out, seededRandom(`sound:${id}`), def.duration)
+    flushGrains(ctx)
     const rendered = await ctx.startRendering()
     if (xf <= 0) return rendered
+    if (def.fold) {
+      const len = Math.floor(def.duration * sampleRate)
+      const loop = new AudioBuffer({ numberOfChannels: 2, length: len, sampleRate })
+      for (let ch = 0; ch < 2; ch++) {
+        const src = rendered.getChannelData(ch)
+        const dst = loop.getChannelData(ch)
+        dst.set(src.subarray(0, len))
+        for (let i = len; i < src.length; i++) dst[i - len] += src[i]
+      }
+      return loop
+    }
     // Fold the tail over the head with an equal-power crossfade → no audible seam.
     const len = Math.floor(def.duration * sampleRate)
     const fade = Math.floor(xf * sampleRate)
@@ -505,4 +403,9 @@ export function renderSound(id: string, sampleRate: number): Promise<AudioBuffer
   cache.set(key, p)
   p.catch(() => cache.delete(key))
   return p
+}
+
+/** Release a rendered loop (several megabytes each) once its layer is gone. */
+export function forgetSound(id: string) {
+  for (const key of [...cache.keys()]) if (key.startsWith(`${id}@`)) cache.delete(key)
 }

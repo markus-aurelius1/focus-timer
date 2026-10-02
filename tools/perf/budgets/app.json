@@ -1,0 +1,16 @@
+{
+  "desktop": {
+    "focus idle": { "rafCallbacksPerSec": { "max": 2 } },
+    "focus running": { "rafCallbacksPerSec": { "max": 2 } },
+    "immersive running": { "rafCallbacksPerSec": { "max": 2 } },
+    "home, session running": { "rafCallbacksPerSec": { "max": 2 } },
+    "routes": { "skeletonsShown": { "max": 6 } }
+  },
+  "phone": {
+    "focus idle": { "rafCallbacksPerSec": { "max": 2 } },
+    "focus running": { "rafCallbacksPerSec": { "max": 2 } },
+    "immersive running": { "rafCallbacksPerSec": { "max": 2 } },
+    "routes": { "skeletonsShown": { "max": 6 } },
+    "touch targets": { "under44": { "max": 220 } }
+  }
+}

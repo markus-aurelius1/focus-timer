@@ -2,15 +2,16 @@ import { Archive, ArchiveRestore, ChevronRight, Plus, Trash2 } from 'lucide-reac
 import { useEffect, useMemo, useState } from 'react'
 import { db } from '@/data/db'
 import { useLabels } from '@/data/hooks'
-import { create, patch, remove } from '@/data/repo'
+import { create, patch } from '@/data/repo'
 import { PALETTE } from '@/data/seed'
 import type { Label, LabelKind } from '@/data/types'
 import { labelScope } from '@/stats/aggregate'
-import { Button, Field, IconButton, Select, TextInput } from '@/ui/controls'
+import { Button, Field, IconButton, ListRow, Select, TextInput } from '@/ui/controls'
 import { ColorPicker } from '@/ui/ColorPicker'
-import { confirmDialog } from '@/ui/feedback'
 import { Sheet, SheetActions, SheetFooter } from '@/ui/Sheet'
 import { flattenLabels, LABEL_KIND_NAME } from '@/features/shared/labels'
+import { deleteLabel } from '@/data/deletion'
+import { toast } from '@/ui/toast'
 
 /** Exam → Subject → Topic, or any flat set of labels. Structure is optional. */
 export function LabelsManager() {
@@ -23,12 +24,20 @@ export function LabelsManager() {
         <ul className="divide-y divide-line">
           {tree.map(({ label, depth }) => (
             <li key={label.id}>
-              <button type="button" onClick={() => setEditing(label)} className="flex w-full items-center gap-3 py-2.5 pr-4 text-left hover:bg-surface-2/60" style={{ paddingLeft: 16 + depth * 20 }}>
-                <span className="size-3 shrink-0 rounded-full" style={{ background: label.color, opacity: label.archived ? 0.4 : 1 }} />
-                <span className={`min-w-0 flex-1 truncate text-[15px] font-semibold ${label.archived ? 'text-ink-3 line-through' : ''}`}>{label.name}</span>
-                <span className="text-xs font-medium text-ink-3">{LABEL_KIND_NAME[label.kind]}</span>
-                <ChevronRight className="size-4 text-ink-3" />
-              </button>
+              <div style={{ paddingLeft: depth * 20 }}>
+                <ListRow
+                  className="px-4"
+                  leading={<span className="size-3 shrink-0 rounded-full" style={{ background: label.color, opacity: label.archived ? 0.4 : 1 }} />}
+                  title={<span className={label.archived ? 'text-ink-3 line-through' : undefined}>{label.name}</span>}
+                  trailing={
+                    <span className="flex items-center gap-2 text-xs font-medium text-ink-3">
+                      {LABEL_KIND_NAME[label.kind]}
+                      <ChevronRight className="size-4" aria-hidden />
+                    </span>
+                  }
+                  onClick={() => setEditing(label)}
+                />
+              </div>
             </li>
           ))}
         </ul>
@@ -73,16 +82,12 @@ function LabelSheet({ target, labels, onClose }: { target: Label | { parentId: s
     if (!existing) return
     const children = labels.filter((l) => l.parentId === existing.id)
     const used = await db.sessions.where('labelId').equals(existing.id).count()
-    const ok = await confirmDialog({
-      title: `Delete “${existing.name}”?`,
-      body: `${used ? `${used} sessions keep their time but lose this label. ` : ''}${children.length ? 'Its topics move up a level. ' : ''}Archiving instead keeps history intact.`,
-      confirmLabel: 'Delete',
-      danger: true,
-    })
-    if (!ok) return
-    for (const c of children) await patch('labels', c.id, { parentId: existing.parentId })
-    await remove('labels', existing.id)
+    const deleted = await deleteLabel(existing.id)
     onClose()
+    if (!deleted) return
+    // What the delete changed, said plainly, with the way back.
+    const effects = [used ? `${used} ${used === 1 ? 'session keeps its' : 'sessions keep their'} time but ${used === 1 ? 'loses' : 'lose'} this label.` : '', children.length ? 'Its topics moved up a level.' : ''].filter(Boolean).join(' ')
+    toast({ title: `“${existing.name}” deleted`, body: effects || undefined, action: { label: 'Undo', run: () => void deleted.undo() } })
   }
 
   return (

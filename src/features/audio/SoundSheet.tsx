@@ -1,197 +1,345 @@
+/**
+ * The sound panel: ambient layers, study music and saved mixes.
+ *
+ * It is only a remote control. Everything that plays belongs to the engine in
+ * audio/store.ts, so opening or closing this panel, or leaving the screen it
+ * was opened from, changes nothing about what is heard.
+ *
+ * Beside the content on a wide screen (the timer stays in view); a bottom
+ * sheet on a phone.
+ */
 import {
   AudioLines,
   AudioWaveform,
   Bird,
+  BookOpen,
+  Bug,
+  Building2,
+  Car,
   Clock3,
+  CloudDrizzle,
   CloudLightning,
   CloudRain,
+  CloudRainWind,
   Coffee,
+  CupSoda,
+  Droplet,
   Droplets,
   ExternalLink,
+  Fan,
+  Fish,
   Flame,
-  Loader2,
+  FlameKindling,
+  Flower2,
+  Keyboard,
+  Leaf,
   Moon,
   Mountain,
   Orbit,
   Pause,
+  Plane,
   Play,
   Plus,
+  Sailboat,
   Save,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Snowflake,
+  TrainFront,
   Trash2,
+  TreePine,
+  Volume2,
+  VolumeX,
   Waves,
   Wind,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useUi } from '@/app/ui-store'
-import { SOUNDS, type SoundCategory } from '@/audio/sounds'
-import { useAudio } from '@/audio/store'
+import { MIXES, MUSIC_GENRES, MUSIC_TRACKS, SOUND_CATEGORIES, SOUND_LIST, SOUND_META, TRACK_META, type MusicGenre, type SoundCategory } from '@/audio/catalog'
+import { queue, useAudio } from '@/audio/store'
 import { parseMediaUrl, providerName, SUGGESTED_STREAMS } from '@/audio/youtube'
 import { updateSettings, useAudioPresets, usePlaylists, useSettings } from '@/data/hooks'
 import { create, nextOrder, remove } from '@/data/repo'
 import { cn } from '@/lib/cn'
-import { Button, SectionTitle, TextInput, Toggle } from '@/ui/controls'
-import { Sheet } from '@/ui/Sheet'
+import { Button, Chip, Group, IconButton, ListRow, Pressable, SectionTitle, Slider, Spinner, SwitchRow, TabPanel, Tabs, TextInput } from '@/ui/controls'
+import { SidePanel } from '@/ui/surface/SidePanel'
 import { toast } from '@/ui/toast'
 import { openExternal, useMusic } from './music'
 
-const ICONS: Record<string, LucideIcon> = {
-  rain: CloudRain,
-  thunder: CloudLightning,
-  waves: Waves,
-  wind: Wind,
-  stream: Droplets,
-  fire: Flame,
-  birds: Bird,
+const CATEGORY_ICON: Record<SoundCategory, LucideIcon> = {
+  weather: CloudRain,
+  water: Droplets,
+  forest: TreePine,
+  nature: Flower2,
   night: Moon,
+  fire: Flame,
   cafe: Coffee,
+  urban: Building2,
+  transport: TrainFront,
+  noise: AudioWaveform,
+}
+
+const ICONS: Record<string, LucideIcon> = {
+  'heavy-rain': CloudRainWind,
+  'rain-window': CloudDrizzle,
+  thunder: CloudLightning,
+  wind: Wind,
+  blizzard: Snowflake,
+  waves: Waves,
+  lake: Sailboat,
+  drip: Droplet,
+  birds: Bird,
+  leaves: Leaf,
+  cicadas: Bug,
+  frogs: Fish,
+  owl: Bird,
+  campfire: FlameKindling,
+  cups: CupSoda,
+  keyboard: Keyboard,
+  pages: BookOpen,
   clock: Clock3,
-  white: AudioWaveform,
+  fan: Fan,
+  plane: Plane,
+  car: Car,
   pink: AudioLines,
   brown: Mountain,
   drone: Orbit,
 }
 
-const CATEGORY_NAME: Record<SoundCategory, string> = { nature: 'Nature', places: 'Places', noise: 'Noise & tones' }
+const iconFor = (id: string): LucideIcon => ICONS[id] ?? CATEGORY_ICON[SOUND_META.get(id)?.category ?? 'noise']
+const percent = (v: number) => `${Math.round(v * 100)}%`
+
+type Tab = 'ambience' | 'music' | 'mixes'
 
 export function SoundSheet() {
   const open = useUi((s) => s.soundOpen)
   const close = () => useUi.getState().set({ soundOpen: false })
-  const audio = useAudio()
-  const presets = useAudioPresets()
-  const settings = useSettings()
-  const [saving, setSaving] = useState<string | null>(null)
-  const active = Object.keys(audio.layers)
-
-  const savePreset = async () => {
-    const name = saving?.trim()
-    if (!name || !active.length) return
-    await create('audioPresets', { name, layers: active.map((sound) => ({ sound, volume: audio.layers[sound] })), order: await nextOrder('audioPresets') })
-    setSaving(null)
-    toast({ title: 'Soundscape saved', body: name, tone: 'success' })
-  }
+  const playing = useAudio((s) => s.playing)
+  const master = useAudio((s) => s.master)
+  const count = useAudio((s) => Object.keys(s.layers).length)
+  const musicOn = useAudio((s) => s.music.on)
+  const [tab, setTab] = useState<Tab>('ambience')
+  const nothing = count === 0 && !musicOn
 
   return (
-    <Sheet
+    <SidePanel
       open={open}
       onClose={close}
-      title="Soundscape"
-      subtitle="Layer sounds and set each level. Everything is generated on your device and works offline."
+      name="sounds"
+      width={400}
+      title="Sounds"
+      subtitle="Made on this device. Nothing to download; works offline."
       size="lg"
       headerAction={
-        <button
-          type="button"
-          onClick={() => audio.togglePlay()}
-          disabled={!active.length}
-          aria-label={audio.playing ? 'Pause' : 'Play'}
-          className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-ink disabled:opacity-30"
-        >
-          {audio.playing ? <Pause className="size-4.5 fill-current" strokeWidth={0} /> : <Play className="ml-0.5 size-4.5 fill-current" strokeWidth={0} />}
-        </button>
+        <IconButton label={playing ? 'Pause sound' : 'Play sound'} variant="primary" disabled={nothing} onClick={() => useAudio.getState().togglePlay()}>
+          {playing ? <Pause className="fill-current" strokeWidth={0} /> : <Play className="ml-0.5 fill-current" strokeWidth={0} />}
+        </IconButton>
+      }
+      footer={
+        <div className="flex items-center gap-3">
+          <Volume2 className="size-4 shrink-0 text-ink-3" aria-hidden />
+          <Slider className="flex-1" label="Overall volume" value={master} valueLabel={percent(master)} onChange={(v) => useAudio.getState().setMaster(v)} />
+        </div>
       }
     >
-      <div className="space-y-6">
-        <section>
-          <SectionTitle>Presets</SectionTitle>
-          <div className="scrollbar-none -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-            {presets.map((p) => (
-              <div key={p.id} className="group relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => audio.applyPreset(p.layers, p.id)}
-                  className={cn('flex h-16 min-w-32 flex-col justify-center rounded-2xl border px-3.5 text-left transition-colors', audio.presetId === p.id ? 'border-accent/50 bg-accent-soft' : 'border-line bg-surface-2 hover:border-line-strong')}
-                >
-                  <span className="text-sm font-bold">{p.name}</span>
-                  <span className="mt-0.5 flex gap-1 text-ink-3">
-                    {p.layers.map((l) => {
-                      const Icon = ICONS[l.sound] ?? AudioLines
-                      return <Icon key={l.sound} className="size-3.5" />
-                    })}
-                  </span>
-                </button>
-                <button type="button" aria-label={`Delete ${p.name}`} onClick={() => void remove('audioPresets', p.id)} className="absolute -top-1.5 -right-1.5 hidden size-6 items-center justify-center rounded-full border border-line bg-surface text-ink-3 shadow-soft group-hover:flex hover:text-danger">
-                  <Trash2 className="size-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-          {active.length > 0 &&
-            (saving === null ? (
-              <button type="button" onClick={() => setSaving('')} className="mt-2 inline-flex items-center gap-1.5 px-1 text-xs font-bold text-accent">
-                <Save className="size-3.5" /> Save current mix
-              </button>
-            ) : (
-              <form
-                className="mt-2 flex gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  void savePreset()
-                }}
-              >
-                <TextInput autoFocus value={saving} onChange={(e) => setSaving(e.target.value)} placeholder="Name this mix" className="py-2" />
-                <Button type="submit" variant="primary">
-                  Save
-                </Button>
-              </form>
-            ))}
-        </section>
-
-        {(['nature', 'places', 'noise'] as SoundCategory[]).map((cat) => (
-          <section key={cat}>
-            <SectionTitle>{CATEGORY_NAME[cat]}</SectionTitle>
-            <div className="grid grid-cols-2 items-start gap-2 sm:grid-cols-3">
-              {SOUNDS.filter((s) => s.category === cat).map((s) => {
-                const Icon = ICONS[s.id] ?? AudioLines
-                const on = audio.layers[s.id] !== undefined
-                const loading = audio.loading.includes(s.id)
-                return (
-                  <div key={s.id} className={cn('rounded-2xl border px-3 py-2.5 transition-colors', on ? 'border-accent/40 bg-accent-soft' : 'border-line bg-surface-2/60')}>
-                    <button type="button" onClick={() => audio.toggleSound(s.id)} aria-pressed={on} className="flex w-full items-center gap-2.5 text-left">
-                      <span className={cn('flex size-9 items-center justify-center rounded-xl', on ? 'bg-accent text-accent-ink' : 'bg-surface text-ink-2')}>
-                        {loading ? <Loader2 className="size-4.5 animate-spin" /> : <Icon className="size-4.5" />}
-                      </span>
-                      <span className="text-sm font-bold">{s.name}</span>
-                    </button>
-                    {on && (
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={audio.layers[s.id]}
-                        onChange={(e) => audio.setVolume(s.id, Number(e.target.value))}
-                        aria-label={`${s.name} volume`}
-                        className="mt-2 w-full"
-                      />
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        ))}
-
-        <section className="space-y-3 rounded-2xl border border-line p-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-semibold">Master volume</span>
-            <input type="range" min={0} max={1} step={0.01} value={audio.master} onChange={(e) => audio.setMaster(Number(e.target.value))} aria-label="Master volume" className="w-40" />
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <span>
-              <span className="block text-sm font-semibold">Follow the timer</span>
-              <span className="block text-xs text-ink-2">Sounds and music play during focus, pause when you pause, stop when you stop, and fade out for breaks.</span>
-            </span>
-            <Toggle label="Follow the timer" checked={settings.ambientFollowsTimer} onChange={(v) => void updateSettings({ ambientFollowsTimer: v })} />
-          </div>
-        </section>
-
-        <MusicSection />
-      </div>
-    </Sheet>
+      <Tabs
+        id="sound"
+        label="Sound sections"
+        layoutId="sound-tabs"
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: 'ambience', label: 'Ambience', count: count || undefined },
+          { id: 'music', label: 'Music' },
+          { id: 'mixes', label: 'Mixes' },
+        ]}
+        className="mb-4"
+      />
+      <TabPanel id="sound" tab="ambience" current={tab}>
+        <Ambience />
+      </TabPanel>
+      <TabPanel id="sound" tab="music" current={tab}>
+        <Music />
+      </TabPanel>
+      <TabPanel id="sound" tab="mixes" current={tab}>
+        <Mixes />
+      </TabPanel>
+    </SidePanel>
   )
 }
 
-function MusicSection() {
+// ───────────────────────── ambience ─────────────────────────
+
+function Ambience() {
+  const layers = useAudio((s) => s.layers)
+  const loading = useAudio((s) => s.loading)
+  const [category, setCategory] = useState<SoundCategory | 'all'>('all')
+  const active = Object.keys(layers)
+  const shown = category === 'all' ? SOUND_LIST : SOUND_LIST.filter((s) => s.category === category)
+  const audio = useAudio.getState()
+
+  return (
+    <div className="space-y-5">
+      {active.length > 0 && (
+        <section aria-label="In the mix">
+          <SectionTitle
+            action={
+              <Button size="sm" variant="ghost" onClick={() => active.forEach((id) => audio.toggleSound(id))}>
+                Clear
+              </Button>
+            }
+          >
+            In the mix
+          </SectionTitle>
+          <Group as="ul" flat>
+            {active.map((id) => {
+              const meta = SOUND_META.get(id)
+              if (!meta) return null
+              const layer = layers[id]
+              const Icon = iconFor(id)
+              return (
+                <li key={id} className="flex items-center gap-2 py-1.5 pr-1.5 pl-3">
+                  <span className="flex size-8 shrink-0 items-center justify-center text-ink-2">{loading.includes(id) ? <Spinner className="size-4" /> : <Icon className="size-[18px]" aria-hidden />}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block truncate text-[13px] font-semibold', layer.muted && 'text-ink-3')}>{meta.name}</span>
+                    <Slider label={`${meta.name} volume`} value={layer.volume} valueLabel={percent(layer.volume)} onChange={(v) => audio.setVolume(id, v)} className={cn(layer.muted && 'opacity-50')} />
+                  </span>
+                  <IconButton size="sm" label={layer.muted ? `Unmute ${meta.name}` : `Mute ${meta.name}`} active={layer.muted} aria-pressed={layer.muted} onClick={() => audio.toggleMute(id)}>
+                    {layer.muted ? <VolumeX /> : <Volume2 />}
+                  </IconButton>
+                  <IconButton size="sm" label={`Remove ${meta.name}`} onClick={() => audio.toggleSound(id)}>
+                    <X />
+                  </IconButton>
+                </li>
+              )
+            })}
+          </Group>
+        </section>
+      )}
+
+      <section aria-label="All sounds">
+        <div className="chip-row scrollbar-none -mx-5 mb-3 px-5" role="group" aria-label="Sound categories">
+          <Chip active={category === 'all'} onClick={() => setCategory('all')} className="shrink-0">
+            All
+          </Chip>
+          {SOUND_CATEGORIES.map((c) => (
+            <Chip key={c.id} active={category === c.id} onClick={() => setCategory(c.id)} className="shrink-0">
+              {c.name}
+            </Chip>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {shown.map((s) => {
+            const Icon = iconFor(s.id)
+            const on = !!layers[s.id]
+            return (
+              <Pressable
+                key={s.id}
+                aria-pressed={on}
+                onClick={() => audio.toggleSound(s.id)}
+                className={cn('flex min-h-12 items-center gap-2.5 rounded-field px-3 py-2 text-left text-[13px] leading-tight font-semibold', on ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-ink')}
+              >
+                {loading.includes(s.id) ? <Spinner className="size-[18px] shrink-0" /> : <Icon className={cn('size-[18px] shrink-0', !on && 'text-ink-2')} aria-hidden />}
+                <span className="min-w-0">{s.name}</span>
+              </Pressable>
+            )
+          })}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+// ───────────────────────── music ─────────────────────────
+
+function Music() {
+  const music = useAudio((s) => s.music)
+  const playing = useAudio((s) => s.playing)
+  const loading = useAudio((s) => s.loading)
+  const audio = useAudio.getState()
+  const current = TRACK_META.get(music.track)
+  const sounding = playing && music.on
+  const tracks = queue(music)
+  const genreName = (g: MusicGenre) => MUSIC_GENRES.find((x) => x.id === g)?.name ?? ''
+
+  return (
+    <div className="space-y-5">
+      <section aria-label="Now playing" className="rounded-card bg-surface-2 p-4">
+        <p className="t-micro text-ink-3">{sounding ? 'Now playing' : music.on ? 'Paused' : 'Study music'}</p>
+        <p className="mt-1 truncate text-[17px] leading-snug font-bold" aria-live="polite">
+          {current?.name}
+        </p>
+        <p className="text-[13px] text-ink-2">{current ? genreName(current.genre) : ''} · plays on, one track into the next</p>
+        <div className="mt-3 flex items-center gap-1.5">
+          <IconButton label="Previous track" onClick={() => audio.prevTrack()}>
+            <SkipBack />
+          </IconButton>
+          <IconButton
+            size="lg"
+            variant="primary"
+            label={sounding ? 'Pause music' : 'Play music'}
+            onClick={() => {
+              // Pausing the music leaves the ambience playing; the header button pauses everything.
+              if (sounding) audio.setMusic(false)
+              else audio.playTrack(music.track)
+            }}
+          >
+            {loading.includes(`music:${music.track}`) ? <Spinner className="size-5" /> : sounding ? <Pause className="fill-current" strokeWidth={0} /> : <Play className="ml-0.5 fill-current" strokeWidth={0} />}
+          </IconButton>
+          <IconButton label="Next track" onClick={() => audio.nextTrack()}>
+            <SkipForward />
+          </IconButton>
+          <span className="flex-1" />
+          <IconButton label="Shuffle" active={music.shuffle} aria-pressed={music.shuffle} onClick={() => audio.setShuffle(!music.shuffle)}>
+            <Shuffle />
+          </IconButton>
+        </div>
+        <Slider className="mt-2" label="Music volume" value={music.volume} valueLabel={percent(music.volume)} onChange={(v) => audio.setMusicVolume(v)} />
+      </section>
+
+      <section aria-label="Tracks">
+        <div className="chip-row scrollbar-none -mx-5 mb-2 px-5" role="group" aria-label="Genres">
+          <Chip active={music.genre === 'all'} onClick={() => audio.setGenre('all')} className="shrink-0">
+            All
+          </Chip>
+          {MUSIC_GENRES.map((g) => (
+            <Chip key={g.id} active={music.genre === g.id} onClick={() => audio.setGenre(g.id)} className="shrink-0">
+              {g.name}
+            </Chip>
+          ))}
+        </div>
+        {music.genre !== 'all' && <p className="mb-1 px-1 text-[13px] text-ink-2">{MUSIC_GENRES.find((g) => g.id === music.genre)?.about}</p>}
+        <ul>
+          {tracks.map((t) => {
+            const selected = t.id === music.track && music.on
+            return (
+              <ListRow
+                as="li"
+                key={t.id}
+                density="compact"
+                selected={selected}
+                title={t.name}
+                meta={music.genre === 'all' ? genreName(t.genre) : undefined}
+                label={`Play ${t.name}`}
+                trailing={selected && sounding ? <AudioLines className="size-4 text-accent" aria-label="Playing" /> : undefined}
+                onClick={() => audio.playTrack(t.id)}
+              />
+            )
+          })}
+        </ul>
+        <p className="mt-2 px-1 text-[13px] text-ink-3">{MUSIC_TRACKS.length} pieces, each written by the app from a few rules. No recordings.</p>
+      </section>
+
+      <Links />
+    </div>
+  )
+}
+
+/** Saved YouTube links: the official embedded player, or the YouTube Music app. */
+function Links() {
   const playlists = usePlaylists()
   const play = useMusic((s) => s.play)
   const [url, setUrl] = useState('')
@@ -214,31 +362,33 @@ function MusicSection() {
   }
 
   return (
-    <section>
-      <SectionTitle>Music</SectionTitle>
-      <p className="mb-3 px-1 text-[13px] leading-relaxed text-ink-2">
-        Save YouTube or YouTube Music links. YouTube videos and playlists play here in the official embedded player; YouTube Music opens in its own app, where background listening follows your YouTube subscription.
-      </p>
+    <section aria-label="Your links">
+      <SectionTitle>Your links</SectionTitle>
+      <p className="mb-3 px-1 text-[13px] leading-relaxed text-ink-2">YouTube videos and playlists play here in the official player and need a connection. YouTube Music opens in its own app.</p>
       {playlists.length > 0 && (
-        <ul className="mb-3 divide-y divide-line overflow-hidden rounded-2xl border border-line">
+        <Group as="ul" flat className="mb-3">
           {playlists.map((p) => {
             const embeddable = !!parseMediaUrl(p.url)?.embeddable
             return (
-              <li key={p.id} className="flex items-center gap-2 py-2 pr-2 pl-4">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold">{p.title}</span>
-                  <span className="block text-xs text-ink-3">{providerName(p.provider)}</span>
-                </span>
-                <Button size="sm" variant={embeddable ? 'primary' : 'secondary'} icon={embeddable ? <Play className="size-3.5 fill-current" /> : <ExternalLink className="size-3.5" />} onClick={() => start(p)}>
-                  {embeddable ? 'Play' : 'Open'}
-                </Button>
-                <button type="button" aria-label={`Remove ${p.title}`} onClick={() => void remove('playlists', p.id)} className="rounded-full p-2 text-ink-3 hover:text-danger">
-                  <Trash2 className="size-4" />
-                </button>
-              </li>
+              <ListRow
+                as="li"
+                key={p.id}
+                density="compact"
+                className="pl-3"
+                leading={embeddable ? <Play className="size-4 text-ink-2" aria-hidden /> : <ExternalLink className="size-4 text-ink-2" aria-hidden />}
+                title={p.title}
+                meta={providerName(p.provider)}
+                label={`${embeddable ? 'Play' : 'Open'} ${p.title}`}
+                onClick={() => start(p)}
+                actions={
+                  <IconButton size="sm" label={`Remove ${p.title}`} onClick={() => void remove('playlists', p.id)}>
+                    <Trash2 />
+                  </IconButton>
+                }
+              />
             )
           })}
-        </ul>
+        </Group>
       )}
       <form
         className="space-y-2"
@@ -247,10 +397,10 @@ function MusicSection() {
           void add()
         }}
       >
-        <TextInput value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Paste a YouTube or YouTube Music link" inputMode="url" />
+        <TextInput value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Paste a YouTube or YouTube Music link" aria-label="Link" inputMode="url" />
         {url && (
           <div className="flex gap-2">
-            <TextInput value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Name (optional)" className="py-2" />
+            <TextInput value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Name (optional)" aria-label="Name" />
             <Button type="submit" variant="primary" icon={<Plus className="size-4" />}>
               Save
             </Button>
@@ -260,19 +410,117 @@ function MusicSection() {
       {playlists.length === 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {SUGGESTED_STREAMS.map((s) => (
-            <button
+            <Chip
               key={s.url}
-              type="button"
               onClick={() => {
                 setUrl(s.url)
                 setTitle(s.title)
               }}
-              className="rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-2 hover:text-ink">
+            >
               {s.title}
-            </button>
+            </Chip>
           ))}
         </div>
       )}
     </section>
+  )
+}
+
+// ───────────────────────── mixes ─────────────────────────
+
+function Mixes() {
+  const layers = useAudio((s) => s.layers)
+  const presetId = useAudio((s) => s.presetId)
+  const presets = useAudioPresets()
+  const settings = useSettings()
+  const [saving, setSaving] = useState<string | null>(null)
+  const active = Object.keys(layers)
+  const audio = useAudio.getState()
+
+  const save = async () => {
+    const name = saving?.trim()
+    if (!name || !active.length) return
+    await create('audioPresets', { name, layers: active.map((sound) => ({ sound, volume: layers[sound].volume })), order: await nextOrder('audioPresets') })
+    setSaving(null)
+    toast({ title: 'Mix saved', body: name, tone: 'success' })
+  }
+
+  const icons = (mix: Array<{ sound: string }>) => (
+    <span className="flex gap-1 text-ink-3">
+      {mix.map((l) => {
+        const Icon = iconFor(l.sound)
+        return <Icon key={l.sound} className="size-4" aria-hidden />
+      })}
+    </span>
+  )
+  const names = (mix: Array<{ sound: string }>) =>
+    mix
+      .map((l) => SOUND_META.get(l.sound)?.name)
+      .filter(Boolean)
+      .join(' · ')
+
+  return (
+    <div className="space-y-5">
+      <section aria-label="Your mixes">
+        <SectionTitle>Your mixes</SectionTitle>
+        {presets.length > 0 ? (
+          <Group as="ul" flat>
+            {presets.map((p) => (
+              <ListRow
+                as="li"
+                key={p.id}
+                density="compact"
+                className="pl-3"
+                selected={presetId === p.id}
+                title={p.name}
+                meta={names(p.layers)}
+                label={`Play ${p.name}`}
+                trailing={icons(p.layers)}
+                onClick={() => audio.applyPreset(p.layers, p.id)}
+                actions={
+                  <IconButton size="sm" label={`Delete ${p.name}`} onClick={() => void remove('audioPresets', p.id)}>
+                    <Trash2 />
+                  </IconButton>
+                }
+              />
+            ))}
+          </Group>
+        ) : (
+          <p className="px-1 text-[13px] text-ink-2">Build a mix under Ambience, then save it here.</p>
+        )}
+        {active.length > 0 &&
+          (saving === null ? (
+            <Button className="mt-2" size="sm" variant="ghost" icon={<Save className="size-4" />} onClick={() => setSaving('')}>
+              Save the current mix
+            </Button>
+          ) : (
+            <form
+              className="mt-2 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void save()
+              }}
+            >
+              <TextInput autoFocus value={saving} onChange={(e) => setSaving(e.target.value)} placeholder="Name this mix" aria-label="Mix name" />
+              <Button type="submit" variant="primary" disabled={!saving.trim()}>
+                Save
+              </Button>
+            </form>
+          ))}
+      </section>
+
+      <section aria-label="Ready-made mixes">
+        <SectionTitle>Ready-made</SectionTitle>
+        <Group as="ul" flat>
+          {MIXES.map((m) => (
+            <ListRow as="li" key={m.id} density="compact" className="pl-3" selected={presetId === m.id} title={m.name} meta={names(m.layers)} label={`Play ${m.name}`} trailing={icons(m.layers)} onClick={() => audio.applyPreset(m.layers, m.id)} />
+          ))}
+        </Group>
+      </section>
+
+      <Group flat>
+        <SwitchRow className="px-3" title="Follow the timer" description="Sound plays during focus, pauses when you pause, stops when you stop, and fades out for breaks." checked={settings.ambientFollowsTimer} onChange={(v) => void updateSettings({ ambientFollowsTimer: v })} />
+      </Group>
+    </div>
   )
 }

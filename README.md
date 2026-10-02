@@ -20,6 +20,11 @@ It runs as an installable **PWA** (offline, no account) and ships with **Capacit
 
 ## Features
 
+### Home
+- Opens on **what to do right now**: the running session (pause, resume, open it), otherwise the next planned task with one **Start focus** button, otherwise simply a session.
+- The rest of today's tasks with inline natural-language add, and **Pick up** rows that continue where you left off: today's reading, Atlas reviews or your expedition, your latest note, the week's focus.
+- One quiet line for progress – today against your goal, the last seven days, the streak. The analytics live in Insights.
+
 ### Focus
 - **Pomodoro cycles, countdown and open focus (stopwatch)**, with long breaks every _n_ sessions.
 - **Timer profiles** (Classic 25/5, Deep work 50/10, Ultradian 90/20, Sprint, Exam block, Open focus) plus one‑tap 25/5 · 50/10 · 90/20 presets and fully custom cycles. Auto‑start breaks/focus per profile.
@@ -84,13 +89,18 @@ A bundled, full-frame atlas of India and the world that works offline. It shows 
 - **JSON backup / restore** (merge — newest wins — or replace), **CSV export/import** for sessions and tasks (handles quoting, BOM, formula‑injection).
 - Sample history you can add and remove cleanly, to preview Insights and the Atlas.
 
+### Notes & quick capture
+- **Notes**: a board of short dated notes on paper (one idea, up to 300 characters), newest first, with Undo on removal and a clean print / Save-as-PDF of the notes alone. A second view reads back the notes you wrote on focus sessions.
+- **Quick capture** from anywhere (<kbd>C</kbd>, the rail, the command palette): a note, or a task in one line of natural language.
+
 ### App shell & feel
+- **One application frame**: from tablet width a navigation rail sits beside an inset stage that every workspace lives on and scrolls inside; on a phone a five-tab bar (Home · Plan · Focus · News · Atlas). Both carry the running timer, and both step back while a session runs.
 - **Command palette** (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>K</kbd>): go anywhere, start/pause/stop, sounds, profiles, theme, open any task – or type a task in natural language and press Enter to capture it.
-- **Keyboard shortcuts** with a reference sheet (<kbd>?</kbd>): <kbd>N</kbd> new task, <kbd>G</kbd> then <kbd>F</kbd>/<kbd>T</kbd>/<kbd>A</kbd>/<kbd>C</kbd>/<kbd>I</kbd>/<kbd>S</kbd> to go to a screen, <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>\</kbd> sidebar, <kbd>Shift</kbd>+<kbd>F</kbd> full-screen Atlas.
-- **Collapsible sidebar** (icons only, with tooltips), remembered across sessions and applied before first paint; it also shows your streak and an offline badge. A toast says when the connection drops or returns – nothing is lost either way.
+- **Keyboard shortcuts** with a reference sheet (<kbd>?</kbd>): <kbd>N</kbd> new task, <kbd>C</kbd> quick capture, <kbd>G</kbd> then <kbd>H</kbd>/<kbd>F</kbd>/<kbd>T</kbd>/<kbd>C</kbd>/<kbd>W</kbd>/<kbd>A</kbd>/<kbd>N</kbd>/<kbd>I</kbd>/<kbd>S</kbd> to go to a screen, <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>\</kbd> sidebar, <kbd>Shift</kbd>+<kbd>F</kbd> full-screen Atlas.
+- **Collapsible rail** (icons only, with tooltips; always icons-only on tablets), remembered across sessions and applied before first paint; it also shows the running timer with pause/resume, your streak and an offline badge. A toast says when the connection drops or returns – nothing is lost either way.
 - **Full-screen Atlas**: the chrome slides away and the browser goes full screen (Fullscreen API); Escape, the browser's own exit and leaving the Atlas all come back out. Without the API (iPhone) the map still fills the window.
 - **Dialogs** are a flex column capped to the viewport: header and footer stay put, only the body scrolls and only when it must, nothing scrolls sideways, footer buttons wrap instead of overflowing; focus is trapped inside and Escape closes only the top one.
-- **Motion system** (`src/ui/motion.ts` + CSS tokens in `index.css`): micro 140 ms, base 220 ms, layout 320 ms, shared easing curves and springs for dialogs, menus, lists, toasts, the sidebar and screen changes. `prefers-reduced-motion` is respected (Motion's `reducedMotion="user"`, and CSS animations collapse).
+- **Motion system** (`src/ui/motion.ts` + CSS tokens in `index.css`): micro 140 ms, base 220 ms, layout 320 ms, calm 520 ms (entering and leaving a session), shared easing curves and springs for dialogs, menus, lists, toasts, the sidebar and screen changes. `prefers-reduced-motion` is respected (Motion's `reducedMotion="user"`, and CSS animations collapse).
 
 ---
 
@@ -198,6 +208,7 @@ The build checks every place against the state it claims, links rivers, lakes, s
 - `node profile.mjs <label>` measures the Atlas: pans and wheel zooms at 4× CPU throttle, reporting frame times and long tasks.
 - `node smoke.mjs` runs a touch smoke test: timer, sheets, every screen, Atlas tap/pan/pinch, and offline reload.
 - `node screens.mjs` screenshots every screen on phone and desktop, in light and dark.
+- `node shots.mjs [url] [routes] [sizes] [schemes]` screenshots chosen routes and states (e.g. `home:running`, `current-affairs:Filters`) at phone / large / tablet / laptop / desktop sizes; `python sheet.py` tiles them into a contact sheet.
 - `node atlas-check.mjs` checks Atlas interaction on desktop and phone: wheel notches, double-click/tap, Shift+double-click, two-finger tap, keys, hover, layers, and search → fly → card across sheets.
 - `node trace.mjs wheel|wheelout|notch|pan|pinch` records a Chrome trace of one gesture and prints where the main-thread time went.
 - `node pyqcheck.mjs` prints the gazetteer's study-priority order and the "Past papers" panel of the places you name.

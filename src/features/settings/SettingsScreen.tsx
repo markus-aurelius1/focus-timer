@@ -1,6 +1,6 @@
-import { ArrowLeft, Bell, Download, FileJson, FileSpreadsheet, HardDrive, Info, Play, Smartphone, Sparkles, Trash2, Upload } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
-import { navigate } from '@/app/router'
+import { Bell, ChevronRight, Download, FileJson, FileSpreadsheet, HardDrive, Info, Play, Smartphone, Sparkles, Trash2, Upload } from 'lucide-react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import { Workspace } from '@/app/Workspace'
 import { useUi } from '@/app/ui-store'
 import { CHIMES, playChime } from '@/audio/chimes'
 import { unlockAudio } from '@/audio/context'
@@ -20,13 +20,17 @@ import { KEYS } from '@/lib/storage'
 import { pickTextFile, saveTextFile, stamp } from '@/services/files'
 import { promptInstall, useInstall } from '@/services/install'
 import { notificationPermission, requestNotificationPermission, showNotification } from '@/services/notifications'
-import { Button, IconButton, Segmented, Select, Stepper, Toggle } from '@/ui/controls'
+import { Button, IconButton, ListRow, Segmented, Select, Slider, Stepper, SwitchRow } from '@/ui/controls'
 import { confirmDialog } from '@/ui/feedback'
 import { Wordmark } from '@/ui/Logo'
 import { Sheet, SheetActions } from '@/ui/Sheet'
 import { toast } from '@/ui/toast'
-import { profileSummary } from '@/features/focus/ProfileSheet'
+import { profileSummary } from '@/features/focus/profileSummary'
+import { useRoute } from '@/app/router'
+import { motionChoice, setMotionChoice, type MotionChoice } from '@/lib/motion'
 import { LabelsManager } from './LabelsManager'
+
+const Gallery = lazy(() => import('@/ui/Gallery'))
 
 function AtlasSettings() {
   const settings = useSettings()
@@ -63,12 +67,8 @@ function AtlasSettings() {
             ))}
         </Select>
       </Line>
-      <Line label="Questions during breaks" hint="Two quick recall questions on the break screen.">
-        <Toggle label="Questions during breaks" checked={settings.breakReview} onChange={(v) => void updateSettings({ breakReview: v })} />
-      </Line>
-      <Line label="Expedition chart in immersive mode" hint="Show your route behind the clock instead of a plain background.">
-        <Toggle label="Expedition chart in immersive mode" checked={!!settings.immersiveChart} onChange={(v) => void updateSettings({ immersiveChart: v })} />
-      </Line>
+      <SwitchRow className="px-4 py-3" title="Questions during breaks" description="Two quick recall questions on the break screen." checked={settings.breakReview} onChange={(v) => void updateSettings({ breakReview: v })} />
+      <SwitchRow className="px-4 py-3" title="Expedition chart in immersive mode" description="Show your route behind the clock instead of a plain background." checked={!!settings.immersiveChart} onChange={(v) => void updateSettings({ immersiveChart: v })} />
     </Group>
   )
 }
@@ -78,19 +78,23 @@ export default function SettingsScreen() {
   const profiles = useProfiles()
   const profile = profiles.find((p) => p.id === settings.activeProfileId) ?? profiles[0]
   const [perm, setPerm] = useState<string>('default')
+  const [motion, setMotion] = useState<MotionChoice>(motionChoice)
+  const route = useRoute()
   useEffect(() => {
     void notificationPermission().then(setPerm)
   }, [])
 
-  return (
-    <div className="pt-safe mx-auto w-full max-w-2xl px-4 pb-10 sm:px-6">
-      <header className="flex items-center gap-2 pt-5 pb-4">
-        <IconButton label="Back" className="lg:hidden" onClick={() => (history.length > 1 ? history.back() : navigate('#/focus'))}>
-          <ArrowLeft className="size-5" />
-        </IconButton>
-        <h1 className="font-display text-[32px] leading-tight font-medium tracking-tight">Settings</h1>
-      </header>
+  // The primitives gallery: every control in every state, for review and screenshots (#/settings?gallery=1).
+  if (route.params.get('gallery'))
+    return (
+      <Suspense fallback={null}>
+        <Gallery />
+      </Suspense>
+    )
 
+  return (
+    <Workspace title="Settings" back width="sm">
+      <div className="pt-2" />
       <Group title="Appearance">
         <Line label="Theme">
           <Segmented<ThemePreference>
@@ -101,6 +105,21 @@ export default function SettingsScreen() {
               { value: 'system', label: 'Auto' },
               { value: 'light', label: 'Paper' },
               { value: 'dark', label: 'Night' },
+            ]}
+          />
+        </Line>
+        <Line label="Motion" hint="Reduced swaps movement for quick fades and stops looping animation. Auto follows your device.">
+          <Segmented<MotionChoice>
+            size="sm"
+            value={motion}
+            onChange={(v) => {
+              setMotionChoice(v)
+              setMotion(v)
+            }}
+            options={[
+              { value: 'system', label: 'Auto' },
+              { value: 'reduced', label: 'Reduced' },
+              { value: 'full', label: 'Full' },
             ]}
           />
         </Line>
@@ -115,25 +134,13 @@ export default function SettingsScreen() {
             ]}
           />
         </Line>
-        <Line label="24-hour clock">
-          <Toggle label="24-hour clock" checked={settings.use24h} onChange={(v) => void updateSettings({ use24h: v })} />
-        </Line>
+        <SwitchRow className="px-4 py-3" title="24-hour clock" checked={settings.use24h} onChange={(v) => void updateSettings({ use24h: v })} />
       </Group>
 
       <Group title="Timer">
-        <button type="button" onClick={() => useUi.getState().set({ profileOpen: true })} className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left hover:bg-surface-2/60">
-          <span>
-            <span className="block text-[15px] font-semibold">Timer profiles</span>
-            <span className="block text-[13px] text-ink-2">{profile ? `${profile.name} · ${profileSummary(profile)}` : '—'}</span>
-          </span>
-          <span className="text-sm font-bold text-accent">Edit</span>
-        </button>
-        <Line label="Keep screen awake" hint="While a timer is running.">
-          <Toggle label="Keep screen awake" checked={settings.keepAwake} onChange={(v) => void updateSettings({ keepAwake: v })} />
-        </Line>
-        <Line label="Immersive mode on start" hint="Go full-screen when focus begins.">
-          <Toggle label="Immersive mode on start" checked={settings.immersiveOnStart} onChange={(v) => void updateSettings({ immersiveOnStart: v })} />
-        </Line>
+        <ListRow className="px-4 py-3" title="Timer profiles" meta={profile ? `${profile.name} · ${profileSummary(profile)}` : '—'} trailing={<ChevronRight className="size-4 text-ink-3" aria-hidden />} onClick={() => useUi.getState().set({ profileOpen: true })} />
+        <SwitchRow className="px-4 py-3" title="Keep screen awake" description="While a timer is running." checked={settings.keepAwake} onChange={(v) => void updateSettings({ keepAwake: v })} />
+        <SwitchRow className="px-4 py-3" title="Immersive mode on start" description="Go full-screen when focus begins." checked={settings.immersiveOnStart} onChange={(v) => void updateSettings({ immersiveOnStart: v })} />
         <Line label="Shortest session to keep" hint="Stopped sessions shorter than this aren’t recorded.">
           <Stepper label="Minimum minutes" value={Math.round(settings.minSessionSeconds / 60)} onChange={(v) => void updateSettings({ minSessionSeconds: v * 60 })} min={0} max={15} suffix="m" />
         </Line>
@@ -159,28 +166,28 @@ export default function SettingsScreen() {
           </div>
         </Line>
         <Line label="Sound volume">
-          <input type="range" min={0} max={1} step={0.05} value={settings.endVolume} onChange={(e) => void updateSettings({ endVolume: Number(e.target.value) })} aria-label="End sound volume" className="w-36" />
+          <Slider className="w-44" label="End sound volume" step={0.05} value={settings.endVolume} valueLabel={`${Math.round(settings.endVolume * 100)}%`} onChange={(v) => void updateSettings({ endVolume: v })} />
         </Line>
       </Group>
 
       <AtlasSettings />
 
       <Group title="Notifications & feel">
-        <Line label="Notifications" hint={perm === 'denied' ? 'Blocked in system settings – allow notifications for Tars there.' : perm === 'unsupported' ? 'Not supported in this browser.' : 'Session endings and reminders.'}>
-          <Toggle
-            label="Notifications"
-            checked={settings.notifications && perm === 'granted'}
-            disabled={perm === 'denied' || perm === 'unsupported'}
-            onChange={async (v) => {
-              if (v && perm !== 'granted') {
-                const ok = await requestNotificationPermission()
-                setPerm(ok ? 'granted' : await notificationPermission())
-                if (!ok) return
-              }
-              await updateSettings({ notifications: v })
-            }}
-          />
-        </Line>
+        <SwitchRow
+          className="px-4 py-3"
+          title="Notifications"
+          description={perm === 'denied' ? 'Blocked in system settings – allow notifications for Tars there.' : perm === 'unsupported' ? 'Not supported in this browser.' : 'Session endings and reminders.'}
+          checked={settings.notifications && perm === 'granted'}
+          disabled={perm === 'denied' || perm === 'unsupported'}
+          onChange={async (v) => {
+            if (v && perm !== 'granted') {
+              const ok = await requestNotificationPermission()
+              setPerm(ok ? 'granted' : await notificationPermission())
+              if (!ok) return
+            }
+            await updateSettings({ notifications: v })
+          }}
+        />
         {perm === 'granted' && (
           <div className="px-4 pb-3">
             <Button size="sm" icon={<Bell className="size-3.5" />} onClick={() => void showNotification('Tars', 'Notifications are working ✦', { tag: 'test' })}>
@@ -188,9 +195,7 @@ export default function SettingsScreen() {
             </Button>
           </div>
         )}
-        <Line label="Haptics" hint="Gentle vibrations on supported devices.">
-          <Toggle label="Haptics" checked={settings.haptics} onChange={(v) => void updateSettings({ haptics: v })} />
-        </Line>
+        <SwitchRow className="px-4 py-3" title="Haptics" description="Gentle vibrations on supported devices." checked={settings.haptics} onChange={(v) => void updateSettings({ haptics: v })} />
       </Group>
 
       <Group title="Subjects & labels" hint="Organise loosely – Exam › Subject › Topic – or keep a flat list. Sessions roll up through the tree in Insights.">
@@ -207,16 +212,16 @@ export default function SettingsScreen() {
           Version {__APP_VERSION__} · Local-first: your data lives on this device and never leaves it unless you export it. Works offline.
         </p>
       </div>
-    </div>
+    </Workspace>
   )
 }
 
 function Group({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="mb-6">
-      <h2 className="mb-2 px-1 text-xs font-bold tracking-[0.12em] text-ink-2 uppercase">{title}</h2>
-      {hint && <p className="-mt-1 mb-2 px-1 text-[13px] text-ink-3">{hint}</p>}
-      <div className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface shadow-soft">{children}</div>
+    <section className="mb-7">
+      <h2 className="t-label mb-2 px-1">{title}</h2>
+      {hint && <p className="t-meta -mt-1 mb-2 px-1">{hint}</p>}
+      <div className="divide-y divide-line overflow-hidden rounded-card bg-surface shadow-[0_0_0_1px_var(--line)]">{children}</div>
     </section>
   )
 }
@@ -235,13 +240,13 @@ function Line({ label, hint, children }: { label: string; hint?: string; childre
 
 function ActionRow({ icon, title, body, onClick, danger }: { icon: ReactNode; title: string; body: string; onClick: () => void; danger?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2/60">
-      <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${danger ? 'bg-danger/10 text-danger' : 'bg-surface-2 text-ink-2'}`}>{icon}</span>
-      <span className="min-w-0">
-        <span className={`block text-[15px] font-semibold ${danger ? 'text-danger' : ''}`}>{title}</span>
-        <span className="block text-[13px] leading-snug text-ink-2">{body}</span>
-      </span>
-    </button>
+    <ListRow
+      className="px-4 py-3"
+      leading={<span className={`flex size-9 shrink-0 items-center justify-center rounded-field ${danger ? 'bg-danger/10 text-danger' : 'bg-surface-2 text-ink-2'}`}>{icon}</span>}
+      title={<span className={danger ? 'text-danger' : undefined}>{title}</span>}
+      meta={body}
+      onClick={onClick}
+    />
   )
 }
 
@@ -289,7 +294,12 @@ function DataGroup() {
     setPending(null)
     await ensureSeed()
     await refresh()
-    toast({ title: 'Backup restored', body: mode === 'merge' ? `${report.inserted} added · ${report.updated} updated · ${report.skipped} already up to date` : `${report.inserted} records loaded`, tone: 'success' })
+    // Notes and reading state live outside the database: tell their open views, and say what came with the backup.
+    window.dispatchEvent(new Event('tars:notes-changed'))
+    const extra = [report.extras.notes ? `${report.extras.notes} ${report.extras.notes === 1 ? 'note' : 'notes'}` : '', report.extras.articles ? `reading state for ${report.extras.articles} ${report.extras.articles === 1 ? 'article' : 'articles'}` : ''].filter(Boolean).join(' · ')
+    const records = mode === 'merge' ? `${report.inserted} added · ${report.updated} updated · ${report.skipped} already up to date` : `${report.inserted} records loaded`
+    toast({ title: 'Backup restored', body: extra ? `${records} · ${extra}` : records, tone: 'success' })
+    if (report.extras.preserved.length) toast({ title: 'Some of the backup was not merged', body: `${report.extras.preserved.includes('notes') ? 'Notes' : 'Current Affairs reading state'} on this device couldn’t be read, so nothing there was changed.`, tone: 'warning' })
   }
 
   const importCsv = async (kind: 'sessions' | 'tasks') => {
@@ -301,7 +311,7 @@ function DataGroup() {
   }
 
   const erase = async () => {
-    if (!(await confirmDialog({ title: 'Erase all data?', body: 'Every session, task, label and setting on this device will be deleted. This can’t be undone.', confirmLabel: 'Erase everything', danger: true }))) return
+    if (!(await confirmDialog({ title: 'Erase all data?', body: 'Every session, task, note, label and setting on this device will be deleted. This can’t be undone.', confirmLabel: 'Erase everything', danger: true }))) return
     await eraseEverything()
     localStorage.removeItem(KEYS.timer)
     location.reload()
@@ -310,7 +320,7 @@ function DataGroup() {
   return (
     <>
       <Group title="Your data" hint={counts ? `${counts.sessions} sessions · ${counts.tasks} tasks${storage ? ` · ${storage}` : ''}` : undefined}>
-        <ActionRow icon={<FileJson className="size-4.5" />} title="Back up everything" body="A complete JSON backup of all your data." onClick={() => void exportJson()} />
+        <ActionRow icon={<FileJson className="size-4.5" />} title="Back up everything" body="One JSON file: sessions, tasks, notes, reading state and settings." onClick={() => void exportJson()} />
         <ActionRow icon={<Upload className="size-4.5" />} title="Restore from backup" body="Merge a backup into this device, or replace it." onClick={() => void importJson()} />
         <ActionRow icon={<FileSpreadsheet className="size-4.5" />} title="Export sessions (CSV)" body="Every focus session – for spreadsheets." onClick={async () => void saveTextFile(`tars-sessions-${stamp()}.csv`, await sessionsCsv(), 'text/csv')} />
         <ActionRow icon={<Download className="size-4.5" />} title="Export tasks (CSV)" body="Tasks with projects, dates and checklists." onClick={async () => void saveTextFile(`tars-tasks-${stamp()}.csv`, await tasksCsv(), 'text/csv')} />

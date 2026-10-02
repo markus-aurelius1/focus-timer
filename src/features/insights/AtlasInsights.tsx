@@ -59,14 +59,15 @@ export function AtlasInsights() {
     .sort((a, b) => b.value - a.value)
 
   return (
-    <section className="space-y-4" aria-label="Atlas">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <section className="border-t border-line pt-5 sm:pt-6" aria-label="Atlas">
+      <h3 className="t-heading mb-3">Atlas</h3>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4 pb-6 lg:grid-cols-4">
         <StatTile label="Places travelled" value={String(discovered)} sub={`of ${data.total} in the Atlas`} />
         <StatTile label="Familiar or better" value={String(data.familiar)} sub={data.familiar ? `${Math.round((data.familiar / data.total) * 100)}% of Atlas` : 'answer a question'} />
         <StatTile label="Mastered" value={String(data.mastered)} sub={`${data.strong} Strong or better`} />
         <StatTile label="Reviews due" value={String(ex.due.length)} sub={ex.due.length ? 'spaced review keeps them fresh' : 'all caught up'} />
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-x-12 lg:grid-cols-2">
         <ChartCard
           title="Travel"
           subtitle="Places reached through focus each week"
@@ -91,7 +92,7 @@ export function AtlasInsights() {
           <BarList rows={spread} formatValue={(v) => String(v)} empty={<p className="text-sm text-ink-3">Answer questions to build recall.</p>} />
           {accuracy.length > 0 && (
             <>
-              <p className="mt-5 mb-2 text-xs font-bold tracking-[0.1em] text-ink-3 uppercase">Accuracy by question type</p>
+              <p className="mt-5 mb-2 t-label text-ink-3">Accuracy by question type</p>
               <BarList rows={accuracy} formatValue={(v) => `${v}%`} limit={8} />
             </>
           )}

@@ -17,7 +17,7 @@ Tars (called Lodestar until 2026-09-26) is a calm, local-first study app for UPS
 
 ## 2. Repo layout
 
-- `src/app` — shell, hash router (`#/focus`, `#/tasks`, `#/atlas`, `#/calendar`, `#/insights`, `#/settings`), theming, command palette, shortcuts
+- `src/app` — the app frame (navigation rail + inset stage, phone tab bar), `Workspace` header, hash router (`#/home` default, `#/focus`, `#/tasks`, `#/calendar`, `#/current-affairs`, `#/atlas`, `#/notes`, `#/insights`, `#/settings`), theming, command palette, shortcuts
 - `src/data` — typed model (`types.ts`), Dexie schema (`db.ts`, DB name `lodestar`, schema v2), `repo.ts` (all writes; timestamps + tombstones), backup, CSV, sync, sample data (`demo.ts`)
 - `src/tars` — typed validated actions, deterministic intents/context, command ranking and restrained presence; future AI/voice uses `executeProposal`
 - `src/timer` — `engine.ts` (pure, timestamp-based; `reconcile(state, now)` replays sleep) + `store.ts` (effects, alerts, notification text)
@@ -56,7 +56,7 @@ Full command list: `CODEX_HANDOFF.md` §8.
 - **Data:** every record has a UUID `id`, `createdAt`, `updatedAt`; write only through `src/data/repo.ts` (deletes leave tombstones). XP, mastery, exploration, streaks, reminders and challenge progress are **derived from history** — never add a stored counter.
 - **Determinism:** user-visible randomness uses `seededRandom(hashString(...))` so every device shows the same questions, challenges and sample data.
 - **Timer:** `setInterval` is never the source of truth; time comes from stored timestamps.
-- **UI:** Tailwind v4 tokens (`bg-surface`, `text-ink-2`, `text-accent`…), themes Paper (light) / Night (`.dark`); Manrope for UI and all numbers (tabular), Fraunces only for headings; motion tokens 140/220/320 ms; respect reduced motion; dialogs via `ui/Sheet.tsx` with actions in the footer; Undo toasts instead of confirm dialogs; no glass/`backdrop-filter`.
+- **UI:** Tailwind v4 tokens – surface layers `bg-canvas` → `bg-bg` (stage) → `bg-surface` (raised) → `bg-surface-2/3` (wells), `text-ink-2`, `text-accent`…; themes Paper (light) / Night (`.dark`); type roles `t-display` / `t-title` / `t-heading` / `t-label` / `t-meta` / `t-num` (Manrope for UI and all numbers, Fraunces only for display moments such as the Home greeting, wordmark and Atlas place names; sentence-case labels, no all-caps eyebrows); screens use `app/Workspace.tsx` and rows on the stage rather than cards; motion tokens 140/220/320/520 ms; respect reduced motion; dialogs via `ui/Sheet.tsx` with actions in the footer; Undo toasts instead of confirm dialogs; no glass/`backdrop-filter`. Full rules and the QA-script contracts: `CODEX_HANDOFF.md` §7 and §9 item 15.
 - **User-facing text** follows the house style in `CODEX_HANDOFF.md` §4.0 (sentence case, no exclamation marks, curly apostrophes, spaced en dash, `formatDuration` for durations).
 - **Atlas renderer:** no React state or SVG attribute writes per frame; point names are HTML; see `CODEX_HANDOFF.md` §7 for the specific regressions to avoid.
 - **Commits:** subject `<Area>: <what changed>`, sentence case, no trailing period (e.g. `Atlas data: PYQ ledger, alias matching and study-priority score`). Branches `claude/<name>` (or your own agent prefix); add commits on top.

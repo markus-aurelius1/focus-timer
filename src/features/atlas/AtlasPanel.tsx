@@ -58,14 +58,16 @@ export function expeditionStatus(ex: Exploration): { title: string; line: string
   return { title: a.expedition.title, line: '', color: a.expedition.color, blocked: false }
 }
 
-export function AtlasPanel({ ex, actions }: { ex: Exploration; actions: PanelActions }) {
+export function AtlasPanel({ ex, actions, hideExplorer }: { ex: Exploration; actions: PanelActions; hideExplorer?: boolean }) {
   const status = expeditionStatus(ex)
   const a = ex.state.active
   return (
-    <div className="space-y-4">
-      <Section>
-        <ExplorerCard ex={ex} />
-      </Section>
+    <div className="mt-5">
+      {!hideExplorer && (
+        <Section>
+          <ExplorerCard ex={ex} />
+        </Section>
+      )}
 
       <Section title="Expedition" icon={<Flag className="size-3.5" />} action={<LinkButton onClick={actions.openExpeditions}>All</LinkButton>}>
         {status && (
@@ -105,10 +107,10 @@ export function AtlasPanel({ ex, actions }: { ex: Exploration; actions: PanelAct
 
 function Section({ title, icon, action, children }: { title?: string; icon?: ReactNode; action?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-card border border-line bg-surface p-4 shadow-soft">
+    <section className="border-t border-line py-4 first:border-t-0 first:pt-0">
       {title && (
-        <div className="mb-2.5 flex items-center justify-between">
-          <h3 className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.12em] text-ink-2 uppercase">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="flex items-center gap-1.5 t-label text-[12px]">
             {icon}
             {title}
           </h3>
@@ -231,7 +233,7 @@ function Journal({ ex }: { ex: Exploration }) {
       ) : (
         <p className="text-[13.5px] text-ink-2">Complete an expedition to add its journal page here.</p>
       )}
-      <p className="mt-4 text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">Map styles</p>
+      <p className="mt-4 t-label text-[12px] text-ink-3">Map styles</p>
       <ul className="mt-1.5 space-y-1">
         {MAP_STYLES.map((s) => {
           const open = s.minRank <= ex.level.rankIndex

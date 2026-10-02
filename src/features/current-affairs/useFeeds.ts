@@ -19,6 +19,13 @@ export function useFeeds() {
   const [revision, setRevision] = useState(0)
   const reload = useCallback(() => setRevision(r => r + 1), [])
   useEffect(() => {
+    let refreshedAt = Date.now()
+    const refreshIfDue = () => { if (!document.hidden && Date.now() - refreshedAt >= 3600000) { refreshedAt = Date.now(); reload() } }
+    const interval = setInterval(refreshIfDue, 60000)
+    document.addEventListener('visibilitychange', refreshIfDue)
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', refreshIfDue) }
+  }, [reload])
+  useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 60000)
     return () => clearInterval(tick)
   }, [])
@@ -38,9 +45,13 @@ export function useFeeds() {
         let restored = false
         try {
           const saved = await window.caches?.match(endpoint), asset = await fetch(`${import.meta.env.BASE_URL}current-affairs/v1/relevance-index.json`)
-          if (saved && asset.ok) {
-            const [nextData, nextIndex] = await Promise.all([saved.json() as Promise<FeedResponse>, asset.json() as Promise<RelevanceIndex>])
-            if (validResponse(nextData) && nextIndex.version === 1 && Array.isArray(nextIndex.signals) && !cancelled) { setData(nextData); setIndex(nextIndex); setCached(true); restored = true }
+          if (asset.ok) {
+            const nextIndex = await asset.json() as RelevanceIndex
+            if (nextIndex.version === 1 && Array.isArray(nextIndex.signals) && !cancelled) {
+              setIndex(nextIndex)
+              const nextData = saved && await saved.json() as FeedResponse
+              if (nextData && validResponse(nextData)) { setData(nextData); setCached(true); restored = true }
+            }
           }
         } catch { /* No last successful response yet. */ }
         if (!cancelled) { setError(restored ? 'Refresh unavailable – showing the last successful feed.' : 'Couldn’t refresh Current Affairs. Try again when you’re online.'); setCached(true) }

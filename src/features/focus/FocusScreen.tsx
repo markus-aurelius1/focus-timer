@@ -1,519 +1,470 @@
-import { ContextMoment } from '@/tars/ContextMoment'
-import { executeAction } from '@/tars/runtime'
+/**
+ * Focus: a study room, not a dashboard.
+ *
+ * A picture fills the stage, a very large clock sits in the middle of it, and
+ * around the clock there is only what a session needs: the phase, what you are
+ * working on, start / pause / stop, and one line to think about. Everything
+ * else – sounds, the wallpaper, timer profiles, today's queue – is one press
+ * away behind a small control, and recedes while a session runs.
+ *
+ * Immersive mode (F) is this same screen with the app's chrome put away and the
+ * browser in full screen: nothing is swapped, so entering and leaving it is one
+ * continuous move. The timer itself is untouched: this file only presents the
+ * engine's state (timer/engine.ts) and sends it actions.
+ */
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronDown, Flame, Headphones, Maximize2, Minus, Pause, Play, Plus, Settings2, SkipForward, Square, Target } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Headphones, Image as ImageIcon, ListTodo, Maximize2, Minimize2, Minus, Pause, Play, Plus, Quote, SkipForward, Square, Target } from 'lucide-react'
+import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { navigate } from '@/app/router'
 import { chordPending, isTyping } from '@/app/shortcuts'
 import { useUi } from '@/app/ui-store'
+import { CommandButton } from '@/app/Workspace'
 import { useAudio } from '@/audio/store'
-import { updateSettings, useLookups, useOpenTasks, useProfiles, useSettings, useTask } from '@/data/hooks'
-import { create, nextOrder } from '@/data/repo'
-import { BUILT_IN_PROFILES } from '@/data/seed'
-import type { Phase, TimerMode, TimerProfile } from '@/data/types'
-import { cn } from '@/lib/cn'
-import { formatClock, formatDuration, formatTimeOfDay, greeting, longDate, MINUTE, todayKey } from '@/lib/time'
-import { byPriorityThenOrder, compareTasks, isOverdue, isToday } from '@/planner/tasks'
-import { elapsedMs, remainingMs, type TimerState } from '@/timer/engine'
-import { PHASE_LABEL, useTimer } from '@/timer/store'
-import { useNow } from '@/timer/useNow'
-import { useDay } from '@/lib/useDay'
-import { Button, Card, IconButton, Segmented } from '@/ui/controls'
-import { EmptyState } from '@/ui/feedback'
-import { EASE_OUT, T } from '@/ui/motion'
-import { Sheet, SheetActions } from '@/ui/Sheet'
-import { useIsDesktop } from '@/ui/useMedia'
-import { enterFullscreen } from '@/services/fullscreen'
-import { haptics } from '@/services/haptics'
+import { useLookups, useOpenTasks, useProfiles, useSettings, useTask } from '@/data/hooks'
+import type { Phase } from '@/data/types'
 import { labelPath } from '@/features/shared/labels'
-import { useTodayProgress } from '@/features/shared/useProgress'
+import { TodayLine } from '@/features/shared/TodayLine'
 import { useTaskSessions } from '@/features/shared/useTaskSessions'
 import { TaskItem } from '@/features/tasks/TaskItem'
-import { phaseColor } from './phase'
-import { TimeDigits, TimerDial } from './TimerDial'
+import { formatDuration, formatTimeOfDay, longDate, MINUTE, todayKey } from '@/lib/time'
+import { useDay } from '@/lib/useDay'
+import { byPriorityThenOrder, compareTasks, isOverdue, isToday } from '@/planner/tasks'
+import { enterFullscreen, exitFullscreen, onFullscreenExit } from '@/services/fullscreen'
+import { executeAction } from '@/tars/runtime'
+import { useClockText } from '@/timer/clock'
+import { useClockDescription } from '@/timer/ClockText'
+import { elapsedMs, endsAt, type TimerState } from '@/timer/engine'
+import { PHASE_LABEL, useTimer } from '@/timer/store'
+import { useProgressAnimation } from '@/timer/useProgressAnimation'
+import { Button, Segmented } from '@/ui/controls'
+import { EmptyState } from '@/ui/feedback'
+import { M, T } from '@/ui/motion'
+import { Pressable, type PressableProps } from '@/ui/Pressable'
+import { BottomSheet } from '@/ui/surface/BottomSheet'
+import { anyModalOpen } from '@/ui/surface/core'
+import { Popover } from '@/ui/surface/Popover'
+import { Tooltip } from '@/ui/surface/Tooltip'
+import { useIsWide } from '@/ui/useMedia'
+import { useAmbience } from './ambience'
+import { Backdrop, useQuote, useWallpaperId } from './Backdrop'
 import { ExpeditionStrip } from './ExpeditionStrip'
+import './focus.css'
+import { phaseColor } from './phase'
+import { SessionCompleteCard, useLastSession } from './SessionComplete'
+import { TimeDigits } from './TimeDigits'
+import { WallpaperPicker } from './WallpaperPicker'
 
-/**
- * The timer screen. It fits the viewport like an app: on laptops and desktops
- * the timer and today's panel sit side by side at full height (the panel
- * scrolls inside itself); on phones the timer fills the first screen and
- * today's stats follow below it while the timer is idle.
- */
+const toggleTimer = () => {
+  const status = useTimer.getState().timer.status
+  void executeAction(status === 'running' ? 'timer.pause' : status === 'paused' ? 'timer.resume' : 'timer.start', {})
+}
+const setImmersive = (on: boolean) => {
+  useUi.getState().set({ immersive: on })
+  void (on ? enterFullscreen() : exitFullscreen())
+}
+
 export function FocusScreen() {
-  const desktop = useIsDesktop()
+  const timer = useTimer((s) => s.timer)
+  const immersive = useUi((s) => s.immersive)
+  const wallpaper = useWallpaperId()
+  const wide = useIsWide()
+  const view = useLastSession()
+  const moment = useCompletionMoment(timer.phase)
+  const hidden = useImmersive(immersive)
   useFocusShortcuts()
+
+  const running = timer.status === 'running'
+  const quiet = running && timer.phase === 'focus'
+  // The "how did it go?" card takes the clock's place in the window; on a phone it is a low sheet over the stage.
+  const card = view && wide
+
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pt-safe sm:px-6 lg:h-dvh">
-      <div className="flex min-h-[calc(100svh-84px-env(safe-area-inset-bottom)-env(safe-area-inset-top))] flex-col lg:min-h-0 lg:flex-1">
-        <FocusHeader />
-        <ContextMoment />
-        <div className="flex flex-1 flex-col lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] lg:gap-10">
-          <TimerPanel />
-          {desktop && <TodayPanel />}
-        </div>
-      </div>
-      {!desktop && <MobileBelowFold />}
+    <div className="focus-stage" data-wallpaper={wallpaper ? '' : undefined} data-state={timer.status} data-quiet={quiet ? '' : undefined} data-hidden={hidden ? '' : undefined} data-immersive={immersive ? '' : undefined} style={{ '--phase': phaseColor(timer.phase) } as React.CSSProperties}>
+      <Backdrop id={wallpaper} />
+      <TopBar timer={timer} immersive={immersive} hidden={hidden} wallpaper={wallpaper} />
+
+      <main className="focus-center" aria-label="Timer">
+        <AnimatePresence initial={false} mode="popLayout">
+          {card ? (
+            <motion.div key="card" role="dialog" aria-label={view.session.completed ? 'Session complete' : 'Session saved'} className="focus-card scrollbar-thin max-h-full overflow-y-auto" {...M.dialog}>
+              <SessionCompleteCard view={view} compact />
+            </motion.div>
+          ) : (
+            <motion.div key="clock" className="flex w-full flex-col items-center" {...M.swap}>
+              <PhasePicker timer={timer} hidden={hidden} />
+              {moment ? <Moment phase={moment.phase} /> : <Clock timer={timer} />}
+              <ContextButton timer={timer} hidden={hidden} />
+              <Controls timer={timer} />
+              <div className="focus-recede w-full" inert={hidden}>
+                <ExpeditionStrip />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      <BottomBar hidden={hidden} />
+
+      {/* On a phone the card is a sheet that leaves the clock and the tab bar in reach. */}
+      {!wide && (
+        <BottomSheet open={!!view} onClose={() => view?.close()} modal={false} dismissible detents={[0.46, 'auto']} bare label={view?.session.completed === false ? 'Session saved' : 'Session complete'}>
+          {view && <SessionCompleteCard view={view} compact />}
+        </BottomSheet>
+      )}
     </div>
   )
 }
 
-/** Space: start/pause · F: immersive · S: sounds (ignored while typing or in a dialog). */
-function useFocusShortcuts() {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null
-      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || isTyping(e.target) || el?.closest('[role="dialog"]') || chordPending()) return
-      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
-      const ui = useUi.getState()
-      if (ui.immersive) return
-      if (e.code === 'Space') {
-        e.preventDefault()
-        void executeAction(useTimer.getState().timer.status === 'running' ? 'timer.pause' : useTimer.getState().timer.status === 'paused' ? 'timer.resume' : 'timer.start', {})
-      } else if (e.key === 'f') {
-        ui.set({ immersive: true })
-        void enterFullscreen()
-      } else if (e.key === 's') ui.set({ soundOpen: true })
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-}
+// ───────────────────────── chrome ─────────────────────────
 
-function FocusHeader() {
-  const soundPlaying = useAudio((s) => s.playing)
-  const status = useTimer((s) => s.timer.status)
-  const today = useDay()
+type StageButtonProps = { label: string; shortcut?: string; shape?: 'icon' | 'pill'; active?: boolean; tip?: 'top' | 'bottom'; children: ReactNode } & Omit<Extract<PressableProps, { href?: undefined }>, 'children'>
+
+/** A control that sits on the picture: quiet until wanted, named by a tooltip. */
+const StageButton = forwardRef<HTMLButtonElement, StageButtonProps>(function StageButton({ label, shortcut, shape = 'icon', active, children, tip = 'bottom', ...rest }, ref) {
   return (
-    <header className="flex shrink-0 items-center justify-between gap-3 py-4">
-      <div className="min-w-0">
-        <p className="text-xs font-bold tracking-[0.12em] text-ink-3 uppercase">{longDate(today)}</p>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.p key={status === 'idle' ? 'idle' : 'zone'} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0, transition: T.base }} exit={{ opacity: 0, y: -4, transition: T.exit }} className="truncate text-base font-semibold">
-            {status === 'idle' ? greeting() : status === 'paused' ? 'Taking a pause' : 'In the zone'}
+    <Tooltip label={label} shortcut={shortcut} side={tip}>
+      <Pressable ref={ref as never} aria-label={shortcut ? `${label} (${shortcut})` : label} className="focus-ctl" data-shape={shape} data-active={active ? '' : undefined} {...rest}>
+        {children}
+      </Pressable>
+    </Tooltip>
+  )
+})
+
+function TopBar({ timer, immersive, hidden, wallpaper }: { timer: TimerState; immersive: boolean; hidden: boolean; wallpaper: string | null }) {
+  const soundPlaying = useAudio((s) => s.playing)
+  const today = useDay()
+  const [picker, setPicker] = useState(false)
+  const [queue, setQueue] = useState(false)
+  const pickerAnchor = useRef<HTMLButtonElement>(null)
+  const queueAnchor = useRef<HTMLButtonElement>(null)
+  const status = timer.status
+  return (
+    <header className="focus-bar focus-recede pt-safe" inert={hidden}>
+      <div className="flex min-w-0 flex-1 items-baseline gap-3">
+        <h1 className="t-title">Focus</h1>
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.p key={status} {...M.swap} className="truncate text-[12.5px] font-medium" style={{ color: 'var(--focus-ink-3)' }}>
+            {status === 'idle' ? longDate(today) : status === 'paused' ? 'Taking a pause' : 'In session'}
           </motion.p>
         </AnimatePresence>
       </div>
-      <div className="chrome-dim flex items-center gap-1">
-        <IconButton label="Sounds (S)" active={soundPlaying} onClick={() => useUi.getState().set({ soundOpen: true })}>
-          <Headphones className="size-5" />
+      <div className="flex shrink-0 items-center gap-0.5">
+        <StageButton label="Sounds" shortcut="S" active={soundPlaying} onClick={() => useUi.getState().set({ soundOpen: true })}>
+          <Headphones className="size-[19px]" />
           {soundPlaying && <span className="absolute top-2 right-2 size-1.5 rounded-full bg-accent" />}
-        </IconButton>
-        <IconButton
-          label="Immersive mode (F)"
-          onClick={() => {
-            useUi.getState().set({ immersive: true })
-            void enterFullscreen()
-          }}
-        >
-          <Maximize2 className="size-5" />
-        </IconButton>
-        <IconButton label="Settings" className="lg:hidden" onClick={() => navigate('#/settings')}>
-          <Settings2 className="size-5" />
-        </IconButton>
+        </StageButton>
+        <StageButton ref={pickerAnchor} label="Wallpaper" active={picker} aria-expanded={picker} onClick={() => setPicker((o) => !o)}>
+          <ImageIcon className="size-[19px]" />
+        </StageButton>
+        <StageButton ref={queueAnchor} label="Up next" active={queue} aria-expanded={queue} onClick={() => setQueue((o) => !o)}>
+          <ListTodo className="size-[19px]" />
+        </StageButton>
+        <StageButton label={immersive ? 'Exit immersive mode' : 'Immersive mode'} shortcut={immersive ? 'Esc' : 'F'} onClick={() => setImmersive(!immersive)}>
+          {immersive ? <Minimize2 className="size-[19px]" /> : <Maximize2 className="size-[19px]" />}
+        </StageButton>
+        {!immersive && <CommandButton className="focus-ctl -mr-2" />}
       </div>
+      <WallpaperPicker open={picker} onClose={() => setPicker(false)} anchor={pickerAnchor} current={wallpaper} />
+      <UpNextPopover open={queue} onClose={() => setQueue(false)} anchor={queueAnchor} />
     </header>
   )
 }
 
-// ───────────────────────── mode & profile ─────────────────────────
-
-const MODES: Array<{ value: TimerMode; label: string }> = [
-  { value: 'pomodoro', label: 'Pomodoro' },
-  { value: 'countdown', label: 'Timer' },
-  { value: 'stopwatch', label: 'Stopwatch' },
-]
-const MODE_MEMORY = 'tars.modeProfiles'
-
-function rememberProfile(p: TimerProfile) {
-  try {
-    const map = JSON.parse(localStorage.getItem(MODE_MEMORY) ?? '{}') as Record<string, string>
-    if (map[p.mode] === p.id) return
-    localStorage.setItem(MODE_MEMORY, JSON.stringify({ ...map, [p.mode]: p.id }))
-  } catch {
-    /* storage unavailable */
-  }
-}
-
-/** Switch timer mode: the profile last used in that mode, else the first one, else a built-in. */
-async function switchMode(mode: TimerMode, profiles: TimerProfile[]) {
-  let remembered: string | undefined
-  try {
-    remembered = (JSON.parse(localStorage.getItem(MODE_MEMORY) ?? '{}') as Record<string, string>)[mode]
-  } catch {
-    /* ignore */
-  }
-  let target = profiles.find((p) => p.id === remembered && p.mode === mode) ?? profiles.find((p) => p.mode === mode)
-  if (!target) {
-    const seed = BUILT_IN_PROFILES.find((p) => p.mode === mode)!
-    target = await create('profiles', { ...seed, order: await nextOrder('profiles') })
-  }
-  // Apply straight away (no waiting for the settings write) so the dial changes with the tap.
-  useTimer.getState().applyProfile(target)
-  await updateSettings({ activeProfileId: target.id })
-}
-
-function ModeBar({ timer, profile, profiles }: { timer: TimerState; profile: TimerProfile | undefined; profiles: TimerProfile[] }) {
-  const mode = timer.config.mode
-  useEffect(() => {
-    if (profile) rememberProfile(profile)
-  }, [profile])
+function BottomBar({ hidden }: { hidden: boolean }) {
+  const quote = useQuote()
+  const a = useAmbience()
   return (
-    <motion.div key="setup" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0, transition: T.base }} exit={{ opacity: 0, y: -6, transition: T.exit }} className="flex flex-col items-center gap-2.5">
-      <div className="flex max-w-full items-center gap-2">
-        <Segmented<TimerMode> size="sm" layoutId="mode-tabs" value={mode} onChange={(m) => void switchMode(m, profiles)} options={MODES} className="border border-line bg-surface-2" />
-        <button
-          type="button"
-          onClick={() => useUi.getState().set({ profileOpen: true })}
-          title={profile ? `${profile.name} – choose or edit timer profiles` : 'Timer profiles'}
-          aria-label={`Timer profile: ${profile?.name ?? 'none'}. Change`}
-          className="press inline-flex h-8 max-w-[8.5rem] min-w-0 items-center gap-1 rounded-full border border-line bg-surface px-3 text-xs font-bold text-ink-2 shadow-soft hover:border-line-strong hover:text-ink"
-        >
-          <span className="truncate">{profile?.name ?? 'Timer'}</span>
-          <ChevronDown className="size-3.5 shrink-0 text-ink-3" />
-        </button>
-      </div>
-      <div className="flex h-8 items-center">
-        {mode === 'pomodoro' ? (
-          <Segmented<Phase>
-            size="sm"
-            layoutId="phase-tabs"
-            value={timer.phase}
-            onChange={(p) => useTimer.getState().selectPhase(p)}
-            options={[
-              { value: 'focus', label: `Focus ${Math.round(timer.config.focusMs / MINUTE)}m` },
-              { value: 'shortBreak', label: `Break ${Math.round(timer.config.shortBreakMs / MINUTE)}m` },
-              ...(timer.config.longBreakEvery > 0 ? [{ value: 'longBreak' as Phase, label: `Long ${Math.round(timer.config.longBreakMs / MINUTE)}m` }] : []),
-            ]}
-          />
-        ) : (
-          <p className="text-xs font-semibold text-ink-3">{mode === 'stopwatch' ? 'Counts up · a break sized to your focus follows' : `A single ${Math.round(timer.config.focusMs / MINUTE)}-minute block`}</p>
+    <footer className="focus-bar focus-recede pb-3" inert={hidden}>
+      <div className="flex w-10 shrink-0 justify-start">
+        {!a.plain && (
+          <StageButton label="Previous wallpaper" tip="top" onClick={() => void a.previous()}>
+            <ChevronLeft className="size-[18px]" />
+          </StageButton>
         )}
       </div>
-    </motion.div>
+      <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+        <AnimatePresence initial={false} mode="popLayout">
+          {quote && (
+            <motion.p key={quote} className="focus-quote" {...M.swap}>
+              {quote}
+            </motion.p>
+          )}
+        </AnimatePresence>
+        {quote && (
+          <StageButton label="Another line" tip="top" onClick={a.nextQuote} className="focus-ctl max-sm:hidden">
+            <Quote className="size-4" />
+          </StageButton>
+        )}
+      </div>
+      <div className="flex w-10 shrink-0 justify-end">
+        {!a.plain && (
+          <StageButton label="Next wallpaper" tip="top" onClick={() => void a.next()}>
+            <ChevronRight className="size-[18px]" />
+          </StageButton>
+        )}
+      </div>
+    </footer>
   )
 }
 
-// ───────────────────────── timer ─────────────────────────
+// ───────────────────────── the clock ─────────────────────────
 
-function TimerPanel() {
-  const timer = useTimer((s) => s.timer)
-  const { adjust } = useTimer.getState()
-  const running = timer.status === 'running'
+/** Focus · Short break · Long break, while a Pomodoro timer is idle; otherwise a line saying what the timer is. */
+function PhasePicker({ timer, hidden }: { timer: TimerState; hidden: boolean }) {
   const idle = timer.status === 'idle'
-  const now = useNow(!idle)
-  const settings = useSettings()
-  const profiles = useProfiles()
-  const profile = profiles.find((p) => p.id === settings.activeProfileId) ?? profiles[0]
-  const { label, labels } = useLookups()
-  const task = useTask(timer.context.taskId)
-  const [stopOpen, setStopOpen] = useState(false)
-
-  const rem = remainingMs(timer, now)
-  const el = elapsedMs(timer, now)
-  const clock = rem === null ? formatClock(el / 1000) : formatClock(Math.ceil(rem / 1000))
-  const l = label(timer.context.labelId)
-  const color = phaseColor(timer.phase)
   const mode = timer.config.mode
   const every = mode === 'pomodoro' ? timer.config.longBreakEvery : 0
-
   const phaseLabel = mode === 'stopwatch' && timer.phase === 'focus' ? 'Stopwatch' : mode === 'countdown' && timer.phase === 'focus' ? 'Timer' : PHASE_LABEL[timer.phase]
-  const round = every > 0 && timer.phase === 'focus' ? ` · ${(timer.cycleCount % every) + 1} of ${every}` : ''
-  const status =
-    timer.status === 'paused'
-      ? 'Paused'
-      : running
-        ? rem !== null
-          ? `Until ${formatTimeOfDay(now + rem, settings.use24h)}`
-          : 'Open focus'
-        : timer.phase === 'focus'
-          ? 'Ready'
-          : 'Break ready'
-
-  const onStop = () => {
-    const minMs = settings.minSessionSeconds * 1000
-    if (timer.phase === 'focus' && el >= minMs) setStopOpen(true)
-    else void executeAction('timer.stop', {})
-  }
-
+  const round = every > 0 && timer.phase === 'focus' ? `${(timer.cycleCount % every) + 1} of ${every}` : ''
+  if (idle && mode === 'pomodoro')
+    return (
+      <div className="focus-recede" inert={hidden}>
+        <Segmented<Phase>
+          layoutId="phase-tabs"
+          label="Phase"
+          value={timer.phase}
+          onChange={(p) => useTimer.getState().selectPhase(p)}
+          options={[
+            { value: 'focus', label: 'Focus' },
+            { value: 'shortBreak', label: 'Short break' },
+            ...(timer.config.longBreakEvery > 0 ? [{ value: 'longBreak' as Phase, label: 'Long break' }] : []),
+          ]}
+        />
+      </div>
+    )
   return (
-    <section className="flex min-w-0 flex-1 flex-col items-center justify-center pb-4 lg:min-h-0 lg:pb-6" aria-label="Timer">
-      {/* Mode, profile and phase – fade away once you start. */}
-      <div className="chrome-dim flex h-[76px] shrink-0 flex-col items-center justify-start">
-        <AnimatePresence initial={false}>{idle && <ModeBar timer={timer} profile={profile} profiles={profiles} />}</AnimatePresence>
+    <p className="focus-phase flex h-9 items-center">
+      {phaseLabel}
+      {round && <span>· {round}</span>}
+    </p>
+  )
+}
+
+function Clock({ timer }: { timer: TimerState }) {
+  const settings = useSettings()
+  const bar = useRef<HTMLDivElement>(null)
+  useProgressAnimation(timer, () => [{ el: bar.current, at: (p) => `scaleX(${p})` }])
+  const running = timer.status === 'running'
+  const every = timer.config.mode === 'pomodoro' ? timer.config.longBreakEvery : 0
+  const end = timer.targetMs === null ? null : endsAt(timer)
+  const status = timer.status === 'paused' ? 'Paused' : running ? (end !== null ? `Until ${formatTimeOfDay(end, settings.use24h)}` : 'Open focus') : timer.phase === 'focus' ? 'Ready' : 'Break ready'
+  return (
+    <>
+      <Digits />
+      <div className="focus-progress" aria-hidden="true">
+        <div ref={bar} />
       </div>
-
-      <div className="@container w-[clamp(220px,min(84vw,calc(100svh-440px)),440px)] shrink-0 lg:w-[clamp(240px,calc(100dvh-420px),480px)]">
-        <TimerDial timer={timer}>
-          <p className="mb-[1.5cqw] flex items-center gap-1.5 text-[clamp(10.5px,3cqw,13px)] font-bold tracking-[0.16em] uppercase" style={{ color }}>
-            {phaseLabel}
-            <span className="text-ink-3">{round}</span>
-          </p>
-          <span
-            role="timer"
-            aria-live="off"
-            aria-label={`${clock} ${rem === null ? 'elapsed' : 'remaining'}`}
-            className={cn('dial-digits timer-digits leading-none', clock.length > 5 ? 'text-[16.5cqw]' : 'text-[22cqw]')}
-          >
-            <TimeDigits text={clock} />
-          </span>
-          <div className="mt-[3cqw] flex h-5 items-center gap-2.5 text-[clamp(12px,3.3cqw,14px)] font-semibold">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={status.startsWith('Until') ? 'until' : status}
-                initial={{ opacity: 0, y: 3 }}
-                animate={{ opacity: 1, y: 0, transition: T.micro }}
-                exit={{ opacity: 0, y: -3, transition: T.exit }}
-                className={cn('tabular', timer.status === 'paused' ? 'rounded-full bg-surface-2 px-2 py-0.5 text-ink-2' : running ? 'text-ink-2' : '')}
-                style={!running && timer.status !== 'paused' ? { color } : undefined}
-              >
-                {status}
-              </motion.span>
-            </AnimatePresence>
-            {every > 0 && <CycleSlabs done={timer.cycleCount % every} total={every} color={color} />}
-          </div>
-        </TimerDial>
+      <div className="focus-status">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span key={status.startsWith('Until') ? 'until' : status} className="tabular" {...M.swap}>
+            {status}
+          </motion.span>
+        </AnimatePresence>
+        {every > 0 && <CycleSlabs done={timer.cycleCount % every} total={every} />}
       </div>
+    </>
+  )
+}
 
-      <button
-        type="button"
-        onClick={() => useUi.getState().set({ contextOpen: true })}
-        className="press mt-3 flex h-10 max-w-full min-w-0 items-center gap-2 rounded-full px-4 text-[15px] font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
-      >
-        {l ? <span className="size-2.5 shrink-0 rounded-full" style={{ background: l.color }} /> : <Target className="size-4 shrink-0 text-ink-3" />}
-        <span className="truncate">
-          {l && <span className="text-ink">{labelPath(labels, l.id)}</span>}
-          {l && (task || timer.context.note) && <span className="text-ink-3"> · </span>}
-          {task ? task.title : timer.context.note ? timer.context.note : !l && 'What are you working on?'}
-        </span>
-      </button>
-
-      <Controls timer={timer} onStop={onStop} />
-
-      <div className="mt-2 flex h-8 shrink-0 items-center">
-        {!idle && timer.targetMs !== null && (
-          <button type="button" onClick={() => adjust(5 * MINUTE)} className="press rounded-full px-3 py-1.5 text-xs font-bold text-ink-3 hover:bg-surface-2 hover:text-ink">
-            +5 min
-          </button>
-        )}
-      </div>
-      <div className="chrome-dim w-full pr-24 sm:pr-0">
-        <ExpeditionStrip />
-      </div>
-
-      <Sheet
-        open={stopOpen}
-        onClose={() => setStopOpen(false)}
-        title="End this session?"
-        size="sm"
-        footer={
-          <SheetActions stack>
-            <Button
-              variant="primary"
-              block
-              onClick={() => {
-                setStopOpen(false)
-                void executeAction('timer.stop', {})
-              }}
-            >
-              Save {formatDuration(el / 1000)} and stop
-            </Button>
-            <Button
-              variant="danger"
-              block
-              onClick={() => {
-                setStopOpen(false)
-                void executeAction('timer.stop', { discard:true })
-              }}
-            >
-              Discard and reset
-            </Button>
-            <Button block onClick={() => setStopOpen(false)}>
-              Keep going
-            </Button>
-          </SheetActions>
-        }
-      >
-        <p className="text-[15px] leading-relaxed text-ink-2">You’ve focused for {formatDuration(el / 1000)}. Save it to your history, or discard it and reset the timer.</p>
-      </Sheet>
-    </section>
+/** The digits: the one part of the screen that renders every second. */
+function Digits() {
+  const clock = useClockText()
+  const description = useClockDescription()
+  return (
+    <span role="timer" aria-live="off" aria-label={description} className="focus-digits timer-digits" data-long={clock.length > 5 ? '' : undefined}>
+      <TimeDigits text={clock} />
+    </span>
   )
 }
 
 /** Four slabs to a cycle – the Tars mark, counting focus sessions before a long break. */
-function CycleSlabs({ done, total, color }: { done: number; total: number; color: string }) {
+function CycleSlabs({ done, total }: { done: number; total: number }) {
   return (
-    <span className="flex items-end gap-[3px]" aria-label={`${done} of ${total} sessions before a long break`} role="img">
+    <span className="focus-slabs" aria-label={`${done} of ${total} sessions before a long break`} role="img">
       {Array.from({ length: total }, (_, i) => (
-        <motion.span
-          key={i}
-          className="w-[5px] rounded-[2px]"
-          initial={false}
-          animate={{ height: i < done ? 12 : 8, backgroundColor: i < done ? color : 'var(--line-strong)' }}
-          transition={T.item}
-        />
+        <span key={i} data-on={i < done ? '' : undefined} />
       ))}
     </span>
   )
 }
 
-function Controls({ timer, onStop }: { timer: TimerState; onStop: () => void }) {
+/** The completion moment: a phase has just run its course. */
+function Moment({ phase }: { phase: Phase }) {
+  return (
+    <motion.div className="flex min-h-44 flex-col items-center justify-center" role="status" {...M.success}>
+      <span className="flex size-16 items-center justify-center rounded-full" style={{ background: 'var(--focus-main)', color: 'var(--focus-main-ink)' }}>
+        <Check className="size-8" strokeWidth={3} />
+      </span>
+      <span className="t-display-m mt-4">{phase === 'focus' ? 'Focus complete' : 'Break’s over'}</span>
+      <span className="t-label mt-1" style={{ color: 'var(--focus-ink-2)' }}>
+        {phase === 'focus' ? 'Nicely done.' : 'Ready when you are.'}
+      </span>
+    </motion.div>
+  )
+}
+
+/** Shown for a few seconds after a phase completes on its own. */
+function useCompletionMoment(phase: Phase) {
+  const ended = useTimer((s) => s.phaseEnded)
+  const [moment, setMoment] = useState<{ phase: Phase; at: number } | null>(null)
+  useEffect(() => {
+    if (!ended || !ended.completed || Date.now() - ended.at > 4000) return
+    setMoment({ phase: ended.phase, at: ended.at })
+    const t = setTimeout(() => setMoment(null), 2600)
+    return () => clearTimeout(t)
+  }, [ended])
+  // Starting the next phase ends the moment early.
+  useEffect(() => {
+    if (moment && phase !== moment.phase && useTimer.getState().timer.status === 'running') {
+      const t = setTimeout(() => setMoment(null), 1200)
+      return () => clearTimeout(t)
+    }
+  }, [phase, moment])
+  return moment
+}
+
+// ───────────────────────── what, and the controls ─────────────────────────
+
+function ContextButton({ timer, hidden }: { timer: TimerState; hidden: boolean }) {
+  const { label, labels } = useLookups()
+  const task = useTask(timer.context.taskId)
+  const l = label(timer.context.labelId)
+  return (
+    <div className="focus-recede mt-3 max-w-full" inert={hidden}>
+      <Pressable onClick={() => useUi.getState().set({ contextOpen: true })} className="focus-ctl" data-shape="pill">
+        {l ? <span className="size-2.5 shrink-0 rounded-full" style={{ background: l.color }} /> : <Target className="size-4 shrink-0" />}
+        <span className="t-text truncate">
+          {l && <span style={{ color: 'var(--focus-ink)' }}>{labelPath(labels, l.id)}</span>}
+          {l && (task || timer.context.note) && ' · '}
+          {task ? task.title : timer.context.note ? timer.context.note : !l && 'What are you working on?'}
+        </span>
+      </Pressable>
+    </div>
+  )
+}
+
+function Controls({ timer }: { timer: TimerState }) {
+  const settings = useSettings()
+  const profiles = useProfiles()
+  const profile = profiles.find((p) => p.id === settings.activeProfileId) ?? profiles[0]
   const { skip, adjust } = useTimer.getState()
   const idle = timer.status === 'idle'
   const running = timer.status === 'running'
   const adjustable = timer.targetMs !== null
-  return (
-    <div className="mt-4 flex shrink-0 items-start justify-center gap-5 sm:gap-7">
-      {idle ? (
-        <SideControl label="−5 min" hint="5 minutes less" disabled={!adjustable} onClick={() => adjust(-5 * MINUTE)}>
-          <Minus className="size-5" />
-        </SideControl>
-      ) : (
-        <SideControl label="Stop" hint="Stop the timer" onClick={onStop}>
-          <Square className="size-[17px] fill-current" />
-        </SideControl>
-      )}
-      <MainButton timer={timer} onClick={() => (void executeAction(running ? 'timer.pause' : timer.status === 'paused' ? 'timer.resume' : 'timer.start', {}))} />
-      {idle ? (
-        <SideControl label="+5 min" hint="5 minutes more" disabled={!adjustable} onClick={() => adjust(5 * MINUTE)}>
-          <Plus className="size-5" />
-        </SideControl>
-      ) : (
-        <SideControl label="Skip" hint={timer.phase === 'focus' ? 'Finish early and take a break' : 'Skip the break'} onClick={skip}>
-          <SkipForward className="size-5 fill-current" />
-        </SideControl>
-      )}
-    </div>
-  )
-}
+  /** Stop was pressed on a session long enough to keep: the controls become the choice (no dialog). Holds the focused time, ms. */
+  const [stopping, setStopping] = useState<number | null>(null)
+  useEffect(() => {
+    if (idle) setStopping(null)
+  }, [idle])
 
-function SideControl({ label, hint, onClick, disabled, children }: { label: string; hint: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
-  return (
-    <div className={cn('flex w-16 flex-col items-center gap-1.5 transition-opacity', disabled && 'pointer-events-none opacity-30')}>
-      <motion.button
-        type="button"
-        aria-label={hint}
-        title={hint}
-        disabled={disabled}
-        whileTap={{ scale: 0.9 }}
-        whileHover={{ y: -1 }}
-        transition={T.micro}
-        onClick={() => {
-          haptics.tap()
-          onClick()
-        }}
-        className="flex size-14 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-soft transition-colors hover:border-line-strong hover:bg-surface-2"
-      >
-        {children}
-      </motion.button>
-      <span className="text-[11px] font-bold text-ink-3" aria-hidden="true">
-        {label}
-      </span>
-    </div>
-  )
-}
-
-/** Start / pause / resume: the one big control, with a ripple and a morphing icon. */
-function MainButton({ timer, onClick }: { timer: TimerState; onClick: () => void }) {
-  const running = timer.status === 'running'
-  const idle = timer.status === 'idle'
-  const color = phaseColor(timer.phase)
-  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([])
-  const nextId = useRef(0)
-  const onDown = (e: ReactPointerEvent<HTMLButtonElement>) => {
-    const r = e.currentTarget.getBoundingClientRect()
-    const id = nextId.current++
-    setRipples((rs) => [...rs.slice(-2), { id, x: e.clientX - r.left, y: e.clientY - r.top }])
-    setTimeout(() => setRipples((rs) => rs.filter((x) => x.id !== id)), 600)
+  const onStop = () => {
+    const el = elapsedMs(timer, Date.now())
+    if (timer.phase === 'focus' && el >= settings.minSessionSeconds * 1000) setStopping(el)
+    else void executeAction('timer.stop', {})
   }
-  const label = running ? 'Pause' : idle ? 'Start' : 'Resume'
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <motion.button
-        type="button"
-        onPointerDown={onDown}
-        onClick={onClick}
-        whileTap={{ scale: 0.93 }}
-        whileHover={{ scale: 1.03 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-        aria-label={running ? 'Pause' : idle ? `Start ${PHASE_LABEL[timer.phase].toLowerCase()}` : 'Resume'}
-        aria-keyshortcuts="Space"
-        data-state={timer.status}
-        className="timer-main relative flex size-20 items-center justify-center rounded-full text-primary-ink shadow-lift transition-[background-color] duration-300"
-        style={{ background: timer.phase === 'focus' ? 'var(--primary)' : color, '--timer-ring': color } as CSSProperties}
-      >
-        <span className="absolute inset-0 overflow-hidden rounded-full">
-          {ripples.map((r) => (
-            <span key={r.id} className="ripple" style={{ left: r.x, top: r.y }} />
-          ))}
-        </span>
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.span
-            key={running ? 'pause' : 'play'}
-            initial={{ opacity: 0, scale: 0.5, rotate: running ? -90 : 90 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0, transition: { duration: 0.22, ease: EASE_OUT } }}
-            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.12 } }}
-            className="relative flex"
-          >
-            {running ? <Pause className="size-8 fill-current" strokeWidth={0} /> : <Play className="ml-1 size-8 fill-current" strokeWidth={0} />}
-          </motion.span>
-        </AnimatePresence>
-      </motion.button>
-      <span className="text-[11px] font-bold text-ink-2" aria-hidden="true">
-        {label}
-      </span>
-    </div>
-  )
-}
 
-// ───────────────────────── today ─────────────────────────
+  if (stopping !== null)
+    return (
+      <motion.div className="mt-6 flex w-full max-w-sm flex-col items-center gap-2" role="group" aria-label="End this session?" {...M.reveal}>
+        <p className="t-text mb-1" style={{ color: 'var(--focus-ink-2)' }}>
+          You’ve focused for {formatDuration(stopping / 1000)}.
+        </p>
+        <Pressable className="focus-main w-full" data-autofocus onClick={() => void executeAction('timer.stop', {})}>
+          Save {formatDuration(stopping / 1000)} and stop
+        </Pressable>
+        <div className="flex w-full gap-2">
+          <Pressable className="focus-ctl flex-1" data-shape="pill" onClick={() => void executeAction('timer.stop', { discard: true })}>
+            Discard and reset
+          </Pressable>
+          <Pressable className="focus-ctl flex-1" data-shape="pill" onClick={() => setStopping(null)}>
+            Keep going
+          </Pressable>
+        </div>
+      </motion.div>
+    )
 
-function ProgressStrip() {
-  const p = useTodayProgress()
   return (
-    <div className="grid grid-cols-3 gap-2">
-      <Stat label="Today" value={formatDuration(p.seconds)} sub={p.targetSeconds ? `of ${formatDuration(p.targetSeconds)}` : undefined}>
-        {p.targetSeconds > 0 && (
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-3">
-            <motion.div className="h-full rounded-full bg-accent" initial={false} animate={{ width: `${Math.min(100, p.ratio * 100)}%` }} transition={{ duration: 0.7, ease: EASE_OUT }} />
-          </div>
+    <>
+      <div className="focus-controls">
+        {idle ? (
+          <SideControl label="5 minutes less" disabled={!adjustable} onClick={() => adjust(-5 * MINUTE)}>
+            <Minus className="size-5" />
+          </SideControl>
+        ) : (
+          <SideControl label="Stop the timer" onClick={onStop}>
+            <Square className="size-4 fill-current" />
+          </SideControl>
         )}
-      </Stat>
-      <Stat label="Streak" value={`${p.streak} ${p.streak === 1 ? 'day' : 'days'}`} sub={p.todayDone ? 'today counted' : p.streak ? 'study today to keep it' : 'start one today'} icon={<Flame className={cn('size-3.5', p.todayDone ? 'fill-current text-accent' : 'text-ink-3')} />}>
-        <WeekDots />
-      </Stat>
-      <Stat label="Sessions" value={String(p.count)} sub="today" />
-    </div>
+        <Tooltip label={running ? 'Pause' : idle ? 'Start' : 'Resume'} shortcut="Space" side="top">
+          <Pressable
+            className="focus-main"
+            haptic="press"
+            aria-label={running ? 'Pause' : idle ? `Start ${PHASE_LABEL[timer.phase].toLowerCase()}` : 'Resume'}
+            aria-keyshortcuts="Space"
+            data-phase={timer.phase === 'focus' ? 'focus' : 'break'}
+            onClick={toggleTimer}
+          >
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span key={running ? 'pause' : 'play'} className="flex" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1, transition: T.base }} exit={{ opacity: 0, scale: 0.6, transition: T.exit }}>
+                {running ? <Pause className="size-5 fill-current" strokeWidth={0} /> : <Play className="size-5 fill-current" strokeWidth={0} />}
+              </motion.span>
+            </AnimatePresence>
+            {running ? 'Pause' : idle ? 'Start' : 'Resume'}
+          </Pressable>
+        </Tooltip>
+        {idle ? (
+          <SideControl label="5 minutes more" disabled={!adjustable} onClick={() => adjust(5 * MINUTE)}>
+            <Plus className="size-5" />
+          </SideControl>
+        ) : (
+          <SideControl label={timer.phase === 'focus' ? 'Finish early and take a break' : 'Skip the break'} onClick={skip}>
+            <SkipForward className="size-5 fill-current" />
+          </SideControl>
+        )}
+      </div>
+      <div className="focus-recede mt-3 flex h-9 items-center justify-center gap-2">
+        {idle ? (
+          <Pressable className="focus-ctl" data-shape="pill" aria-label={`Timer profile: ${profile?.name ?? 'none'}. Change`} onClick={() => useUi.getState().set({ profileOpen: true })}>
+            <span className="truncate">{profile?.name ?? 'Timer'}</span>
+            <ChevronDown className="size-3.5 shrink-0" />
+          </Pressable>
+        ) : (
+          adjustable && (
+            <Pressable className="focus-ctl" data-shape="pill" onClick={() => adjust(5 * MINUTE)}>
+              +5 min
+            </Pressable>
+          )
+        )}
+      </div>
+    </>
   )
 }
 
-/** The last seven days at a glance: filled where you focused. */
-function WeekDots() {
-  const p = useTodayProgress()
-  if (!p.week) return null
+function SideControl({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
   return (
-    <div className="mt-2 flex gap-1" role="img" aria-label={`Focused on ${p.week.filter(Boolean).length} of the last 7 days`}>
-      {p.week.map((on, i) => (
-        <span key={i} className={cn('h-1.5 flex-1 rounded-full', on ? 'bg-accent' : 'bg-surface-3', i === 6 && !on && 'bg-line-strong')} />
-      ))}
-    </div>
+    <Tooltip label={label} side="top">
+      <Pressable aria-label={label} disabled={disabled} className="focus-side" onClick={onClick}>
+        {children}
+      </Pressable>
+    </Tooltip>
   )
 }
 
-function Stat({ label, value, sub, icon, children }: { label: string; value: string; sub?: string; icon?: ReactNode; children?: ReactNode }) {
+// ───────────────────────── today's queue ─────────────────────────
+
+function UpNextPopover({ open, onClose, anchor }: { open: boolean; onClose: () => void; anchor: RefObject<HTMLElement | null> }) {
   return (
-    <Card className="min-w-0 px-3.5 py-3">
-      <p className="flex items-center gap-1 text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">
-        {icon}
-        {label}
-      </p>
-      <p className="tabular mt-1 truncate text-xl leading-tight font-semibold tracking-tight">{value}</p>
-      {sub && <p className="mt-0.5 truncate text-[11px] font-medium text-ink-3">{sub}</p>}
-      {children}
-    </Card>
+    <Popover open={open} onClose={onClose} anchor={anchor} label="Up next" align="end" width={380} sheet={{ title: 'Up next' }} className="p-4">
+      <div className="space-y-6">
+        <TodayLine />
+        <UpNext limit={6} onNavigate={onClose} />
+      </div>
+    </Popover>
   )
 }
 
-function UpNext({ limit }: { limit: number }) {
+/** What's planned for today, startable from here: rows, no cards. */
+function UpNext({ limit, onNavigate }: { limit: number; onNavigate: () => void }) {
   const tasks = useOpenTasks()
   const { project, label } = useLookups()
   const counts = useTaskSessions()
@@ -524,67 +475,113 @@ function UpNext({ limit }: { limit: number }) {
     const todays = tasks.filter((t) => isToday(t, today)).sort(compareTasks)
     return [...todays, ...overdue].filter((t) => t.id !== activeTaskId)
   }, [tasks, today, activeTaskId])
+  const openPlan = () => {
+    onNavigate()
+    navigate('#/tasks')
+  }
 
   return (
     <section>
-      <div className="mb-1 flex items-center justify-between px-1">
-        <h2 className="text-xs font-bold tracking-[0.12em] text-ink-2 uppercase">Up next</h2>
-        <button type="button" onClick={() => navigate('#/tasks')} className="text-xs font-bold text-accent">
-          All tasks
-        </button>
+      <div className="mb-1 flex min-h-8 items-center justify-between px-1">
+        <h2 className="t-label">Up next</h2>
+        <Button size="sm" variant="ghost" onClick={openPlan}>
+          Plan <ChevronRight className="size-3.5" />
+        </Button>
       </div>
       {list.length === 0 ? (
-        <Card>
-          <EmptyState
-            title="A clear day"
-            body="Plan a few tasks for today and start them from here."
-            action={
-              <Button size="sm" variant="primary" onClick={() => useUi.getState().newTask({ plannedFor: today })}>
-                Plan a task
-              </Button>
-            }
-            className="py-7"
-          />
-        </Card>
+        <EmptyState
+          title="A clear day"
+          body="Plan a few tasks for today and start them from here."
+          action={
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => {
+                onNavigate()
+                useUi.getState().newTask({ plannedFor: today })
+              }}
+            >
+              Plan a task
+            </Button>
+          }
+          className="py-7"
+        />
       ) : (
-        <Card className="p-1">
-          <AnimatePresence initial={false}>
-            {list.slice(0, limit).map((t) => (
-              <motion.div key={t.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: T.base }} exit={{ opacity: 0, height: 0, transition: T.exit }}>
-                <TaskItem task={t} project={project(t.projectId)} label={label(t.labelId)} sessions={counts.count(t.id)} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+        <div className="-mx-2">
+          {list.slice(0, limit).map((t) => (
+            <TaskItem key={t.id} task={t} project={project(t.projectId)} label={label(t.labelId)} sessions={counts.count(t.id)} />
+          ))}
           {list.length > limit && (
-            <button type="button" onClick={() => navigate('#/tasks')} className="w-full rounded-xl py-2.5 text-center text-[13px] font-bold text-ink-2 hover:bg-surface-2">
+            <Button size="sm" variant="ghost" className="mx-2 mt-0.5" onClick={openPlan}>
               {list.length - limit} more for today
-            </button>
+            </Button>
           )}
-        </Card>
+        </div>
       )}
     </section>
   )
 }
 
-function MobileBelowFold() {
-  const idle = useTimer((s) => s.timer.status === 'idle')
-  return (
-    <AnimatePresence initial={false}>
-      {idle && (
-        <motion.div key="below" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', transition: T.layout }} exit={{ opacity: 0, height: 0, transition: T.exit }} className="space-y-6 overflow-hidden pt-2 pb-6">
-          <ProgressStrip />
-          <UpNext limit={4} />
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
+// ───────────────────────── keys and immersive mode ─────────────────────────
+
+/** Space: start/pause · F: immersive · S: sounds (ignored while typing or with a dialog open). */
+function useFocusShortcuts() {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || isTyping(e.target) || el?.closest('[role="dialog"]') || chordPending() || anyModalOpen()) return
+      const ui = useUi.getState()
+      if (e.code === 'Space') {
+        // A focused control handles Space itself.
+        if (el?.closest('button, a, [role="tab"], [role="radio"]')) return
+        e.preventDefault()
+        toggleTimer()
+      } else if (e.key === 'f') setImmersive(!ui.immersive)
+      else if (e.key === 's') ui.set({ soundOpen: true })
+      else if (e.key === 'Escape' && ui.immersive) setImmersive(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 }
 
-function TodayPanel() {
-  return (
-    <aside className="chrome-dim scrollbar-thin -mr-2 space-y-6 overflow-y-auto overscroll-contain pt-[76px] pr-2 pb-6" aria-label="Today">
-      <ProgressStrip />
-      <UpNext limit={7} />
-    </aside>
+/**
+ * Immersive mode: follows the browser's own full screen (leaving it leaves
+ * immersive too), ends when the screen is left, and after a few still seconds
+ * puts the controls away. Returns whether they are away.
+ */
+function useImmersive(immersive: boolean): boolean {
+  const [hidden, setHidden] = useState(false)
+  useEffect(() => {
+    if (!immersive) {
+      setHidden(false)
+      return
+    }
+    const off = onFullscreenExit(() => useUi.getState().set({ immersive: false }))
+    let timer: ReturnType<typeof setTimeout>
+    const poke = () => {
+      setHidden(false)
+      clearTimeout(timer)
+      timer = setTimeout(() => setHidden(true), 3500)
+    }
+    poke()
+    window.addEventListener('pointermove', poke)
+    window.addEventListener('pointerdown', poke)
+    window.addEventListener('keydown', poke)
+    return () => {
+      off()
+      clearTimeout(timer)
+      window.removeEventListener('pointermove', poke)
+      window.removeEventListener('pointerdown', poke)
+      window.removeEventListener('keydown', poke)
+    }
+  }, [immersive])
+  // Leaving the Focus screen always brings the app's chrome back.
+  useEffect(
+    () => () => {
+      if (useUi.getState().immersive) setImmersive(false)
+    },
+    [],
   )
+  return hidden
 }

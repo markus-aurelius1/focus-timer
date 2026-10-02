@@ -23,9 +23,9 @@ export interface ActionInputs {
   'pyq.reviewForPlace': { placeId?: string; family?: 'CSE' | 'PCS' | 'CDS'; year?: number; kind?: string; mode?: 'questions' | 'places' }
   'review.startDue': Record<string,never>
   'settings.open': Record<string,never>
-  'navigation.open': { route: 'focus' | 'tasks' | 'atlas' | 'calendar' | 'insights' | 'settings' | 'current-affairs'; view?: string }
+  'navigation.open': { route: 'home' | 'focus' | 'tasks' | 'atlas' | 'calendar' | 'insights' | 'settings' | 'current-affairs' | 'notes'; view?: string }
   'appearance.theme': { theme: 'light' | 'dark' | 'system' }
-  'ui.open': { surface: 'immersive' | 'context' | 'sounds' | 'profiles' | 'sidebar' | 'shortcuts' | 'atlasFullscreen' }
+  'ui.open': { surface: 'immersive' | 'context' | 'sounds' | 'profiles' | 'sidebar' | 'shortcuts' | 'atlasFullscreen' | 'capture' }
 }
 export type ActionId = keyof ActionInputs
 export interface ActionResult { ok: boolean; message?: string; createdTaskId?:string; code?: 'unknown-action' | 'invalid-input' | 'unavailable' | 'failed' }
@@ -51,9 +51,9 @@ export function validateActionInput(id: ActionId, raw:unknown): boolean {
   if (p.day!==undefined && !validDay(p.day) || p.plannedFor!==undefined && p.plannedFor!==null && !validDay(p.plannedFor)) return false
   if (p.family!==undefined && !['CSE','PCS','CDS'].includes(p.family as string)) return false
   if (p.mode!==undefined && !['questions','places'].includes(p.mode as string)) return false
-  if (id==='navigation.open' && !['focus','tasks','atlas','calendar','insights','settings','current-affairs'].includes(p.route as string)) return false
+  if (id==='navigation.open' && !['home','focus','tasks','atlas','calendar','insights','settings','current-affairs','notes'].includes(p.route as string)) return false
   if (id==='appearance.theme' && !['light','dark','system'].includes(p.theme as string)) return false
-  if (id==='ui.open' && !['immersive','context','sounds','profiles','sidebar','shortcuts','atlasFullscreen'].includes(p.surface as string)) return false
+  if (id==='ui.open' && !['immersive','context','sounds','profiles','sidebar','shortcuts','atlasFullscreen','capture'].includes(p.surface as string)) return false
   const required: Partial<Record<ActionId,string[]>> = {'timer.linkTask':['taskId'],'calendar.startBlock':['eventId'],'task.revisePlace':['placeId'],'task.open':['taskId'],'task.complete':['taskId'],'task.schedule':['taskId','day'],'calendar.openDay':['day'],'atlas.openPlace':['placeId'],'atlas.reviewPlace':['placeId'],'atlas.search':['query'],'atlas.startExpedition':['expeditionId'],'pyq.open':['questionId']}
   return (required[id] ?? []).every(k=>string(p[k]))
 }

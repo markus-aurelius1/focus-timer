@@ -126,7 +126,9 @@ check('deleting a task can be undone from the toast', gone && back)
 
 // ── Command palette ─────────────────────────────────────────────────────
 await page.keyboard.press('Control+k')
-await wait(300)
+// On the dev server the palette's module is fetched on first use: wait for its field rather than a fixed time.
+await page.getByRole('dialog', { name: 'Search and commands' }).getByRole('combobox').waitFor({ timeout: 5000 }).catch(() => {})
+await wait(150)
 await page.keyboard.type('Read chapter 4 fri #biology')
 await wait(200)
 await page.keyboard.press('Enter')
@@ -171,9 +173,13 @@ const entered = await page.evaluate(() => !!document.fullscreenElement)
 if (entered) {
   await page.evaluate(() => document.exitFullscreen())
   await wait(800)
-  check('exiting full screen closes immersive mode', !(await page.getByRole('dialog', { name: /immersive focus/i }).isVisible().catch(() => false)))
+  check('exiting full screen closes immersive mode', (await page.evaluate(() => document.documentElement.dataset.focus)) === undefined)
 } else {
-  check('immersive mode opened (full screen unavailable headless)', await page.getByRole('dialog', { name: /immersive focus/i }).isVisible())
+  // Immersive mode is the Focus screen with the app's chrome put away (<html data-focus="immersive" data-chrome="hidden">).
+  check('immersive mode opened (full screen unavailable headless)', (await page.evaluate(() => document.documentElement.dataset.focus + '/' + document.documentElement.dataset.chrome)) === 'immersive/hidden')
+  await page.keyboard.press('Escape')
+  await wait(400)
+  check('Escape leaves immersive mode', (await page.evaluate(() => document.documentElement.dataset.focus)) === undefined)
 }
 
 // The real runtime chooses a compatible countdown before mutating a stopwatch task.

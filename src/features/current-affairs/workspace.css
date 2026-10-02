@@ -1,25 +1,12 @@
-/* Reading surfaces use Tars tokens. Desktop panes scroll without moving their neighbour. */
-.ca-row[data-selected='true']::before {
-  content: '';
-  position: absolute;
-  inset: 10px auto 10px 0;
-  width: 2px;
-  background: var(--accent);
-  border-radius: 2px;
-}
+/* Direct publisher links and optional RSS thumbnails share one natural scroll. Notes printing lives in features/notes/notes.css. */
 .ca-row-main { transition: background-color var(--dur-micro) var(--motion-ease-out); }
-.ca-row-main:hover { background: var(--surface-2); }
+@media (hover: hover) { .ca-row-main:hover { background: color-mix(in oklab, var(--surface-2) 70%, transparent); } }
 .ca-headline {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
-}
-.ca-row-meta { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-@media (min-width: 1024px) {
-  .ca-panes { display: grid; grid-template-columns: minmax(0, 42fr) minmax(0, 58fr); }
-  .ca-list, .ca-inspector { height: clamp(440px, calc(100dvh - 410px), 780px); overflow-y: auto; overscroll-behavior: contain; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ca-row-main { transition: none; }

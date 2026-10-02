@@ -1,7 +1,7 @@
 /** Reactive read hooks – components re-render whenever the underlying IndexedDB data changes. */
 import { liveQuery, type Subscription } from 'dexie'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useSyncExternalStore } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import { db } from './db'
 import { DEFAULT_SETTINGS } from './seed'
 import type {
@@ -57,8 +57,18 @@ function sharedLiveQuery<T>(query: () => Promise<T>, initial: T) {
 const useAllSessions = sharedLiveQuery<Session[]>(() => db.sessions.orderBy('startedAt').toArray(), EMPTY)
 const useAllTasks = sharedLiveQuery<Task[]>(() => db.tasks.toArray(), EMPTY)
 
+// The small tables are read by a dozen components each (useLookups alone is called on every list row's screen):
+// one live query per table, shared, instead of one IndexedDB subscription per consumer.
+const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order
+const useStoredSettings = sharedLiveQuery<Settings | undefined>(() => db.settings.get('settings'), undefined)
+const useAllLabels = sharedLiveQuery<Label[]>(async () => (await db.labels.toArray()).sort(byOrder), EMPTY)
+const useAllProjects = sharedLiveQuery<Project[]>(async () => (await db.projects.toArray()).sort(byOrder), EMPTY)
+const useAllProfiles = sharedLiveQuery<TimerProfile[]>(() => db.profiles.orderBy('order').toArray(), EMPTY)
+const useAllGoals = sharedLiveQuery<Goal[]>(() => db.goals.orderBy('order').toArray(), EMPTY)
+const useAllEvents = sharedLiveQuery<CalendarEvent[]>(() => db.events.toArray(), EMPTY)
+
 export function useSettings(): Settings {
-  return useLiveQuery(() => db.settings.get('settings'), [], undefined) ?? DEFAULT_SETTINGS
+  return useStoredSettings() ?? DEFAULT_SETTINGS
 }
 
 export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Promise<void> {
@@ -66,32 +76,22 @@ export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Prom
   await db.settings.put({ ...cur, ...patch, id: 'settings', updatedAt: Date.now() })
 }
 
-const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order
-
 export function useLabels(includeArchived = false): Label[] {
-  return (
-    useLiveQuery(async () => {
-      const all = await db.labels.toArray()
-      return all.filter((l) => includeArchived || !l.archived).sort(byOrder)
-    }, [includeArchived]) ?? EMPTY
-  )
+  const all = useAllLabels()
+  return useMemo(() => (includeArchived ? all : all.filter((l) => !l.archived)), [all, includeArchived])
 }
 
 export function useProjects(includeArchived = false): Project[] {
-  return (
-    useLiveQuery(async () => {
-      const all = await db.projects.toArray()
-      return all.filter((p) => includeArchived || !p.archived).sort(byOrder)
-    }, [includeArchived]) ?? EMPTY
-  )
+  const all = useAllProjects()
+  return useMemo(() => (includeArchived ? all : all.filter((p) => !p.archived)), [all, includeArchived])
 }
 
 export function useProfiles(): TimerProfile[] {
-  return useLiveQuery(() => db.profiles.orderBy('order').toArray(), []) ?? EMPTY
+  return useAllProfiles()
 }
 
 export function useGoals(): Goal[] {
-  return useLiveQuery(() => db.goals.orderBy('order').toArray(), []) ?? EMPTY
+  return useAllGoals()
 }
 
 export function useHabits(includeArchived = false): Habit[] {
@@ -127,7 +127,7 @@ export function useSessionsBetween(from: string, to: string): Session[] {
 }
 
 export function useEvents(): CalendarEvent[] {
-  return useLiveQuery(() => db.events.toArray(), []) ?? EMPTY
+  return useAllEvents()
 }
 
 export function useAudioPresets(): AudioPreset[] {
@@ -160,10 +160,15 @@ export function useExpeditionRuns(): ExpeditionRun[] {
 export function useLookups() {
   const labels = useLabels(true)
   const projects = useProjects(true)
-  return {
-    labels,
-    projects,
-    label: (id: string | null | undefined) => (id ? labels.find((l) => l.id === id) : undefined),
-    project: (id: string | null | undefined) => (id ? projects.find((p) => p.id === id) : undefined),
-  }
+  // Stable while the tables don't change, so components that take these as props or dependencies are not re-run for nothing.
+  return useMemo(() => {
+    const labelById = new Map(labels.map((l) => [l.id, l]))
+    const projectById = new Map(projects.map((p) => [p.id, p]))
+    return {
+      labels,
+      projects,
+      label: (id: string | null | undefined) => (id ? labelById.get(id) : undefined),
+      project: (id: string | null | undefined) => (id ? projectById.get(id) : undefined),
+    }
+  }, [labels, projects])
 }

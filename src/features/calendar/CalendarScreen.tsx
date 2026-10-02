@@ -1,7 +1,8 @@
 import { executeAction } from '@/tars/runtime'
-import { ChevronLeft, ChevronRight, GraduationCap, Play, Plus, Settings2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, GraduationCap, Play, Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { navigate, useRoute } from '@/app/router'
+import { useRoute } from '@/app/router'
+import { Workspace } from '@/app/Workspace'
 import { useUi } from '@/app/ui-store'
 import { useEvents, useLabels, useLookups, useSessionsBetween, useSettings, useTasks } from '@/data/hooks'
 import type { Task } from '@/data/types'
@@ -32,9 +33,11 @@ import { useNow } from '@/timer/useNow'
 import { Button, IconButton, Segmented } from '@/ui/controls'
 import { useIsDesktop } from '@/ui/useMedia'
 import { useTaskSessions } from '@/features/shared/useTaskSessions'
+import { PlanTabs } from '@/features/tasks/PlanTabs'
 import { TaskItem } from '@/features/tasks/TaskItem'
 import { eventColor, expandEvents, packColumns, sessionSpans, toMinutes, type Occurrence } from './calendarModel'
 import { EventSheet, type EventDraft } from './EventSheet'
+import { useRouteState } from '@/app/routeState'
 
 type View = 'day' | 'week' | 'month'
 const HOUR_PX = 52
@@ -45,8 +48,9 @@ export default function CalendarScreen() {
   const settings = useSettings()
   const today = useDay()
   const param = route.params.get('date')
-  const [anchor, setAnchor] = useState<DayKey>(isDayKey(param) ? param : today)
-  const [view, setView] = useState<View>(desktop ? 'week' : 'day')
+  // Kept while the app is open, so returning to the calendar finds the same week or month.
+  const [anchor, setAnchor] = useRouteState<DayKey>('calendar:anchor', isDayKey(param) ? param : today)
+  const [view, setView] = useRouteState<View>('calendar:view', desktop ? 'week' : 'day')
   const [draft, setDraft] = useState<EventDraft | null>(null)
 
   useEffect(() => {
@@ -80,41 +84,44 @@ export default function CalendarScreen() {
   const title = `${monthLong(d.getMonth())} ${d.getFullYear()}`
 
   return (
-    <div className="pt-safe mx-auto w-full max-w-6xl px-4 sm:px-6">
-      <header className="flex flex-wrap items-center justify-between gap-3 pt-5 pb-3">
-        <div className="flex items-center gap-1">
-          <h1 className="mr-2 font-display text-[28px] leading-tight font-medium tracking-tight sm:text-[32px]">{title}</h1>
+    <Workspace
+      title="Plan"
+      meta={title}
+      width="2xl"
+      actions={
+        <IconButton label="New calendar item" variant="primary" size="sm" onClick={() => setDraft({ date: anchor })}>
+          <Plus className="size-4.5" />
+        </IconButton>
+      }
+      toolbar={<PlanTabs current="calendar" />}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 pb-3">
+        <div className="flex items-center gap-0.5">
+          <h2 className="mr-1.5 text-[17px] font-bold tracking-tight">{title}</h2>
           <IconButton label="Previous" size="sm" onClick={() => step(-1)}>
             <ChevronLeft className="size-5" />
           </IconButton>
           <IconButton label="Next" size="sm" onClick={() => step(1)}>
             <ChevronRight className="size-5" />
           </IconButton>
-        </div>
-        <div className="flex items-center gap-2">
           {anchor !== today && (
-            <Button size="sm" onClick={() => setAnchor(today)}>
+            <Button size="sm" variant="ghost" onClick={() => setAnchor(today)}>
               Today
             </Button>
           )}
-          <Segmented<View>
-            size="sm"
-            value={view}
-            onChange={setView}
-            options={[
-              { value: 'day', label: 'Day' },
-              { value: 'week', label: 'Week' },
-              { value: 'month', label: 'Month' },
-            ]}
-          />
-          <IconButton label="New calendar item" variant="primary" size="sm" onClick={() => setDraft({ date: anchor })}>
-            <Plus className="size-4.5" />
-          </IconButton>
-          <IconButton label="Settings" size="sm" className="lg:hidden" onClick={() => navigate('#/settings')}>
-            <Settings2 className="size-4.5" />
-          </IconButton>
         </div>
-      </header>
+        <Segmented<View>
+          size="sm"
+          layoutId="calendar-view"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'day', label: 'Day' },
+            { value: 'week', label: 'Week' },
+            { value: 'month', label: 'Month' },
+          ]}
+        />
+      </div>
 
       {view === 'month' && (
         <MonthGrid
@@ -146,7 +153,7 @@ export default function CalendarScreen() {
         </>
       )}
       <EventSheet draft={draft} onClose={() => setDraft(null)} />
-    </div>
+    </Workspace>
   )
 }
 
@@ -181,10 +188,10 @@ function MonthGrid({ anchor, start, occurrences, tasks, sessions, onPick }: { an
   const lastRowNeeded = days[35] <= endOfMonthKey(anchor)
 
   return (
-    <div className="overflow-hidden rounded-card border border-line bg-surface shadow-soft">
+    <div className="overflow-hidden rounded-card border border-line bg-surface">
       <div className="grid grid-cols-7 border-b border-line">
         {weekdayOrder(settings.weekStartsOn).map((wd) => (
-          <div key={wd} className="py-2 text-center text-[11px] font-bold tracking-wider text-ink-3 uppercase">
+          <div key={wd} className="py-2 text-center t-label text-[12px] text-ink-3">
             {weekdayShort(wd)}
           </div>
         ))}
@@ -228,7 +235,7 @@ function WeekStrip({ weekStart, selected, onSelect, occurrences, tasks, sessions
         const focused = sessions.some((s) => s.date === day)
         const sel = day === selected
         return (
-          <button key={day} type="button" onClick={() => onSelect(day)} className={cn('flex flex-col items-center gap-1 rounded-2xl py-2 transition-colors', sel ? 'bg-primary text-primary-ink' : 'hover:bg-surface-2')}>
+          <button key={day} type="button" onClick={() => onSelect(day)} className={cn('flex flex-col items-center gap-1 rounded-2xl py-2 transition-colors', sel ? 'bg-primary text-primary-ink' : 'hover:bg-surface-2')} aria-pressed={sel}>
             <span className={cn('text-[11px] font-bold uppercase', sel ? 'text-primary-ink/70' : 'text-ink-3')}>{weekdayShort(parseDayKey(day).getDay()).slice(0, 2)}</span>
             <span className={cn('text-base font-bold', !sel && day === today && 'text-accent')}>{parseDayKey(day).getDate()}</span>
             <span className="flex h-1.5 gap-0.5">
@@ -251,16 +258,16 @@ function PlannedActual({ days, occurrences, sessions, label }: { days: DayKey[];
   if (!planned && !actual) return null
   const ratio = planned ? actual / planned : 0
   return (
-    <div className="mb-3 flex items-center gap-4 rounded-2xl bg-surface-2/70 px-4 py-2.5 text-[13px]">
-      <span className="font-bold">{label}</span>
-      <span className="text-ink-2">
-        Planned <b className="text-ink">{formatDuration(planned)}</b>
+    <p className="t-meta mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
+      <span className="font-bold text-ink-2">{label}</span>
+      <span>
+        Planned <b className="t-num text-ink">{formatDuration(planned)}</b>
       </span>
-      <span className="text-ink-2">
-        Focused <b className="text-ink">{formatDuration(actual)}</b>
+      <span>
+        Focused <b className="t-num text-ink">{formatDuration(actual)}</b>
       </span>
-      {planned > 0 && <span className={cn('ml-auto font-bold', ratio >= 0.9 ? 'text-success' : 'text-ink-2')}>{Math.round(ratio * 100)}%</span>}
-    </div>
+      {planned > 0 && <span className={cn('t-num ml-auto', ratio >= 0.9 ? 'text-success' : 'text-ink-2')}>{Math.round(ratio * 100)}%</span>}
+    </p>
   )
 }
 
@@ -302,7 +309,7 @@ function TimeGrid({
   const hasAllDay = days.some((d) => allDay(d).length || (multi && dueTasks(d).length))
 
   return (
-    <div className="overflow-hidden rounded-card border border-line bg-surface shadow-soft">
+    <div className="overflow-hidden rounded-card border border-line bg-surface">
       {multi && (
         <div className="grid border-b border-line" style={{ gridTemplateColumns: `44px repeat(${days.length}, minmax(0,1fr))` }}>
           <div />
@@ -452,20 +459,20 @@ function DayTasks({ day, tasks }: { day: DayKey; tasks: Task[] }) {
   const list = tasks.filter((t) => (t.plannedFor === day || t.dueDate === day) && (!t.done || (t.completedAt && dayKey(t.completedAt) === day))).sort(compareTasks)
   return (
     <section className="mt-5 lg:mt-0">
-      <div className="mb-1 flex items-center justify-between px-1">
-        <h2 className="text-xs font-bold tracking-[0.12em] text-ink-2 uppercase">Tasks</h2>
-        <button type="button" className="text-xs font-bold text-accent" onClick={() => useUi.getState().newTask({ plannedFor: day })}>
-          Add
+      <div className="mb-1 flex min-h-8 items-center justify-between px-1">
+        <h2 className="t-label">Tasks</h2>
+        <button type="button" className="press flex items-center gap-1 rounded-full px-2 py-1 text-[12.5px] font-bold text-ink-3 hover:bg-surface-2 hover:text-ink" onClick={() => useUi.getState().newTask({ plannedFor: day })}>
+          <Plus className="size-3.5" /> Add
         </button>
       </div>
       {list.length ? (
-        <div className="rounded-card border border-line bg-surface p-1 shadow-soft">
+        <div className="-mx-2">
           {list.map((t) => (
             <TaskItem key={t.id} task={t} project={project(t.projectId)} label={label(t.labelId)} sessions={counts.count(t.id)} showDate={false} />
           ))}
         </div>
       ) : (
-        <p className="px-1 py-3 text-[13px] text-ink-3">No tasks planned for this day.</p>
+        <p className="t-meta px-1 py-3">No tasks planned for this day.</p>
       )}
     </section>
   )

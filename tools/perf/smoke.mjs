@@ -40,7 +40,7 @@ await page.touchscreen.tap(195, 30)
 await page.waitForTimeout(700)
 ok('backdrop tap closes sheet', !(await page.locator('[role=dialog]').isVisible().catch(() => false)))
 
-for (const r of ['#/tasks', '#/calendar', '#/insights', '#/settings']) {
+for (const r of ['#/home', '#/tasks', '#/calendar', '#/notes', '#/insights', '#/settings']) {
   await page.goto(base + r)
   await page.waitForTimeout(700)
 }

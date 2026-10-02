@@ -120,7 +120,7 @@ const registry=createActionRegistry(currentContext,async(id,p,c)=>{
       if(p.surface==='sidebar')ui.toggleSidebar()
       else if(p.surface==='atlasFullscreen')window.dispatchEvent(new CustomEvent('tars:atlas-fullscreen'))
       else if(p.surface==='immersive'){navigate('#/focus');ui.set({immersive:true});void enterFullscreen()}
-      else ui.set({[({context:'contextOpen',sounds:'soundOpen',profiles:'profileOpen',shortcuts:'shortcutsOpen'} as Record<string,string>)[String(p.surface)]]:true})
+      else ui.set({[({context:'contextOpen',sounds:'soundOpen',profiles:'profileOpen',shortcuts:'shortcutsOpen',capture:'captureOpen'} as Record<string,string>)[String(p.surface)]]:true})
       return ok
     }
   }

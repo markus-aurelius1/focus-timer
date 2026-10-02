@@ -135,7 +135,7 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
             <div className="mt-5 space-y-2.5">
               {rels.map((r, i) => (
                 <div key={i}>
-                  <p className="text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">{r.label}</p>
+                  <p className="t-label text-[12px] text-ink-3">{r.label}</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">{r.items}</div>
                 </div>
               ))}
@@ -158,7 +158,7 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
         </>
       )}
 
-      {stopsIn.length > 0 && <section className="mt-4"><h3 className="text-xs font-bold text-ink-3 uppercase">Expedition context</h3><ul className="mt-2 space-y-2">{stopsIn.map(({ e, c, ci, si }) => <li key={`${e.id}${ci}${si}`} className="flex items-center gap-2 text-sm"><MapPin className="size-3.5" style={{ color: e.color }} />{e.title} · {c.title}</li>)}</ul></section>}
+      {stopsIn.length > 0 && <section className="mt-4"><h3 className="t-label text-ink-3">Expedition context</h3><ul className="mt-2 space-y-2">{stopsIn.map(({ e, c, ci, si }) => <li key={`${e.id}${ci}${si}`} className="flex items-center gap-2 text-sm"><MapPin className="size-3.5" style={{ color: e.color }} />{e.title} · {c.title}</li>)}</ul></section>}
       <PlaceSources place={p} />
     </div>
   )

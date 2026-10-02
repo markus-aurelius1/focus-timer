@@ -16,6 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
       - run: npm test
       - run: node --test tools/atlas-build/test/*.test.mjs
       - run: npm run build
@@ -53,6 +54,11 @@ jobs:
           VIEWPORTS=375,1366 node tools/perf/ui-audit.mjs http://localhost:4173/
           node tools/perf/job4-offline.mjs http://localhost:4173/
           node tools/perf/job4-control-contrast.mjs http://localhost:4173/
+          node tools/perf/error-recovery.mjs http://localhost:4173/
+          node tools/perf/dial-check.mjs http://localhost:4173/
+          # Budgets on counts (repaints, label layouts, skeletons, frame callbacks), which do not depend on the runner's speed.
+          node tools/perf/gesture-audit.mjs http://localhost:4173/ desktop --counts --budget=tools/perf/budgets/gesture.json
+          node tools/perf/app-audit.mjs http://localhost:4173/ desktop --budget=tools/perf/budgets/app.json
       - name: Dev browser action regression
         run: |
           node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173 --strictPort > /tmp/tars-dev.log 2>&1 &

@@ -71,12 +71,17 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
 
   await page.locator('[role=application]').focus()
   const tf0 = await page.evaluate(() => document.querySelector('.atlas-layer svg > g').getAttribute('transform'))
+  // These check what the keys do, not how fast the map repaints (gesture-audit budgets that): the painted transform is
+  // read once the repaint that follows the move has happened, however long this machine takes over it.
+  const repainted = (was) => page.waitForFunction((was) => document.querySelector('.atlas-layer svg > g').getAttribute('transform') !== was, was, { timeout: 5000 }).then(() => true, () => false)
   await page.keyboard.press('ArrowRight')
-  await settle(page, 500)
-  ok('arrow key pans', tf0 !== (await page.evaluate(() => document.querySelector('.atlas-layer svg > g').getAttribute('transform'))))
+  ok('arrow key pans', await repainted(tf0))
+  await settle(page, 300)
   const k4 = await scaleOf(page)
+  const tf1 = await page.evaluate(() => document.querySelector('.atlas-layer svg > g').getAttribute('transform'))
   await page.keyboard.press('+')
-  await settle(page, 600)
+  await repainted(tf1)
+  await settle(page, 300)
   ok('+ key zooms in', (await scaleOf(page)) > k4 * 1.3)
 
   await page.getByRole('button', { name: 'Fit the map' }).click()
@@ -118,9 +123,12 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
   const sel = await page.evaluate(() => {
     const g = document.querySelector('.atlas-selected')?.getBoundingClientRect()
     const m = document.querySelector('[role=application]').getBoundingClientRect()
-    return g ? { dx: Math.abs(g.x + g.width / 2 - (m.x + m.width / 2)), dy: Math.abs(g.y + g.height / 2 - (m.y + m.height / 2)) } : null
+    // The inspector covers the right of the map: the place is centred in what is left.
+    const inspector = document.querySelector('[data-inspector]')?.getBoundingClientRect()
+    const right = inspector ? inspector.left - 12 : m.right
+    return g ? { dx: Math.abs(g.x + g.width / 2 - (m.x + right) / 2), dy: Math.abs(g.y + g.height / 2 - (m.y + m.height / 2)) } : null
   })
-  ok('the camera flew to it (selection ring near the centre)', sel && sel.dx < 80 && sel.dy < 120, JSON.stringify(sel))
+  ok('the camera flew to it (selection ring in the middle of the uncovered map)', sel && sel.dx < 80 && sel.dy < 120, JSON.stringify(sel))
 
   await page.getByRole('button', { name: 'Search places' }).click()
   await page.getByRole('textbox', { name: 'Search the gazetteer' }).fill('ramsar')
@@ -157,9 +165,14 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
   // A tap may have opened a card; close it.
   if (await page.locator('[role=dialog]').isVisible().catch(() => false)) await page.keyboard.press('Escape')
   await settle(page, 400)
-  await touch('touchStart', [[170, 420], [230, 420]])
+  // Not awaited: CDP answers a touch only once the page has handled it, and if the map happens to be repainting after
+  // the zoom above, that answer is late – the "lift" would then be sent hundreds of milliseconds after the "touch" and
+  // would not be a tap at all. Real fingers are not held down by a busy frame; the app times taps by the events' own
+  // timestamps for the same reason.
+  const down = touch('touchStart', [[170, 420], [230, 420]])
   await page.waitForTimeout(60)
   await touch('touchEnd', [])
+  await down
   await settle(page)
   const k2 = await scaleOf(page)
   ok('two-finger tap zooms out', k2 < k1 / 1.6, `${k1} → ${k2}`)

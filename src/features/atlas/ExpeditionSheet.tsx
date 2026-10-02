@@ -125,7 +125,7 @@ function ExpeditionRow({
           <ol className="space-y-3">
             {e.chapters.map((c, ci) => (
               <li key={c.id}>
-                <p className="text-[12px] font-bold tracking-[0.08em] text-ink-3 uppercase">
+                <p className="t-label text-[12px] text-ink-3">
                   {ci + 1}. {c.title}
                 </p>
                 <ul className="mt-1.5 flex flex-wrap gap-1.5">

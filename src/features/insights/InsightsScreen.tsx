@@ -1,6 +1,7 @@
-import { ChevronLeft, ChevronRight, Plus, Settings2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { navigate } from '@/app/router'
+import { Workspace } from '@/app/Workspace'
 import { useEvents, useGoals, useLabels, useLookups, useProjects, useSessions, useSettings, useTasks } from '@/data/hooks'
 import type { Session } from '@/data/types'
 import { cn } from '@/lib/cn'
@@ -48,19 +49,21 @@ import { Button, IconButton, Segmented, Select } from '@/ui/controls'
 import { EmptyState } from '@/ui/feedback'
 import { flattenLabels, labelPath } from '@/features/shared/labels'
 import { expandEvents, toMinutes } from '@/features/calendar/calendarModel'
-import { BarList, ChartCard, ColumnChart, fmtSeconds, Heatmap, StatTile, TrendLine, type BarRow, type Datum } from './charts'
+import { BarList, ChartCard, ColumnChart, fmtSeconds, Heatmap, TrendLine, type BarRow, type Datum } from './charts'
 import { GoalsSection } from './GoalsSection'
 import { AtlasInsights } from './AtlasInsights'
 import { SessionSheet } from './SessionSheet'
+import { useRouteState } from '@/app/routeState'
 
 const minKey = (a: DayKey, b: DayKey) => (a < b ? a : b)
 
 export default function InsightsScreen() {
   const settings = useSettings()
   const today = useDay()
-  const [kind, setKind] = useState<RangeKind>('week')
-  const [anchor, setAnchor] = useState<DayKey>(today)
-  const [labelFilter, setLabelFilter] = useState('')
+  // The range and filter are kept while the app is open (app/routeState.ts).
+  const [kind, setKind] = useRouteState<RangeKind>('insights:kind', 'week')
+  const [anchor, setAnchor] = useRouteState<DayKey>('insights:anchor', today)
+  const [labelFilter, setLabelFilter] = useRouteState('insights:label', '')
   const [editing, setEditing] = useState<Session | 'new' | null>(null)
   const allSessions = useSessions()
   const labels = useLabels(true)
@@ -126,7 +129,7 @@ export default function InsightsScreen() {
   }, [kind, inRange, range.start, range.end, settings.use24h, isCurrent, today, dailyGoal, labelFilter])
 
   // ── breakdowns
-  const [rollup, setRollup] = useState<'subject' | 'topic'>('subject')
+  const [rollup, setRollup] = useRouteState<'subject' | 'topic'>('insights:rollup', 'subject')
   const subjectRows: BarRow[] = useMemo(() => {
     const root = rootOf(labels)
     return breakdown(inRange, (s) => (rollup === 'subject' ? root(s.labelId) : s.labelId)).map((b) => {
@@ -183,79 +186,84 @@ export default function InsightsScreen() {
   const empty = allSessions.length === 0
 
   return (
-    <div className="pt-safe mx-auto w-full max-w-5xl px-4 sm:px-6">
-      <header className="flex items-end justify-between gap-3 pt-5 pb-3">
-        <div>
-          <p className="text-xs font-bold tracking-[0.12em] text-ink-3 uppercase">Review</p>
-          <h1 className="font-display text-[32px] leading-tight font-medium tracking-tight">Insights</h1>
+    <Workspace
+      title="Insights"
+      back
+      width="xl"
+      actions={
+        <Button size="sm" icon={<Plus className="size-3.5" />} onClick={() => setEditing('new')}>
+          Log session
+        </Button>
+      }
+      toolbar={
+        // One filter row scopes everything below it.
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          <Segmented<RangeKind>
+            size="sm"
+            layoutId="insights-range"
+            value={kind}
+            onChange={(k) => {
+              setKind(k)
+              setAnchor(today)
+            }}
+            options={[
+              { value: 'day', label: 'Day' },
+              { value: 'week', label: 'Week' },
+              { value: 'month', label: 'Month' },
+              { value: 'year', label: 'Year' },
+            ]}
+          />
+          <div className="flex items-center">
+            <IconButton label="Previous period" size="sm" onClick={() => setAnchor(shiftRange(kind, anchor, -1))}>
+              <ChevronLeft className="size-4.5" />
+            </IconButton>
+            <span className="min-w-28 text-center text-[13px] font-bold">{rangeLabel}</span>
+            <IconButton label="Next period" size="sm" disabled={range.end >= today} onClick={() => setAnchor(shiftRange(kind, anchor, 1))}>
+              <ChevronRight className="size-4.5" />
+            </IconButton>
+          </div>
+          {activeLabels.length > 0 && (
+            <Select compact value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className="max-w-44" aria-label="Filter by subject">
+              <option value="">All subjects</option>
+              {flattenLabels(activeLabels).map(({ label, path }) => (
+                <option key={label.id} value={label.id}>
+                  {path}
+                </option>
+              ))}
+            </Select>
+          )}
         </div>
-        <div className="flex items-center gap-1">
-          <Button size="sm" icon={<Plus className="size-3.5" />} onClick={() => setEditing('new')}>
-            Log session
-          </Button>
-          <IconButton label="Settings" className="lg:hidden" onClick={() => navigate('#/settings')}>
-            <Settings2 className="size-5" />
-          </IconButton>
-        </div>
-      </header>
-
-      {/* One filter row scopes everything below it. */}
-      <div className="sticky top-0 z-20 -mx-4 mb-4 flex flex-wrap items-center gap-2 bg-bg px-4 py-2 sm:-mx-6 sm:px-6">
-        <Segmented<RangeKind>
-          size="sm"
-          value={kind}
-          onChange={(k) => {
-            setKind(k)
-            setAnchor(today)
-          }}
-          options={[
-            { value: 'day', label: 'Day' },
-            { value: 'week', label: 'Week' },
-            { value: 'month', label: 'Month' },
-            { value: 'year', label: 'Year' },
-          ]}
-        />
-        <div className="flex items-center">
-          <IconButton label="Previous period" size="sm" onClick={() => setAnchor(shiftRange(kind, anchor, -1))}>
-            <ChevronLeft className="size-4.5" />
-          </IconButton>
-          <span className="min-w-28 text-center text-[13px] font-bold">{rangeLabel}</span>
-          <IconButton label="Next period" size="sm" disabled={range.end >= today} onClick={() => setAnchor(shiftRange(kind, anchor, 1))}>
-            <ChevronRight className="size-4.5" />
-          </IconButton>
-        </div>
-        {activeLabels.length > 0 && (
-          <Select compact value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className="max-w-44" aria-label="Filter by subject">
-            <option value="">All subjects</option>
-            {flattenLabels(activeLabels).map(({ label, path }) => (
-              <option key={label.id} value={label.id}>
-                {path}
-              </option>
-            ))}
-          </Select>
-        )}
-      </div>
-
+      }
+    >
       {empty ? (
         <><div className="py-6">
           <EmptyState title="Your story starts with one session" body="Every focus session is recorded automatically. Complete one and your charts, streaks and patterns appear here." action={<Button variant="primary" onClick={() => navigate('#/focus')}>Start focusing</Button>} />
         </div><AtlasInsights /></>
       ) : (
-        <div className="space-y-4 pb-6">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatTile label="Focus time" value={formatDuration(sum.totalSeconds)} delta={delta(sum.totalSeconds, sumPrev.totalSeconds)} sub={isCurrent ? `vs same point last ${kind}` : `vs previous ${kind}`} />
-            <StatTile label="Sessions" value={String(sum.count)} delta={delta(sum.count, sumPrev.count)} sub={sum.count ? `avg ${formatDuration(sum.avgSeconds)}` : undefined} />
-            <StatTile label="Completion rate" value={sum.count ? `${Math.round(sum.completionRate * 100)}%` : '–'} sub={sum.count ? `${sum.completed} of ${sum.count} ran to the end` : 'no sessions'} />
-            <StatTile label="Streak" value={`${streaks.current} ${streaks.current === 1 ? 'day' : 'days'}`} sub={`longest ${streaks.longest} · ${sum.studyDays} study ${sum.studyDays === 1 ? 'day' : 'days'} here`} />
-          </div>
-
-          <ChartCard title={kind === 'day' ? 'Your day' : kind === 'year' ? 'Your year' : kind === 'month' ? 'Your month' : 'Your week'} subtitle={`${main.subtitle}${main.reference ? ' · dashed line is your daily goal' : ''}`} table={main.data.map((d) => [d.label, formatDuration(d.value)])}>
-            <ColumnChart data={main.data} highlight={main.highlight} tickEvery={main.tickEvery} reference={main.reference} referenceLabel="goal" ariaLabel={`${main.subtitle} for ${rangeLabel}`} />
-          </ChartCard>
+        <div className="pb-6">
+          {/* The period in one number, with the shape of it beside it. */}
+          <section className="grid gap-x-12 gap-y-7 pt-4 pb-8 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:items-end" aria-label="Summary">
+            <div>
+              <p className="t-label text-ink-3">Focus time</p>
+              <p className="t-num mt-1.5 text-[clamp(40px,7vw,52px)] leading-none">{formatDuration(sum.totalSeconds)}</p>
+              <p className="t-meta mt-2.5 flex flex-wrap items-center gap-x-1.5">
+                <Delta value={delta(sum.totalSeconds, sumPrev.totalSeconds)} />
+                {isCurrent ? `vs same point last ${kind}` : `vs previous ${kind}`}
+              </p>
+              <dl className="mt-6 grid grid-cols-3 gap-x-4 gap-y-3 lg:grid-cols-1">
+                <Fact label="Sessions" value={String(sum.count)} sub={sum.count ? `avg ${formatDuration(sum.avgSeconds)}` : undefined} />
+                <Fact label="Ran to the end" value={sum.count ? `${Math.round(sum.completionRate * 100)}%` : '–'} sub={sum.count ? `${sum.completed} of ${sum.count}` : undefined} />
+                <Fact label="Streak" value={`${streaks.current} ${streaks.current === 1 ? 'day' : 'days'}`} sub={`longest ${streaks.longest}`} />
+              </dl>
+            </div>
+            <ChartCard className="border-t-0 py-0 sm:py-0" title={kind === 'day' ? 'Your day' : kind === 'year' ? 'Your year' : kind === 'month' ? 'Your month' : 'Your week'} subtitle={`${main.subtitle}${main.reference ? ' · dashed line is your daily goal' : ''}`} table={main.data.map((d) => [d.label, formatDuration(d.value)])}>
+              <ColumnChart data={main.data} highlight={main.highlight} tickEvery={main.tickEvery} reference={main.reference} referenceLabel="goal" height={196} ariaLabel={`${main.subtitle} for ${rangeLabel}`} />
+            </ChartCard>
+          </section>
 
           <GoalsSection />
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-x-12 lg:grid-cols-2">
             <ChartCard
               title="By subject"
               subtitle={rollup === 'subject' ? 'Topics roll up into their subject' : 'Every label separately'}
@@ -267,11 +275,11 @@ export default function InsightsScreen() {
             <ChartCard title="By project & task" subtitle="Where the time actually went" table={[...projectRows, ...taskRows].map((r) => [r.label, formatDuration(r.value)])}>
               {projectRows.length > 0 && (
                 <>
-                  <p className="mb-2 text-xs font-bold tracking-[0.1em] text-ink-3 uppercase">Projects</p>
+                  <p className="mb-2 t-label text-ink-3">Projects</p>
                   <BarList rows={projectRows} limit={5} />
                 </>
               )}
-              <p className={cn('mb-2 text-xs font-bold tracking-[0.1em] text-ink-3 uppercase', projectRows.length > 0 && 'mt-5')}>Tasks</p>
+              <p className={cn('mb-2 t-label text-ink-3', projectRows.length > 0 && 'mt-5')}>Tasks</p>
               <BarList rows={taskRows} limit={6} empty={<p className="text-sm text-ink-3">Start sessions from tasks to see time per task.</p>} />
             </ChartCard>
           </div>
@@ -307,7 +315,7 @@ export default function InsightsScreen() {
             )}
           </ChartCard>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-x-12 lg:grid-cols-2">
             <ChartCard
               title="Best days"
               subtitle={`Average focus per weekday${kind === 'day' || kind === 'week' ? ' · last 90 days' : ''}${byWeekday[bestDay] > 0 ? ` · strongest on ${weekdayLong(bestDay)}s` : ''}`}
@@ -338,16 +346,39 @@ export default function InsightsScreen() {
         </div>
       )}
       <SessionSheet session={editing} onClose={() => setEditing(null)} />
+    </Workspace>
+  )
+}
+
+/** Change against the comparison period: a signed percentage, coloured by direction. */
+function Delta({ value }: { value: number | null }) {
+  if (value === null || !Number.isFinite(value)) return null
+  const flat = Math.abs(value) < 0.005
+  return (
+    <span className={cn('t-num', flat ? 'text-ink-3' : value > 0 ? 'text-success' : 'text-danger')}>
+      {value >= 0 ? '▲' : '▼'} {Math.abs(Math.round(value * 100))}%
+    </span>
+  )
+}
+
+function Fact({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="min-w-0 lg:flex lg:items-baseline lg:justify-between lg:gap-3 lg:border-t lg:border-line lg:pt-3">
+      <dt className="t-meta">{label}</dt>
+      <dd className="t-num mt-0.5 text-[17px] leading-tight lg:mt-0 lg:text-[15px]">
+        {value}
+        {sub && <span className="t-meta ml-1.5 hidden sm:inline">{sub}</span>}
+      </dd>
     </div>
   )
 }
 
 function MiniStat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="rounded-2xl bg-surface-2/60 px-3 py-2.5">
-      <p className="text-[11px] font-semibold text-ink-2">{label}</p>
-      <p className="mt-0.5 text-lg font-semibold">{value}</p>
-      <p className="text-[11px] text-ink-3">{sub}</p>
+    <div className="min-w-0">
+      <p className="t-meta">{label}</p>
+      <p className="t-num mt-0.5 text-xl leading-tight">{value}</p>
+      <p className="t-meta text-[11.5px]">{sub}</p>
     </div>
   )
 }
@@ -378,8 +409,8 @@ function SessionLog({ sessions, onEdit }: { sessions: Session[]; onEdit: (s: Ses
   }, [sorted, limit])
 
   return (
-    <section className="rounded-card border border-line bg-surface p-4 shadow-soft sm:p-5">
-      <h3 className="mb-3 text-[15px] font-bold">Session history</h3>
+    <section className="border-t border-line py-5 sm:py-6">
+      <h3 className="t-heading mb-3">Session history</h3>
       {groups.length === 0 && <p className="text-sm text-ink-3">No sessions in this period.</p>}
       <div className="space-y-4">
         {groups.map(([day, list]) => (
@@ -394,7 +425,7 @@ function SessionLog({ sessions, onEdit }: { sessions: Session[]; onEdit: (s: Ses
                 const t = tasks.find((x) => x.id === s.taskId)
                 return (
                   <li key={s.id}>
-                    <button type="button" onClick={() => onEdit(s)} className="flex w-full items-center gap-3 py-2 text-left hover:bg-surface-2/50">
+                    <button type="button" onClick={() => onEdit(s)} className="row -mx-2 w-[calc(100%+1rem)] px-2 py-2 text-left">
                       <span className="size-2.5 shrink-0 rounded-full" style={{ background: l?.color ?? 'var(--line-strong)' }} />
                       <span className="tabular w-16 shrink-0 text-[13px] text-ink-2">{formatTimeOfDay(s.startedAt, settings.use24h)}</span>
                       <span className="min-w-0 flex-1">

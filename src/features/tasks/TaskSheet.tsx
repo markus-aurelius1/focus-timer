@@ -139,7 +139,7 @@ function TitleRow({ draft, existing, onTitle, onEnter, onClose }: { draft: Draft
         rows={1}
         // Inline, so the shared field styles (border, min height, resize) can't win over this borderless title.
         style={{ resize: 'none', minHeight: 0, borderColor: 'transparent', boxShadow: 'none' }}
-        className="max-h-40 min-h-0 flex-1 resize-none border-transparent bg-transparent px-1 py-1.5 font-display text-[22px] leading-snug font-medium [field-sizing:content] focus:border-transparent focus:ring-0 focus-visible:outline-none"
+        className="max-h-40 min-h-0 flex-1 resize-none border-transparent bg-transparent px-1 py-1.5 text-[20px] leading-snug font-bold tracking-[-0.02em] [field-sizing:content] focus:border-transparent focus:ring-0 focus-visible:outline-none"
       />
       <IconButton label="Close" size="sm" onClick={onClose} className="mt-1.5">
         <X className="size-4.5" />
@@ -302,7 +302,7 @@ function Subtasks({ items, onChange }: { items: Subtask[]; onChange: (s: Subtask
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between px-1">
-        <span className="text-xs font-bold tracking-[0.12em] text-ink-2 uppercase">Checklist</span>
+        <span className="t-label">Checklist</span>
         {items.length > 0 && (
           <span className="tabular text-xs font-bold text-ink-3">
             {done}/{items.length}
@@ -363,7 +363,7 @@ function TaskActivity({ task }: { task: Task }) {
   return (
     <div className="rounded-2xl bg-surface-2/60 px-4 py-3">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-bold tracking-[0.12em] text-ink-2 uppercase">Time tracked</span>
+        <span className="t-label">Time tracked</span>
         <span className="tabular text-sm font-bold">
           {formatDuration(total)} · {sessions.length}
           {task.estimatedPomodoros > 0 && `/${task.estimatedPomodoros}`} sessions
@@ -511,11 +511,11 @@ export function ScheduleBlockSheet({ task, open, onClose }: { task: Task; open: 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <label className="space-y-1.5">
-            <span className="text-xs font-bold text-ink-2 uppercase">Day</span>
+            <span className="t-label">Day</span>
             <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value || todayKey())} />
           </label>
           <label className="space-y-1.5">
-            <span className="text-xs font-bold text-ink-2 uppercase">Start</span>
+            <span className="t-label">Start</span>
             <TextInput type="time" value={start} onChange={(e) => setStart(e.target.value)} />
           </label>
         </div>

@@ -139,7 +139,7 @@ export function QuickAdd({ defaults, placeholder, autoFocus }: { defaults?: Part
 
   return (
     <div
-      className={cn('rounded-2xl border bg-surface shadow-soft transition-[border-color,box-shadow] duration-200', focused || expanded ? 'border-accent/50 shadow-lift' : 'border-line')}
+      className={cn('rounded-2xl border bg-surface transition-[border-color,box-shadow] duration-200', focused || expanded ? 'border-accent/50 shadow-soft' : 'border-line')}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
           e.preventDefault()

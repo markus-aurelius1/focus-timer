@@ -109,6 +109,19 @@ for (const [vp, viewport, touch] of VIEWPORTS) {
     const check = async (name, opts) => {
       if (filter && !name.includes(filter)) return
       await page.waitForTimeout(750)
+      // A surface opened for the first time may still be arriving (its module and data load on first use): measure it at rest.
+      await page
+        .waitForFunction(
+          () => {
+            const now = [...document.querySelectorAll('[role="dialog"]')].map((d) => Math.round(d.getBoundingClientRect().top)).join(',')
+            const same = window.__dialogTops === now
+            window.__dialogTops = now
+            return same
+          },
+          null,
+          { timeout: 2500, polling: 120 },
+        )
+        .catch(() => {})
       report(`${tag} ${name}`, await measure(page), opts)
       await page.screenshot({ path: `${out}${tag}-${name}.png` })
     }
@@ -118,7 +131,7 @@ for (const [vp, viewport, touch] of VIEWPORTS) {
     }
 
     const D = { allowPageY: true }
-    // Focus (home): must fit the viewport while idle on laptop/desktop; phones may scroll to "Up next".
+    // Focus: must fit the stage while idle on laptop/desktop; phones may scroll to "Up next".
     await check('focus-idle', { allowPageY: viewport.width < 1024 })
     await page.getByRole('button', { name: /^start focus/i }).click()
     await page.waitForTimeout(1500)
@@ -170,7 +183,7 @@ for (const [vp, viewport, touch] of VIEWPORTS) {
     await check('dialog-edit-task', D)
     await escape()
 
-    for (const r of ['calendar', 'insights', 'settings']) {
+    for (const r of ['home', 'calendar', 'notes', 'insights', 'settings']) {
       await page.goto(base + '#/' + r)
       await page.waitForTimeout(900)
       await check(r, { allowPageY: true })

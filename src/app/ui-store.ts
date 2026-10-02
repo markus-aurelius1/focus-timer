@@ -11,11 +11,13 @@ interface UiStore {
   profileOpen: boolean
   immersive: boolean
   quickAddOpen: boolean
+  /** Quick capture: a note or a task, from anywhere (C). */
+  captureOpen: boolean
   /** Command palette (Ctrl/⌘ K). */
   paletteOpen: boolean
   /** Keyboard shortcuts reference (?). */
   shortcutsOpen: boolean
-  /** Desktop sidebar shows icons only (persisted). */
+  /** The navigation rail shows icons only (persisted; always so on tablets). */
   sidebarCollapsed: boolean
   /** The Atlas fills the screen: app chrome (sidebar, tab bar) steps aside. */
   atlasFullscreen: boolean
@@ -41,6 +43,7 @@ export const useUi = create<UiStore>((set, get) => ({
   profileOpen: false,
   immersive: false,
   quickAddOpen: false,
+  captureOpen: false,
   paletteOpen: false,
   shortcutsOpen: false,
   sidebarCollapsed: typeof localStorage === 'undefined' ? false : readCollapsed(),

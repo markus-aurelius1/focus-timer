@@ -43,7 +43,7 @@ for (const [vp, viewport, dpr] of viewports) {
     await page.waitForTimeout(500)
     const discard = page.getByRole('button', { name: /discard and reset/i })
     if (await discard.isVisible().catch(() => false)) await discard.click()
-    for (const r of ['tasks', 'calendar', 'insights', 'atlas', 'settings']) {
+    for (const r of ['home', 'tasks', 'calendar', 'notes', 'insights', 'atlas', 'settings']) {
       await page.goto(base + '#/' + r)
       await page.waitForTimeout(r === 'atlas' ? 2500 : 900)
       const close = page.getByRole('button', { name: /close/i }).first()
