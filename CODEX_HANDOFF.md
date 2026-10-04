@@ -8,6 +8,10 @@
 
 # CODEX_HANDOFF.md — Tars (Atlas · News)
 
+**Atlas/News architecture implementation checkpoint — 2026-10-05:** work is isolated on `codex/atlas-news-architecture`, based on `handoff/claude-overhaul`. News is cache-first with a 2-hour TTL, session/CacheStorage reuse, background stale revalidation, manual refresh bypass and Cloudflare canonical-cache replacement. Atlas has an opt-in MapLibre/OpenFreeMap preview (`?atlasRenderer=maplibre`) plus semantic zoom, frequency-weighted PYQ disclosure and settled viewport/overscan slicing; the MapLibre source is capped by zoom and no longer receives the full gazetteer on every view. The production SVG path remains the default fallback.
+
+**India boundary provenance gate:** do not describe the generated `india-controlled-border.geojson` as Survey-of-India data. It is currently derived from the legacy India-view sheet, whose build uses Natural Earth India-view country data plus DataMeet state geometry. Survey of India publishes free official boundary digital data (`OUTLINE_OF_INDIA_SHP.zip`, generalized 1:16M) and a free Administrative Boundary Database; promotion of MapLibre to default requires importing/validating an official SoI boundary asset locally, then masking only conflicting provider boundary linework. Until then, MapLibre stays opt-in.
+
 Last updated: 2026-10-04 (final production-readiness pass). HEAD remains `43560abe415292e7c548f4180bab0c463265a6fd` on `handoff/claude-overhaul`. This pass began with the existing modified local tree, which remains authoritative and uncommitted. No commit, push, PR or deployment is authorized. Older checkpoints below are historical. Current evidence: `docs/TARS-PRODUCTION-READINESS.md`.
 
 **Maintenance rule (for every agent; the full protocol and the "done" checklist are in `AGENTS.md`):** update this file as part of any change: features, fixes, refactors, dependencies, config or design decisions. Edit the relevant section; do not rewrite the whole file. If the change touches a feature that produces user-facing content, update that feature's entry in §4 so it states the **current standard**, not only that the feature exists. Add one line to §6. `docs/HANDOFF.md` is the older, longer milestone log (measurements, user requirements per milestone); keep the two consistent. Verify every claim here against the code before relying on it.
@@ -606,6 +610,12 @@ Tile parity passes 120/120 (maximum MAE1.180472/255, high-delta fraction0.421524
 Final source typecheck/build pass (154 precache entries/7015.33KiB),224/224 tests across29 files, lint0 errors/188 existing warnings. Browser product smoke100/100, Atlas interactions21/21, learning104/104 in each theme, News279/279, clean-install offline9/9 and settled map/console health pass with no unexpected runtime errors. UI audit passes at375/768/1366/1920px in both themes; four repeated fullscreen exits and recovery6/6 pass. Expected failed-image/503/offline network errors belong to News fault fixtures. Source/schema/id diffs remain empty and whitespace review is clean. Physical-device and WebKit acceptance are still separate J-30 work. Changes remain local/uncommitted; no push/merge/PR/deployment.
 
 ## 6. Recent changes (newest first)
+
+2026-10-05 — MapLibre study points now come from a settled, overscanned viewport slice with zoom-dependent caps; hidden/off-screen gazetteer entries no longer participate in clustering, while search-selected places are forced into the slice.
+
+2026-10-05 — News manual refresh now bypasses ordinary edge caching and replaces Cloudflare’s canonical feed cache; stale-feed coverage holds revalidation open to prove cached articles remain visible.
+
+2026-10-05 — Boundary provenance corrected: the current generated India overlay is a legacy India-view fallback, not Survey-of-India source data; official SoI vector import is a hard gate before MapLibre becomes the default renderer.
 
 2026-10-05 — Corrected News stale-cache regression coverage to advance beyond the two-hour TTL before remount — keeps retry-throttle semantics intact while testing background refresh.
 
