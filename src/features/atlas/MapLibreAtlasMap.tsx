@@ -145,7 +145,9 @@ function addStudyLayers(map: LibreMap, data: FeatureCollection<Point, PlaceProps
   })
 }
 
-export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(function MapLibreAtlasMap(props, ref) {
+type MapLibreAtlasProps = AtlasMapProps & { onFailure?: () => void }
+
+export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, MapLibreAtlasProps>(function MapLibreAtlasMap(props, ref) {
   const node = useRef<HTMLDivElement>(null)
   const mapRef = useRef<LibreMap | null>(null)
   const propsRef = useRef(props)
@@ -177,6 +179,8 @@ export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(functi
 
   useEffect(() => {
     if (!node.current) return
+    let ready = false
+    const loadTimeout = window.setTimeout(() => { if (!ready) propsRef.current.onFailure?.() }, 8000)
     const map = new LibreMap({
       container: node.current,
       style: styleRef.current,
@@ -189,11 +193,15 @@ export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(functi
     mapRef.current = map
 
     const setup = () => {
+      ready = true
+      window.clearTimeout(loadTimeout)
       addStudyLayers(map, collectionFor(propsRef.current, map), propsRef.current.sheet.id)
       refreshSource()
     }
+    const failBeforeReady = () => { if (!ready) propsRef.current.onFailure?.() }
     map.on('load', setup)
     map.on('style.load', setup)
+    map.on('error', failBeforeReady)
     map.on('moveend', refreshSource)
 
     const selectPoint = (event: MapLayerMouseEvent) => {
@@ -216,6 +224,8 @@ export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, AtlasMapProps>(functi
     })
 
     return () => {
+      window.clearTimeout(loadTimeout)
+      map.off('error', failBeforeReady)
       map.off('moveend', refreshSource)
       mapRef.current = null
       map.remove()
