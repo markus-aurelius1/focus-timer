@@ -1,17 +1,20 @@
 /** One-time deterministic importer for the official Survey of India Outline of India vector data. */
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, extname, resolve } from 'node:path'
+import { dirname, extname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import * as shapefile from 'shapefile'
 import { boundaryLines, SOI_OUTLINE_PAGE, SOI_OUTLINE_SCALE, SOI_OUTLINE_URL, soiBoundaryFeatureCollection, validateSoiBoundary } from './lib/soi-boundary.mjs'
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 const args = Object.fromEntries(process.argv.slice(2).map(arg => {
   const match = arg.match(/^--([^=]+)=(.*)$/)
   return match ? [match[1], match[2]] : [arg.replace(/^--/, ''), true]
 }))
 
-const out = resolve(args.out || '../../public/atlas-assets/v1/india-controlled-border.geojson')
-const metaOut = resolve(args.meta || '../../public/atlas-assets/v1/india-boundary-source.json')
+const out = args.out ? resolve(String(args.out)) : join(repoRoot, 'public/atlas-assets/v1/india-controlled-border.geojson')
+const metaOut = args.meta ? resolve(String(args.meta)) : join(repoRoot, 'public/atlas-assets/v1/india-boundary-source.json')
 
 const sha = buffers => {
   const h = createHash('sha256')
