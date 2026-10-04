@@ -83,16 +83,6 @@ export default defineConfig({
         // while application loading/validation stays paper-lazy. Hash queries select the same precached bytes.
         ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^hash$/],
         runtimeCaching: [
-          { urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname === '/api/current-affairs', handler: 'NetworkFirst', options: {
-            cacheName: 'current-affairs-v1', networkTimeoutSeconds: 12, cacheableResponse: { statuses: [200] }, expiration: { maxEntries: 1 },
-            // navigator.onLine can stay true without internet access, including a cached reload.
-            plugins: [{ cachedResponseWillBeUsed: async ({ cachedResponse }) => {
-              if (!cachedResponse) return undefined
-              const headers = new Headers(cachedResponse.headers)
-              headers.set('X-Tars-News-Cache', 'hit')
-              return new Response(cachedResponse.body, { status: cachedResponse.status, statusText: cachedResponse.statusText, headers })
-            } }],
-          } },
           { urlPattern: /\/pyq-atlas\/v1\/manifest\.json$/, handler: 'NetworkFirst', options: { cacheName: 'atlas-pyq-manifest-v1', networkTimeoutSeconds: 3, cacheableResponse: { statuses: [200] } } },
           { urlPattern: /\/pyq-atlas\/v1\/(?:papers\/|answers\/|place-pyq-index\.json)/, handler: 'CacheFirst', options: { cacheName: 'atlas-pyq-packs-v1', cacheableResponse: { statuses: [200] }, expiration: { maxEntries: 160 } } },
         ],
