@@ -18,7 +18,8 @@
     "cap:sync": "npm run build && cap sync",
     "cap:android": "npm run build && cap sync android && cap open android",
     "cap:ios": "npm run build && cap sync ios && cap open ios",
-    "atlas:assets": "node tools/build-atlas-assets.mjs"
+    "atlas:assets": "node tools/build-atlas-assets.mjs",
+    "atlas:soi-boundary": "node tools/atlas-build/import-soi-boundary.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
