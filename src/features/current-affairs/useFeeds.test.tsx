@@ -51,13 +51,16 @@ it('forces a refresh only when the user requests it', async () => {
 })
 
 it('keeps stale articles visible while refreshing in the background', async () => {
-  const old = feed(new Date(Date.now() - NEWS_REFRESH_TTL_MS - 60000).toISOString())
-  const fresh = feed()
+  let now = Date.now()
+  vi.spyOn(Date, 'now').mockImplementation(() => now)
+  const old = feed(new Date(now).toISOString())
+  const fresh = feed(new Date(now + NEWS_REFRESH_TTL_MS + 60000).toISOString())
   const calls = installFetch([old, fresh])
   const first = renderHook(useFeeds)
   await waitFor(() => expect(first.result.current.loading).toBe(false))
   first.unmount()
 
+  now += NEWS_REFRESH_TTL_MS + 60000
   const second = renderHook(useFeeds)
   await waitFor(() => expect(calls).toHaveLength(2))
   expect(second.result.current.data?.fetchedAt).toBe(old.fetchedAt)

@@ -607,6 +607,8 @@ Final source typecheck/build pass (154 precache entries/7015.33KiB),224/224 test
 
 ## 6. Recent changes (newest first)
 
+2026-10-05 — Corrected News stale-cache regression coverage to advance beyond the two-hour TTL before remount — keeps retry-throttle semantics intact while testing background refresh.
+
 2026-10-05 — Corrected the MapLibre preview’s semantic-zoom paint expression to the style-spec-supported top-level `step` form — prevents preview style validation failure.
 
 2026-10-05 — Added an opt-in MapLibre/OpenFreeMap Atlas preview (`?atlasRenderer=maplibre`) with clustered semantic study points and a generated controlled-India-border GeoJSON derived from the existing India sheet — production SVG remains the fallback until parity validation.
