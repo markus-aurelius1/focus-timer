@@ -10,8 +10,8 @@ const args = Object.fromEntries(process.argv.slice(2).map(arg => {
   return match ? [match[1], match[2]] : [arg.replace(/^--/, ''), true]
 }))
 
-const out = resolve(args.out || '../../public/atlas-assets/v1/india-soi-boundary.geojson')
-const metaOut = resolve(args.meta || '../../public/atlas-assets/v1/india-soi-boundary.source.json')
+const out = resolve(args.out || '../../public/atlas-assets/v1/india-controlled-border.geojson')
+const metaOut = resolve(args.meta || '../../public/atlas-assets/v1/india-boundary-source.json')
 
 const sha = buffers => {
   const h = createHash('sha256')
