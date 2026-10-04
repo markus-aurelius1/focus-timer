@@ -32,10 +32,13 @@ describe('Atlas semantic zoom', () => {
     expect(studyPlacesForView([nearby, far], { ...options, selectedId: 'far' }).map(p => p.id)).toContain('far')
   })
 
-  it('caps low-zoom source size deterministically', () => {
-    const places: Place[] = Array.from({ length: 120 }, (_, i) => ({ ...place, id: 'p-' + String(i).padStart(3, '0'), kind: 'capital' as const, level: 1 as const }))
-    const result = studyPlacesForView(places, { zoom: 1 })
-    expect(result).toHaveLength(studySourceLimit(1))
-    expect(result.map(p => p.id)).toEqual([...result].map(p => p.id).sort())
+  it('caps overview and mid-overview source sizes deterministically', () => {
+    const places: Place[] = Array.from({ length: 360 }, (_, i) => ({ ...place, id: 'p-' + String(i).padStart(3, '0'), kind: 'capital' as const, level: 1 as const }))
+    const overview = studyPlacesForView(places, { zoom: 1 })
+    const midOverview = studyPlacesForView(places, { zoom: 2 })
+    expect(overview).toHaveLength(80)
+    expect(midOverview).toHaveLength(160)
+    expect(studySourceLimit(2)).toBe(160)
+    expect(overview.map(p => p.id)).toEqual([...overview].map(p => p.id).sort())
   })
 })
