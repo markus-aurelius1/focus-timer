@@ -1,0 +1,86 @@
+name: Import official Survey of India boundary
+
+on:
+  push:
+    branches: [codex/atlas-news-architecture]
+    paths:
+      - .github/workflows/import-soi-boundary.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/atlas-news-architecture
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/atlas-build/package-lock.json
+      - name: Install Atlas importer dependencies
+        run: npm ci --prefix tools/atlas-build
+      - name: Download official Survey of India outline vector
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/soi
+          curl --fail --location --retry 3 --retry-all-errors \
+            https://surveyofindia.gov.in/documents/Outline_of_India.zip \
+            --output /tmp/Outline_of_India.zip
+          unzip -q /tmp/Outline_of_India.zip -d /tmp/soi
+          find /tmp/soi -maxdepth 4 -type f -printf '%p\n' | sort
+      - name: Import and validate official boundary
+        run: |
+          set -euo pipefail
+          mapfile -t candidates < <(find /tmp/soi -type f -iname '*.shp' | sort)
+          if [ "${#candidates[@]}" -eq 0 ]; then
+            echo "No shapefile found in the official archive" >&2
+            exit 1
+          fi
+          shp=""
+          if [ "${#candidates[@]}" -eq 1 ]; then
+            shp="${candidates[0]}"
+          else
+            for candidate in "${candidates[@]}"; do
+              if printf '%s' "$candidate" | grep -Eiq '(outline|international|boundary|india)'; then
+                shp="$candidate"
+                break
+              fi
+            done
+          fi
+          if [ -z "$shp" ]; then
+            printf 'Ambiguous shapefiles:\n%s\n' "${candidates[*]}" >&2
+            exit 1
+          fi
+          echo "Importing $shp"
+          node tools/atlas-build/import-soi-boundary.mjs --shp="$shp"
+          node --test tools/atlas-build/test/soi-boundary.test.mjs
+          node tools/build-atlas-assets.mjs
+          node - <<'NODE'
+          const fs = require('fs')
+          const meta = JSON.parse(fs.readFileSync('public/atlas-assets/v1/india-boundary-source.json', 'utf8'))
+          if (meta.authority !== 'Survey of India') throw new Error('Official authority metadata missing')
+          if (!meta.geometry?.northWestClaim) throw new Error('North-west claimed-territory validation missing')
+          console.log(meta)
+          NODE
+          git diff --check
+      - name: Commit the locally bundled official boundary
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            public/atlas-assets/v1/india-controlled-border.geojson \
+            public/atlas-assets/v1/india-boundary-source.json \
+            public/atlas-assets/v1/manifest.json
+          if git diff --cached --quiet; then
+            echo "Boundary asset is already current"
+            exit 0
+          fi
+          git commit -m "Atlas boundary: Import official Survey of India outline"
+          git push origin HEAD:codex/atlas-news-architecture
