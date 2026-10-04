@@ -1,21 +1,7 @@
-/**
- * Progression: XP, levels and explorer ranks. XP is always computed from the
- * recorded history (sessions, claimed challenges and recall answers) – there is
- * no running total that could drift or be lost.
- *
- *   1 XP per focused minute
- *   +3 XP for finishing a planned session
- *   challenge rewards (older claims paid "stardust"; they count as XP now)
- *   +1 XP per correct recall answer, at most 30 a day
- */
-import type { ChallengeClaim, RecallAttempt, Session } from '@/data/types'
+/** Existing Atlas recall XP, ranks and map styles. Legacy Focus rewards are preserved in storage but unused. */
+import type { ChallengeClaim, RecallAttempt } from '@/data/types'
 
-export const COMPLETION_BONUS = 3
 export const RECALL_XP_DAILY_CAP = 30
-
-export function xpForSession(s: Pick<Session, 'duration' | 'completed' | 'plannedDuration'>): number {
-  return Math.floor(s.duration / 60) + (s.completed && s.plannedDuration ? COMPLETION_BONUS : 0)
-}
 
 /** Recall XP per day, capped. */
 export function recallXp(recalls: Pick<RecallAttempt, 'correct' | 'date'>[]): number {
@@ -27,19 +13,16 @@ export function recallXp(recalls: Pick<RecallAttempt, 'correct' | 'date'>[]): nu
 }
 
 export interface XpBreakdown {
-  focus: number
   challenges: number
   recall: number
   total: number
 }
 
-export function xpBreakdown(sessions: Session[], claims: ChallengeClaim[], recalls: RecallAttempt[]): XpBreakdown {
-  let focus = 0
-  for (const s of sessions) focus += xpForSession(s)
+export function xpBreakdown(claims: ChallengeClaim[], recalls: RecallAttempt[]): XpBreakdown {
   let challenges = 0
-  for (const c of claims) challenges += c.reward
+  for (const c of claims) if (['d-review', 'w-recall', 'w-pass'].includes(c.challengeId)) challenges += c.reward
   const recall = recallXp(recalls)
-  return { focus, challenges, recall, total: focus + challenges + recall }
+  return { challenges, recall, total: challenges + recall }
 }
 
 // ───────────────────────── levels & ranks ─────────────────────────

@@ -2,6 +2,8 @@
 
 **Date:** 2026-10-01 · **Scope:** `focus-timer/` working tree on `main` (HEAD `1e79fed` plus the uncommitted app-shell overhaul) · **Status:** audit and redesign plan. Written before any application code was changed; implementation has since started, see "Corrections and progress" below.
 
+**Current scope, 2026-10-03:** the owner resumed the overhaul for Atlas, News and shared infrastructure only. Follow [the active scoped roadmap](TARS-ATLAS-NEWS-ROADMAP.md). Focus/Planning jobs have been removed from §23; earlier findings and measurements are historical. J-23 is accepted; J-24/J-25 remain unaccepted.
+
 **How it was produced**
 
 - Read all of `src/` (≈27,000 lines: shell, UI primitives, every feature screen, the Atlas renderer and engine, data layer, timer, services), `index.css`, the build config, CI, and the existing handoff documents.
@@ -1635,6 +1637,8 @@ Priority refers to §20. "Job" refers to §23.
 
 ## 20. P0 / P1 / P2 / P3 roadmap
 
+Historical full-product priorities only. The active Atlas/News queue is [TARS-ATLAS-NEWS-ROADMAP.md](TARS-ATLAS-NEWS-ROADMAP.md); obsolete feature jobs below are retired and have been removed from §23.
+
 Ranking is by user impact × how often it is felt × how much later work it unlocks × measured performance gain, discounted by implementation risk. Novelty is not a factor.
 
 ### P0 · Foundation
@@ -1718,6 +1722,8 @@ The four tracks are independent after the guard-rails and can be worked in paral
 
 ## 21. Technical dependencies
 
+Historical full-product dependency inventory. Only retained Atlas/News/shared dependencies apply; deleted Focus/Planning harnesses and runtime modules are not requirements.
+
 | Dependency | Needed by | Notes |
 | --- | --- | --- |
 | A DOM test environment for Vitest | J-05, J-07 | A dev dependency. Limit to `src/ui/**` so logic tests stay in the fast node environment. |
@@ -1760,6 +1766,8 @@ The four tracks are independent after the guard-rails and can be worked in paral
 
 ## 23. Suggested implementation jobs
 
+**Active scope and ordering:** `TARS-ATLAS-NEWS-ROADMAP.md` is authoritative. Apply every retained job only to Atlas, News and shared infrastructure. Completed work stays accepted unless a verified regression requires repair.
+
 ### Ground rules for every job
 
 1. Read `AGENTS.md` and `CODEX_HANDOFF.md` first. Follow the "done" checklist in `AGENTS.md` §6, including the handoff update.
@@ -1767,9 +1775,8 @@ The four tracks are independent after the guard-rails and can be worked in paral
 3. Keep the accessible names listed in `CODEX_HANDOFF.md` §9 item 15.
 4. Baseline before, measure after, with the same script and the production build: `npm run build && npm run preview`, then from `tools/perf`:
    - `node gesture-audit.mjs http://localhost:4173/` (Atlas; results in `out/gesture-audit/`)
-   - `node app-audit.mjs http://localhost:4173/` (Focus cost, navigation, start-up, touch targets; results in `out/app-audit/`)
-   - `node smoke.mjs`, `node atlas-check.mjs`, `node ui-audit.mjs`, `node tars-check.mjs`, and `node features-check.mjs` against `npm run dev`
-5. Every job ends with `npm run typecheck`, `npm test` and `npm run build` passing.
+   - `node smoke.mjs`, `node atlas-check.mjs`, `node ui-audit.mjs`, `node product-health.mjs`, `node vnext-learning.mjs`, `node job4-offline.mjs` against production preview; `node current-affairs-check.mjs` serves production fixtures
+5. Every job ends with `npm run typecheck`, `npm run lint`, `npm test` and `npm run build` passing.
 6. One job, one concern. If a job uncovers a separate problem, record it in the handoff rather than fixing it in passing.
 
 The baseline numbers for this audit are in §1 and §7 and in `tools/perf/out/gesture-audit/*.json` and `out/app-audit/*.json`.
@@ -1786,8 +1793,6 @@ Jobs are listed below in the order they should be executed, not in numeric order
 | J-11a | P0 | Atlas | Settle clock and repaint policy: end the repaint storm |
 | J-11b | P0 | Atlas | Names and symbols while dragging |
 | J-11c | P0 | Atlas | Overlay layer, instant tap, soft edges, quiet resize |
-| J-10 | P0 | Focus | Dial on the compositor (done) |
-| J-10b | P1 | Focus | Once-a-second readouts as leaf components |
 | J-03 | P0 | shell | Instant navigation and shell-first boot |
 | J-28 | P0 | shell | Start-up weight |
 | J-04 | P0 | system | Tokens v2 and dead-code removal |
@@ -1806,35 +1811,29 @@ Jobs are listed below in the order they should be executed, not in numeric order
 | J-25 | P1 | Atlas | Label layer |
 | J-15 | P1 | Atlas | Atlas chrome: inspector, detented sheet, anchored search |
 | J-18b | P1 | learning | One question surface |
-| J-12 | P1 | Plan | Task editor as a side panel; inline editors |
-| J-13 | P1 | Plan | Plan lists on primitives |
-| J-14 | P1 | Focus | Focus surfaces without modals |
-| J-16 | P1 | screens | Settings and Soundscape on primitives |
+| J-16 | P1 | screens | Shared Settings on primitives (accepted) |
 | J-16b | P1 | screens | Current Affairs on primitives |
-| J-17 | P1 | screens | Calendar and Habits on primitives, with keyboard |
-| J-18 | P1 | screens | Delete with Undo |
 | J-29 | P1 | quality | Accessibility pass |
 | J-30 | P1 | quality | WebKit and device verification |
 | J-19 | P2 | polish | Toasts and palette |
 | J-20 | P2 | polish | Tactile details |
 | J-21 | P2 | polish | Loading, empty and data-rich states |
-| J-22 | P2 | polish | Immersive and onboarding transitions |
 | J-26 | P3 | Atlas | Stage C: detail that arrives as you approach |
 
 ---
 
 ### J-01 · Error boundaries and chunk-failure recovery (P0)
 
-- **Objective.** A render error or a failed lazy import never blanks the app. The shell and the timer stay alive; the user sees a calm recovery surface.
+- **Objective.** A render error or a failed lazy import never blanks the app. The shell and navigation stay alive; the user sees a calm recovery surface.
 - **Affected systems.** `src/app/App.tsx` (route host, global overlays), new `src/ui/ErrorBoundary.tsx`.
 - **Dependencies.** None.
 - **Acceptance criteria.**
-  - A throw inside any screen shows a recovery panel inside the stage; the rail or tab bar, the running timer readout and navigation still work.
+  - A throw inside any screen shows a recovery panel inside the stage; the rail or tab bar, navigation still works.
   - A throw inside an overlay closes that overlay and shows a toast; the screen beneath is intact.
   - A rejected dynamic import reloads the page once (guarded so it cannot loop) and otherwise shows a "Reload" action.
   - A root boundary catches anything else with the existing database-error styling.
   - Copy follows the house style (§4.0 of the handoff).
-- **Verification.** A browser check that aborts a route chunk request and asserts the recovery panel and a live timer; a DOM test that a throwing child renders the fallback; smoke and UI audit unchanged.
+- **Verification.** A browser check that aborts a route chunk request and asserts the recovery panel and live navigation; a DOM test that a throwing child renders the fallback; smoke and UI audit unchanged.
 
 ### J-02 · Lint, format and two custom rules (P0)
 
@@ -1850,12 +1849,12 @@ Jobs are listed below in the order they should be executed, not in numeric order
 
 ### J-27 · Performance budgets in CI (P0)
 
-- **Objective.** Regressions in the Atlas renderer and in session cost fail the build.
-- **Affected systems.** `tools/perf/gesture-audit.mjs`, `tools/perf/app-audit.mjs`, `.github/workflows/ci.yml`.
+- **Objective.** Regressions in the retained Atlas renderer fail the build.
+- **Affected systems.** `tools/perf/gesture-audit.mjs`, retained product browser regressions and `.github/workflows/ci.yml`.
 - **Dependencies.** None. Do this before J-11a so each Atlas job can tighten a budget.
 - **Acceptance criteria.**
-  - Both scripts accept a budget file and exit non-zero when a budget is exceeded.
-  - Budgets use deterministic counts first: base repaints and label commits per gesture, names on screen while holding as a share of after release, repaints on select and on rail collapse, rAF callbacks per second while a session runs, skeleton shown on navigation. Frame-time budgets are generous and advisory because CI machines vary.
+  - Gesture audit accepts a budget file and exits non-zero when a budget is exceeded.
+  - CI budgets use deterministic counts first: base repaints and label commits per gesture, names on screen while holding as a share of after release, repaints on select and on rail collapse. The separate J-24 timing budgets are hard acceptance gates; CI variability does not waive them. Session-cost budgets are retired.
   - Initial budgets equal today's values, so the job changes no behaviour and only prevents getting worse.
 - **Verification.** CI run showing the budgets evaluated; a deliberate local regression (for example lowering `MIN_REPAINT_GAP`) fails the check.
 
@@ -1898,56 +1897,30 @@ Jobs are listed below in the order they should be executed, not in numeric order
   - Reduced motion: no spring-back animation; the camera simply stops at the bound.
 - **Verification.** `gesture-audit` (`tapLatencyMs`); a small addition to the audit for select, rail collapse and full screen (the one-off script used for this audit can be folded in); `atlas-check`; `fullscreen-regression`.
 
-### J-10 · Focus dial on the compositor (P0)
-
-- **Objective.** A running session costs almost nothing between second ticks (FO-1, FO-2).
-- **Affected systems.** `src/features/focus/TimerDial.tsx`, the progress bar in `ImmersiveFocus.tsx`, dial styles in `index.css`. The engine and store are not edited.
-- **Dependencies.** None.
-- **Acceptance criteria.**
-  - `app-audit`: "focus running" at most 20 ms/s of main-thread work on desktop and at most 100 ms/s at 4× throttle (today 185–368 and 900–990). rAF callbacks at most 2 per second while running. "immersive running" within the same limits.
-  - The arc and head are within 0.5% of `progress(timer, now)` at any moment, including after pause, resume, ±5 minutes, a phase change, and five minutes with the tab hidden.
-  - The dial looks the same at rest in screenshots at 375, 768, 1366 and 1920 px in both themes; the running, paused and idle states remain distinct.
-  - Reduced motion: the arc still advances; halo and breathing ring are off.
-- **Verification.** `app-audit`; `engine.test.ts` unchanged and passing; a browser check that samples the arc angle against the engine at several points; `ui-audit` and `shots` for the Focus states.
-- **Outcome.** Done, with the cost targets narrowly missed: 17–32 ms/s on desktop and 115–135 ms/s at 4× throttle, with no frame callbacks. The arc is two half rings turned behind clips and the head a third layer, each with one Web Animations transform animation as long as the phase; `tools/perf/dial-check.mjs` is the browser check. The remainder is J-10b.
-
-### J-10b · Once-a-second readouts as leaf components (P1)
-
-- **Objective.** A second tick re-renders only the digits that change.
-- **Affected systems.** `TimerPanel` in `src/features/focus/FocusScreen.tsx`, `useTimerReadout` in `src/app/Shell.tsx` (rail and tab bar), `ExpeditionStrip.tsx`, `ImmersiveFocus.tsx`. Today each calls `useNow` at its top, so the whole panel, the dial's 60 ticks, the controls and the navigation re-render every second.
-- **Dependencies.** J-10.
-- **Acceptance criteria.**
-  - `app-audit`: "focus running" and "immersive running" at most 20 ms/s on desktop and 100 ms/s at 4× throttle.
-  - `useNow` is called only in components that render a time; their parents do not re-render on a tick (checked with the React profiler or a render counter in a dev build).
-  - The QA accessible names and the single `role="timer"` are unchanged.
-- **Verification.** `app-audit`; `dial-check`; `smoke`; `tars-check`.
-
 ### J-03 · Instant navigation and shell-first boot (P0)
 
 - **Objective.** No skeleton on navigation; the frame of the app is on screen at first paint (NAV-1, PF-3).
 - **Affected systems.** `src/app/App.tsx` (boot, route host, `lazy` declarations), `src/app/router.ts`.
 - **Dependencies.** J-01 (boundaries around the route host).
 - **Acceptance criteria.**
-  - `app-audit` routes: every screen except the Atlas reports `skeleton: false` on first visit and at most 150 ms on desktop (today 330–644 ms with a skeleton).
+  - Retained route checks preserve the deferred route behavior and shell-first boot. The removed app-audit measurements remain historical.
   - The current screen stays visible until the next one can render.
   - Route chunks are requested during idle time after boot and on pointer-down or focus of a navigation item.
   - At cold start the rail or tab bar and the stage frame are part of the first contentful paint.
   - No change to deep links or one-shot parameters.
-- **Verification.** `app-audit`; `smoke`; `tars-check`; `features-check`.
+- **Verification.** Product smoke and chunk-failure recovery.
 
 ### J-28 · Start-up weight (P0)
 
-- **Objective.** Home and Focus do not pay for the Atlas or for closed overlays (PF-1, PF-2, PF-4, PF-5, PF-6, PF-7).
-- **Affected systems.** `src/tars/useContext.ts`, `src/atlas/data.ts`, `src/atlas/useExploration.ts`, `src/app/App.tsx` (overlay imports), `src/data/hooks.ts`, `src/timer/useNow.ts`, `src/audio/sounds.ts`, `index.css` (fonts), `vite.config.ts` (precache groups).
+- **Objective.** Retain accepted lazy loading of Atlas data and closed shared overlays; obsolete session-cost work is retired.
+- **Affected systems.** `src/tars/useContext.ts`, `src/atlas/data.ts`, `src/atlas/useExploration.ts`, `src/app/App.tsx`, shared settings hooks, fonts and precache groups.
 - **Dependencies.** J-03.
 - **Acceptance criteria.**
-  - `app-audit` cold start: `gazetteerRequestedAtMs` is after the Home heading, or null until first need.
   - Entry chunk at most 200 KB raw (today 279 KB) with closed overlays loaded on first open and preloaded on idle.
-  - "home, session running" at most 10 ms/s on desktop and at most 80 ms/s at 4× throttle (today 17–36 and 146–442).
-  - Labels, projects, profiles, goals, events and settings use shared live queries.
+  - Retained settings queries and Atlas/News context avoid restoring removed feature subscriptions.
   - `og-image.png` is not precached; India assets remain in the first precache group and `job4-offline.mjs` passes.
-  - Due-review counts on Home and in the palette are still correct once the gazetteer has loaded.
-- **Verification.** `app-audit`; `bundle-profile.mjs`; `job4-offline.mjs`; `tars-check`; `vnext-learning`.
+  - Due-review counts in Atlas and the palette remain correct once the gazetteer has loaded.
+- **Verification.** Build output, `job4-offline.mjs`, product smoke and `vnext-learning`.
 
 ### J-04 · Tokens v2 and dead-code removal (P0)
 
@@ -1973,7 +1946,7 @@ Jobs are listed below in the order they should be executed, not in numeric order
   - Haptics are a prop with semantic values and fire once per activation.
   - The gallery route renders every primitive in every state in both themes.
   - DOM tests cover activation by pointer, Enter and Space, disabled and loading behaviour.
-- **Verification.** New unit tests; `shots.mjs` of the gallery; `job4-control-contrast`; `features-check`.
+- **Verification.** New unit tests; `shots.mjs` of the gallery; `job4-control-contrast`; `smoke`.
 
 ### J-05b · `ListRow`, `Group`, `Progress` (P0)
 
@@ -1996,8 +1969,8 @@ Jobs are listed below in the order they should be executed, not in numeric order
   - `SegmentedControl`: radio-group semantics and arrow keys.
   - `Switch`: thumb reacts to press and can be dragged; an optional full-row label target.
   - `Checkbox`: the task tick animation as a reusable component with a 44 px target.
-  - The QA scripts that select `role="tab"` (India and World, timer modes) still pass.
-- **Verification.** DOM tests for keys and roles; `atlas-check`; `features-check`.
+  - The QA scripts that select `role="tab"` (India and World, News queues) still pass.
+- **Verification.** DOM tests for keys and roles; `atlas-check`; `smoke`.
 
 ### J-05d · Field family (P0)
 
@@ -2044,7 +2017,7 @@ Jobs are listed below in the order they should be executed, not in numeric order
   - Collision-aware placement in a portal; closes on outside press and Escape; returns focus.
   - `Menu`: arrow keys, Home and End, type-ahead, focus moves in on open.
   - `Tooltip`: 400 ms delay, instant when moving between adjacent triggers, shown on keyboard focus, never on touch; `IconButton` uses it in place of `title`.
-- **Verification.** DOM tests; `atlas-check` (layers); `features-check` (rail).
+- **Verification.** DOM tests; `atlas-check` (layers); `smoke` (rail).
 
 ### J-07c · `SidePanel` and Back integration (P1)
 
@@ -2063,23 +2036,22 @@ Jobs are listed below in the order they should be executed, not in numeric order
 - **Affected systems.** `src/app/App.tsx`, new `useRouteState`, each screen's view state, `AtlasScreen.tsx`.
 - **Dependencies.** J-03.
 - **Acceptance criteria.**
-  - Leaving and returning restores scroll position, selected tab, filters, calendar anchor and view, Insights range, and the Atlas sheet, camera and selection.
+  - Leaving and returning restores retained News queues, filters and archive position, shared scroll position, and the Atlas sheet, camera and selection.
   - Re-selecting the current tab scrolls to the top and resets transient filters.
-  - `app-audit`: second visit to the Atlas at most 100 ms on desktop (today 160–1,329 ms).
+  - Preserve the accepted desktop Atlas keep-alive behavior; earlier second-visit timings remain historical.
   - A hidden Atlas runs no animations and holds no pointer listeners.
-- **Verification.** `app-audit`; a browser check that scrolls Plan, visits the Atlas, returns and compares scroll position; `fullscreen-regression`.
+- **Verification.** Product smoke, News reading-state checks and `fullscreen-regression`; retired route-state harness results remain historical.
 
 ### J-09 · Shell alignment (P1)
 
 - **Objective.** Title, actions and tabs sit in one place on every screen; the rail collapses without layout animation; phone navigation is accurate (NAV-4, NAV-5, NAV-6, MO-3).
-- **Affected systems.** `src/app/Workspace.tsx`, `src/app/Shell.tsx`, `src/index.css` (shell section), `src/features/tasks/PlanTabs.tsx`, Home and Focus headers.
+- **Affected systems.** `src/app/Workspace.tsx`, `src/app/Shell.tsx`, `src/index.css` (shell section), Atlas/News/shared Settings headers.
 - **Dependencies.** J-05c.
 - **Acceptance criteria.**
   - The workspace title's left edge is at the same x position on every non-Atlas route at 1366 and 1920 px.
   - Rail collapse and full-screen chrome animate with transforms; no layout runs during the transition except once at the end.
-  - On phones, no tab is selected on Notes, Insights or Settings; they show a Back that uses in-app history.
-  - Plan tabs use `Tabs` with an overflow fade; on compact widths the less-used views sit behind one "Lists" entry.
-- **Verification.** A screenshot script that records the title's bounding box per route; `ui-audit`; `features-check` (sidebar persistence); `smoke`.
+  - On phones, Atlas and News are the primary tabs; auxiliary Settings has no selected primary tab and shows Back using in-app history.
+- **Verification.** A screenshot script that records the title's bounding box per route; `ui-audit`; `smoke` (sidebar persistence); `smoke`.
 
 ### J-23 · Atlas: extract gestures and renderer modules; spike (P1)
 
@@ -2121,15 +2093,15 @@ Jobs are listed below in the order they should be executed, not in numeric order
 ### J-15 · Atlas chrome (P1)
 
 - **Objective.** The Atlas's surfaces match their jobs (§9.2, RS-2).
-- **Affected systems.** `AtlasScreen.tsx`, `PlaceDetails.tsx`, `UnitDetails.tsx`, `AtlasPanel.tsx`, `Gazetteer.tsx`, `Legend.tsx`, `ExpeditionSheet.tsx`, `OfflineAtlas.tsx`.
+- **Affected systems.** `AtlasScreen.tsx`, `PlaceDetails.tsx`, `UnitDetails.tsx`, `AtlasPanel.tsx`, `Gazetteer.tsx`, `Legend.tsx`, `OfflineAtlas.tsx`.
 - **Dependencies.** J-07a–c, J-05b, J-11c.
 - **Acceptance criteria.**
   - Desktop: the inspector is a `SidePanel` with enter and exit motion; search is anchored under the search button and previews results on the map as they are arrowed through; layers and legend are popovers.
   - Phone: one detented `BottomSheet` replaces the fixed card and the modal details sheet; the map stays interactive behind it and re-centres above it; the toolbar is one row.
   - `Escape` deselects, then closes the inspector.
-  - No raw buttons remain in these files; touch targets under 44 px on the Atlas route are zero in `app-audit`.
+  - No raw buttons remain in these files; Atlas touch targets under 44 px are zero in a retained browser hit-test check.
   - The Legend reads colours from `style.ts`.
-- **Verification.** `atlas-check`; `vnext-learning`; `job4-state-matrix`; `ui-audit`; `app-audit` touch targets.
+- **Verification.** `atlas-check`; `vnext-learning` in both themes; `ui-audit`; retained Atlas touch-target checks.
 
 ### J-18b · One question surface (P1)
 
@@ -2142,53 +2114,12 @@ Jobs are listed below in the order they should be executed, not in numeric order
   - Full screen on compact widths; a focused panel on wide layouts with the map visible for locate questions.
   - Durability rules are unchanged: feedback appears only after a durable save, attempts lock after save, accepted answers come only from the packs, no generated explanations.
   - Loading uses skeletons of the final layout.
-- **Verification.** `vnext-learning` (104 checks, both themes); `job4-visual` (every question type); `job4-actions`; `canonical-pyq-audit`.
+- **Verification.** `vnext-learning` (104 checks, both themes); canonical question-type, durability and source audit checks. Retired mixed-feature harnesses are not required.
 
-### J-12 · Task editor as a side panel; inline editors (P1)
+### J-16 · Shared Settings on primitives (P1, accepted)
 
-- **Objective.** Objects open beside their list on wide layouts (OV-1, NAV-7).
-- **Affected systems.** `TaskSheet.tsx`, `TasksScreen.tsx`, `QuickCapture.tsx`, the project, habit, goal, event, session and label editors.
-- **Dependencies.** J-07a–c, J-05d.
-- **Acceptance criteria.**
-  - From 1024 px the task editor is a side panel; the list stays visible, scrolls, and selecting another task swaps the panel's content.
-  - Scheduling a focus block is a step inside the panel, not a second modal.
-  - Small editors open as popovers or inline on wide layouts and as sheets on compact.
-  - Saving on close shows a brief saved indication.
-  - The names `New task`, `Edit task` and the footer actions used by QA scripts are preserved.
-- **Verification.** `features-check`; `job4-actions`; `ui-audit` (dialog states); `tars-check`.
-
-### J-13 · Plan lists on primitives (P1)
-
-- **Objective.** Task rows are structurally correct, tactile and immediate.
-- **Affected systems.** `TaskItem.tsx`, `TasksScreen.tsx`, `QuickAdd.tsx`, `HomeScreen.tsx` and `FocusScreen.tsx` where they list tasks.
-- **Dependencies.** J-05b, J-05c.
-- **Acceptance criteria.**
-  - The row is a list item with a title button and sibling action buttons; no nested interactive roles; Enter and Space both work.
-  - Completion writes immediately; the row's exit animation carries the tick; Undo still works; a row that unmounts mid-animation is still completed (RL-8).
-  - "Move all to today" is one transaction (RL-7).
-  - On touch: swipe to complete and to schedule, long-press to reorder with a 44 px handle.
-  - No raw buttons remain in these files.
-- **Verification.** `features-check`; `job4-actions`; `job4-control-contrast`; planner tests; `app-audit` touch targets for Home, Plan and Focus.
-
-### J-14 · Focus surfaces (P1)
-
-- **Objective.** The session flow has no modal interruptions (FO-3, FO-4, FO-5).
-- **Affected systems.** `FocusScreen.tsx`, `SessionCompleteSheet.tsx`, `ContextSheet.tsx`, `ProfileSheet.tsx`, `SoundSheet.tsx` entry points.
-- **Dependencies.** J-07a–b, J-10.
-- **Acceptance criteria.**
-  - Completion appears in the dial region on the Focus screen (a low-detent sheet on phones); the sheet is used only when the session ended on another screen. Rating, note, task completion and "Start break" all work from it.
-  - Stop saves immediately with an Undo toast that offers "Discard instead", or the controls morph to Save and Discard; no backdrop.
-  - Context, profiles and sounds open as popovers from their controls on medium and expanded widths.
-  - The names `Start focus…`, `Pause`, `Resume`, `Stop the timer`, `Timer profile: …`, `What are you working on?`, `Sounds (S)`, `Immersive mode (F)` are preserved.
-- **Verification.** `smoke`; `features-check`; `tars-check`; `ui-audit` Focus states.
-
-### J-16 · Settings and Soundscape on primitives (P1)
-
-- **Objective.** Bring two drifted surfaces onto the system.
-- **Affected systems.** `SettingsScreen.tsx`, `LabelsManager.tsx`, `SoundSheet.tsx`, `MusicDock.tsx`.
-- **Dependencies.** J-05b–d.
-- **Acceptance criteria.** Full-row switches; `Slider` for volumes; `ListRow` action rows with press states; the preset delete control is reachable on touch; no raw buttons; touch targets under 44 px on Settings are zero.
-- **Verification.** `ui-audit`; `features-check` (sound follows the timer); `app-audit` touch targets.
+- **Scope.** Shared Settings work is accepted. Soundscape is retired. Preserve theme, haptics, install, storage and backup behavior. Do not restore removed settings.
+- **Verification.** Product smoke, UI audit and Settings backup tests.
 
 ### J-16b · Current Affairs on primitives (P1)
 
@@ -2201,37 +2132,21 @@ Jobs are listed below in the order they should be executed, not in numeric order
   - Every `data-*` hook and accessible name used by `current-affairs-check.mjs` is preserved, including `Short notes`.
 - **Verification.** `current-affairs-check.mjs` (279 checks); `ui-audit`.
 
-### J-17 · Calendar and Habits on primitives, with keyboard (P1)
-
-- **Objective.** The calendar is operable by keyboard and responds to touch (AX-4).
-- **Affected systems.** `CalendarScreen.tsx`, `EventSheet.tsx`, `HabitsView.tsx`.
-- **Dependencies.** J-05b, J-07b.
-- **Acceptance criteria.** Arrow keys move through time slots and Enter creates; event blocks are `Pressable` with no nested interactive element; the month grid uses `Group`; the emoji is replaced by an icon; habit day cells are 44 px targets.
-- **Verification.** `ui-audit`; `tars-check` (Calendar → Focus); DOM tests for grid keys.
-
-### J-18 · Delete with Undo (P1)
-
-- **Objective.** Apply the product's own rule to the six remaining confirm dialogs (OV-4).
-- **Affected systems.** `EventSheet.tsx`, `GoalsSection.tsx`, `SessionSheet.tsx`, `LabelsManager.tsx`, `HabitsView.tsx`, `TasksScreen.tsx` (project).
-- **Dependencies.** None.
-- **Acceptance criteria.** Each delete happens at once with an Undo toast that restores the record and its dependents (habit logs, tasks' project link) exactly; tombstones are removed on restore; "Replace everything" and "Erase all data" keep their dialogs.
-- **Verification.** Data tests for remove and restore round trips; `features-check` (undo).
-
 ### J-29 · Accessibility pass (P1)
 
-- **Objective.** Close the findings in §12 not already closed by primitives.
-- **Affected systems.** `AtlasMap.tsx` and `AtlasScreen.tsx` (in-view list, `h1`), `charts.tsx` (heading levels), `ImmersiveFocus.tsx`, `TaskItem.tsx` and `UnitDetails.tsx` (non-colour cues), `index.css` (session dim).
+- **Objective.** Close retained Atlas/News/Settings accessibility findings.
+- **Affected systems.** Atlas in-view place list and selection announcements, route headings, non-colour mastery cues, shared controls and dialogs.
 - **Dependencies.** J-07a, J-15.
-- **Acceptance criteria.** The map exposes a focusable list of places in view and announces selection; every route has one `h1` and no skipped levels; immersive mode traps focus and hides the app beneath; priority and mastery have non-colour cues; an automated accessibility scan of every route and open dialog reports no serious violations.
-- **Verification.** An accessibility scan added to `ui-audit`; a manual screen-reader pass of Focus, Plan and the Atlas.
+- **Acceptance criteria.** Focusable in-view places; selection announced; one h1 per route and no skipped heading levels; non-colour mastery cues; no serious route/dialog scan violations.
+- **Verification.** Route/dialog accessibility scans and recorded screen-reader checks of Atlas and News.
 
 ### J-30 · WebKit and device verification (P1)
 
-- **Objective.** Establish what holds outside Chromium (RL-6).
-- **Affected systems.** `tools/perf` (a WebKit run), a short device checklist in `docs/`.
-- **Dependencies.** Runs alongside P1; repeat after J-24.
-- **Acceptance criteria.** `smoke` and `ui-audit` pass in WebKit; a recorded manual pass on one iPhone and one Android phone covering the timer through sleep, sheets with the keyboard open, the Atlas gestures, full screen, and offline reload; every difference is fixed or listed in the handoff.
-- **Verification.** The checklist with results and screenshots.
+- **Objective.** Verify retained products outside Chromium.
+- **Affected systems.** WebKit tooling and a recorded device checklist.
+- **Dependencies.** Repeat after J-24.
+- **Acceptance criteria.** Product smoke and UI audit pass in WebKit; recorded manual iPhone and Android checks cover map gestures, full screen, offline reload and retained sheets with keyboard open. Fix differences or list them in the handoff.
+- **Verification.** Device results and screenshots; emulation cannot satisfy this gate.
 
 ### J-19 · Toasts and palette (P2)
 
@@ -2239,31 +2154,23 @@ Jobs are listed below in the order they should be executed, not in numeric order
 - **Affected systems.** `src/ui/feedback.tsx`, `src/ui/toast.ts`, `src/app/CommandPalette.tsx`, `src/tars/commands.ts`.
 - **Dependencies.** J-05a, J-06.
 - **Acceptance criteria.** Bottom placement above the tab bar on compact widths; pause on hover and focus; swipe to dismiss; timers cleared on dismiss; "Undo last action" and recent items in the palette.
-- **Verification.** DOM tests; `features-check` (undo, palette).
+- **Verification.** DOM tests; `smoke` (undo, palette).
 
 ### J-20 · Tactile details (P2)
 
-- **Objective.** The last layer of physical feel.
-- **Affected systems.** `src/ui/`, `HomeScreen.tsx`, `TodayLine.tsx`, `FocusScreen.tsx`.
+- **Objective.** Tactile detail in retained controls and Atlas.
+- **Affected systems.** Shared controls, Pressable effects with retained consumers and Atlas cursors.
 - **Dependencies.** J-05a–d.
-- **Acceptance criteria.** Stepper repeats with acceleration while held; slider has detent haptics; colour picker has arrow keys; the Home "Now" surface is one target; the Today block opens Insights; the start control's ripple and breathing ring are reusable `Pressable` effects; the map shows grab and grabbing cursors.
-- **Verification.** DOM tests; screenshots of the gallery.
+- **Acceptance criteria.** Preserve implemented Stepper hold-repeat and Slider detents. Map shows grab/grabbing cursors. Only complete reusable effects that have an actual Atlas/News/shared consumer. Removed Home, Insights, timer and colour-picker requirements are retired.
+- **Verification.** Relevant control DOM tests and gallery/browser checks.
 
 ### J-21 · Loading, empty and data-rich states (P2)
 
-- **Objective.** Nothing appears from text placeholders or jumps into place.
-- **Affected systems.** `App.tsx` (skeleton), Atlas loading, `charts.tsx`, `NotesScreen.tsx`, `EmptyState`.
+- **Objective.** Retained screens load without layout jumps.
+- **Affected systems.** App/Atlas/News skeletons, shared EmptyState and retained News short notes.
 - **Dependencies.** J-05b, J-06.
-- **Acceptance criteria.** Skeletons match the destination layout for the Atlas, Insights and Current Affairs; chart columns are tappable and open that day, tooltips animate and follow arrow keys; notes insert and remove with list motion; drafts autosave.
-- **Verification.** `ui-audit`; screenshots with network throttling; DOM tests for chart keys.
-
-### J-22 · Immersive and onboarding transitions (P2)
-
-- **Objective.** The two changes of mode feel like one continuous move (FO-6, OV-7).
-- **Affected systems.** `ImmersiveFocus.tsx`, `TimerDial.tsx`, `Onboarding.tsx`.
-- **Dependencies.** J-10, J-06, J-07a.
-- **Acceptance criteria.** The dial digits grow into the immersive clock and back; immersive uses tokens and shared controls; hidden controls are `inert`; onboarding is a full-screen first run that only an explicit action can skip; reduced motion replaces both with cross-fades.
-- **Verification.** `fullscreen-regression`; `smoke`; screenshots.
+- **Acceptance criteria.** Skeletons match Atlas and News destination layouts; loading and empty states remain stable; retained notes use list motion and existing draft autosave. Insights charts and standalone Notes are retired.
+- **Verification.** UI audit, throttled-network screenshots and relevant News note checks.
 
 ### J-26 · Atlas stage C: detail (P3)
 
@@ -2286,4 +2193,3 @@ Jobs are listed below in the order they should be executed, not in numeric order
 The JSON files in `out/` hold the most recent run of each script. The ranges quoted in this document combine two Atlas passes on the desktop shape, one on each of the other shapes, and three passes of the app audit; the earlier passes are recorded here, not on disk.
 
 Frame times were sampled with `requestAnimationFrame`. A long frame with little script time and no long task means the main thread was waiting for the compositor, which the traces confirm as raster work in the GPU process. The built-in browser pane of the development tool was not used for timing: while hidden it presents frames at 1 Hz, which would have produced false results.
-

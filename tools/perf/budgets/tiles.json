@@ -1,0 +1,143 @@
+{
+  "desktop": {
+    "zoom-in-continuous": {
+      "p95": {
+        "max": 20
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "zoom-out-continuous": {
+      "p95": {
+        "max": 20
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "pan-short": {
+      "max": {
+        "max": 50
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "pan-long": {
+      "max": {
+        "max": 50
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "pan-back": {
+      "max": {
+        "max": 50
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "heap": {
+      "usedMB": {
+        "max": 31.2
+      }
+    }
+  },
+  "laptop-hidpi": {
+    "zoom-in-continuous": {
+      "p95": {
+        "max": 20
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "zoom-out-continuous": {
+      "p95": {
+        "max": 20
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "pan-short": {
+      "max": {
+        "max": 50
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "pan-long": {
+      "max": {
+        "max": 50
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "pan-back": {
+      "max": {
+        "max": 50
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "heap": {
+      "usedMB": {
+        "max": 31.2
+      }
+    }
+  },
+  "phone": {
+    "zoom-in-continuous": {
+      "p95": {
+        "max": 34
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "zoom-out-continuous": {
+      "p95": {
+        "max": 34
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "pan-short": {
+      "max": {
+        "max": 50
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "pan-long": {
+      "max": {
+        "max": 50
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "pan-back": {
+      "max": {
+        "max": 50
+      },
+      "over100": {
+        "max": 0
+      }
+    },
+    "heap": {
+      "usedMB": {
+        "max": 31.2
+      }
+    }
+  }
+}

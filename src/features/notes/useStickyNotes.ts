@@ -1,6 +1,5 @@
 /**
- * One collection of short dated notes, shared by the Notes workspace, quick
- * capture and the Current Affairs sheet. Storage and its rules live in
+ * One collection of short dated notes, used by the Current Affairs sheet. Storage and its rules live in
  * current-affairs/notes.ts (localStorage, 300 characters, dated on save); this
  * keeps every open view in step, in this tab and across tabs.
  */

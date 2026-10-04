@@ -1,3 +1,5 @@
+> Current contract, 2026-10-04: Tars is Atlas + News. Focus, Planning and timer expeditions are removed; their records/schema remain for compatibility. The overhaul is paused again; only the Atlas runtime and label-rendering regression repairs are authorized. See TARS-ATLAS-NEWS-ROADMAP.md for paused retained scope and TARS-ATLAS-RUNTIME-FIX.md for bitmap lifecycle and base-layer stacking evidence. This file is a historical milestone log; see ../CODEX_HANDOFF.md §0a and TARS-ATLAS-NEWS-REDUCTION.md for current product scope and validation.
+
 # Development handoff — UI/UX + Atlas performance + PYQ data upgrade + Atlas v2 + Tars rebrand & UI overhaul
 
 Last updated: 2026-09-26 (local session: M10 — rename Lodestar → Tars and premium UI/UX pass, see §11; before that M9 Atlas v2).

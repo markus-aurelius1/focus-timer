@@ -1,12 +1,11 @@
-/** Freely accessible place knowledge; travel and recall are independent historical states. */
-import { BookmarkPlus, ChevronRight, Crosshair, GraduationCap, MapPin } from 'lucide-react'
+/** Freely accessible place knowledge; recall establishes mastery. */
+import { ChevronRight, Crosshair, GraduationCap } from 'lucide-react'
 import { PlaceSources } from './PlaceSources'
 import type { ReactNode } from 'react'
 import { placeSubtitle } from '@/atlas/data'
 import { MASTERY_LABEL, type PlaceMastery } from '@/atlas/mastery'
 import type { Place, PlaceRelations } from '@/atlas/types'
 import type { Exploration } from '@/atlas/useExploration'
-import { executeAction } from '@/tars/runtime'
 import { todayKey, relativeDayLabel } from '@/lib/time'
 import { cn } from '@/lib/cn'
 import { Button } from '@/ui/controls'
@@ -44,7 +43,6 @@ const BACK_LABEL: Partial<Record<keyof PlaceRelations, string>> = {
 
 export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: { ex: Exploration; place: Place; onSelect: (t: MapTarget) => void; onTest: (id: string) => void; onShow?: (p: Place) => void; onPyq: (id: string) => void }) {
   const { atlas } = ex
-  const discovered = ex.state.discovered.get(p.id)
   const level = masteryFn(ex)(p.id)
   const m = ex.mastery.get(p.id)
   const crumbs = breadcrumb(atlas, p)
@@ -74,12 +72,6 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
     if (!back.get(label)!.includes(r.place)) back.get(label)!.push(r.place)
   }
   for (const [label, list] of back) rels.push({ label, items: list.map((q) => <LinkChip key={q.id} place={q} ex={ex} onClick={() => onSelect({ type: 'place', id: q.id })} />) })
-
-  const stopsIn = atlas.expeditions.flatMap((e) =>
-    e.chapters.flatMap((c, ci) => c.stops.map((s, si) => ({ e, ci, si, c, s }))).filter((x) => x.s.place === p.id),
-  )
-
-  const addRevision = () => executeAction('task.revisePlace', { placeId: p.id })
 
   return (
     <div>
@@ -121,7 +113,6 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
 
       {(
         <>
-          <p className="mt-5 text-xs text-ink-3">{discovered ? 'Travelled through focus-powered progression.' : 'Accessible now · not yet travelled.'}</p>
           <MasteryRow level={level} m={m} />
           <ul className="mt-4 space-y-2">
             {p.facts.map((f, i) => (
@@ -146,9 +137,6 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
             <Button variant="primary" icon={<GraduationCap className="size-4" />} onClick={() => onTest(p.id)}>
               Test me
             </Button>
-            <Button icon={<BookmarkPlus className="size-4" />} onClick={addRevision}>
-              Revision task
-            </Button>
             {onShow && (
               <Button className="col-span-2" variant="ghost" icon={<Crosshair className="size-4" />} onClick={() => onShow(p)}>
                 Show on the map
@@ -158,7 +146,6 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
         </>
       )}
 
-      {stopsIn.length > 0 && <section className="mt-4"><h3 className="t-label text-ink-3">Expedition context</h3><ul className="mt-2 space-y-2">{stopsIn.map(({ e, c, ci, si }) => <li key={`${e.id}${ci}${si}`} className="flex items-center gap-2 text-sm"><MapPin className="size-3.5" style={{ color: e.color }} />{e.title} · {c.title}</li>)}</ul></section>}
       <PlaceSources place={p} />
     </div>
   )

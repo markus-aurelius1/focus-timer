@@ -1,6 +1,6 @@
 import type { PlaceKind } from '@/atlas/types'
 import { Sheet } from '@/ui/Sheet'
-import { MASTERY_COLOUR, TRAVELLED } from './style'
+import { MASTERY_COLOUR, STUDIED } from './style'
 import { KIND_NAME } from './symbols'
 import { PlaceIcon } from './util'
 
@@ -25,8 +25,8 @@ export function LegendSheet({ open, onClose }: { open: boolean; onClose: () => v
         <li className="flex items-center gap-3"><Line dash="5 2.5" width={1.2} color="#3b3b3b" halo={2.6} /> State / UT boundary</li>
         <li className="flex items-center gap-3"><Line width={2.2} color="#3a7fc1" /> River (width shows importance)</li>
         <li className="flex items-center gap-3">
-          <svg width={44} height={14} aria-hidden="true"><rect x={3} y={2} width={38} height={10} rx={2} fill={TRAVELLED} fillOpacity={0.1} stroke={TRAVELLED} strokeWidth={1.7} strokeOpacity={0.8} /></svg>
-          Travelled – focus time carries you into new states
+          <svg width={44} height={14} aria-hidden="true"><rect x={3} y={2} width={38} height={10} rx={2} fill={STUDIED} fillOpacity={0.1} stroke={STUDIED} strokeWidth={1.7} strokeOpacity={0.8} /></svg>
+          Studied – recall makes places Familiar
         </li>
         <li className="flex items-center gap-3">
           <svg width={44} height={14} aria-hidden="true"><rect x={3} y={2} width={38} height={10} rx={2} fill="#3f8f46" fillOpacity={0.16} stroke="#2e6b33" strokeDasharray="3 2" /></svg>
@@ -53,7 +53,7 @@ export function LegendSheet({ open, onClose }: { open: boolean; onClose: () => v
         ))}
         <li className="flex items-center gap-2.5"><PlaceIcon kind="park" tags={['tiger-reserve']} /> Tiger reserve</li>
         <li className="flex items-center gap-2.5">
-          <span className="flex size-6 items-center justify-center rounded-full" style={{ boxShadow: `inset 0 0 0 1.3px ${TRAVELLED}`, background: `color-mix(in srgb, ${TRAVELLED} 14%, transparent)` }}><PlaceIcon kind="peak" /></span> Travelled
+          <span className="flex size-6 items-center justify-center rounded-full" style={{ boxShadow: `inset 0 0 0 1.3px ${STUDIED}`, background: `color-mix(in srgb, ${STUDIED} 14%, transparent)` }}><PlaceIcon kind="peak" /></span> Studied
         </li>
       </ul>
       <p className="mt-5 t-label text-[12px] text-ink-3">Mastery</p>

@@ -1,6 +1,6 @@
 /**
  * Field Review: a short run of recall questions. Used for the daily review,
- * "Test me" on a place card, break-time questions and expedition checkpoints.
+ * "Test me" on a place card and spaced reviews.
  */
 import { AnimatePresence, motion } from 'motion/react'
 import { ArrowRight, Check, RotateCcw, Sparkles, X } from 'lucide-react'

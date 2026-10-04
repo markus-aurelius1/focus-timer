@@ -1,4 +1,4 @@
-/** Short notes without leaving the reading list: the same dated collection as the Notes workspace, in a small Sheet. */
+/** Short notes without leaving the reading list: the preserved dated collection, in a small Sheet. */
 import { Printer } from 'lucide-react'
 import { Button } from '@/ui/controls'
 import { Sheet } from '@/ui/Sheet'

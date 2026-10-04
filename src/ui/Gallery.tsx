@@ -182,7 +182,7 @@ export default function Gallery() {
         />
         <Switch checked={on} onChange={setOn} label="Example switch" />
         <Switch checked={false} onChange={() => {}} label="Disabled switch" disabled />
-        <Checkbox checked={check} onChange={setCheck} label="Example task" />
+        <Checkbox checked={check} onChange={setCheck} label="Example selection" />
         <Checkbox checked onChange={() => {}} label="Done task" />
         <Checkbox checked={check} onChange={setCheck} label="Square" shape="square" size="sm" />
         <Checkbox checked={false} onChange={() => {}} label="High priority" ring="var(--danger)" />
@@ -190,7 +190,7 @@ export default function Gallery() {
 
       <Section title="Rows and groups">
         <Group className="w-full" label="Example settings">
-          <SwitchRow title="Follow the timer" description="Sounds start, pause and stop with your session." checked={on} onChange={setOn} icon={<Headphones />} />
+          <SwitchRow title="Haptics" description="Gentle feedback on supported devices." checked={on} onChange={setOn} icon={<Headphones />} />
           <ListRow title="A row that opens something" meta="With a quiet second line" trailing="Value" onClick={() => {}} className="px-4" />
           <ListRow
             title="A row with actions beside it"

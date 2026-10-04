@@ -6,7 +6,7 @@
  *   fast     140 ms   hover, small reveals, exits
  *   base     220 ms   popovers, content swaps, list items
  *   slow     320 ms   panels, sheets, layout moves
- *   calm     520 ms   a change of mode (entering a session, immersive)
+ *   calm     520 ms   a calm change of mode
  *
  * Use a *role* from `M` (below) rather than a duration: a role says what the
  * movement is for, and under reduced motion each role already has its quieter
@@ -31,7 +31,7 @@ export const DUR = {
   fast: 0.14,
   base: 0.22,
   slow: 0.32,
-  /** Entering or leaving a session – slow enough to read as a change of mode. */
+  /** A calm change of mode – slow enough to read as a change of mode. */
   calm: 0.52,
   /** Earlier names for fast and slow. */
   micro: 0.14,
@@ -155,7 +155,7 @@ export const M = {
   surface: SPRING.surface,
   settle: SPRING.settle,
   press: SPRING.snap,
-  /** A bar or ring taking a step (continuous progress is a compositor animation: timer/useProgressAnimation.ts). */
+  /** A bar or ring taking a step (continuous progress uses a compositor animation). */
   progress: T.base,
 } as const
 

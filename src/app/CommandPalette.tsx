@@ -1,7 +1,4 @@
-/**
- * Command palette (Ctrl/⌘ K): jump anywhere, run common actions, find a task,
- * or capture a new one in natural language ("Physics revision tomorrow 5pm #exam").
- */
+/** Atlas place search and validated Atlas, News and shared settings commands. */
 import { AnimatePresence, motion } from 'motion/react'
 import { CornerDownLeft, Search } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -106,7 +103,7 @@ function Palette() {
                 void run(commands[active])
               }
             }}
-            placeholder="Search, run a command, or capture a task…"
+            placeholder="Search places or run a command…"
             className="h-[3.25rem] min-w-0 flex-1 bg-transparent text-[16px] font-medium outline-none placeholder:font-normal placeholder:text-ink-3"
             role="combobox"
             aria-label="Search and commands"

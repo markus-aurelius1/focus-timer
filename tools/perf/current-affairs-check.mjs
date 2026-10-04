@@ -72,7 +72,7 @@ try {
     mode = 'fail'
     await prepare(page, base, { sample: false, route: '#/current-affairs' }); await page.getByRole('alert').waitFor()
     check(tag, 'first-load failure is visible')
-    if (width === 375) check(tag, 'bottom navigation remains usable', await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('button').evaluateAll(buttons => buttons.length === 5 && buttons.every(el => { const r = el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.x >= 0 && r.right <= innerWidth })))
+    if (width === 375) check(tag, 'bottom navigation remains usable', await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('button').evaluateAll(buttons => buttons.length === 3 && buttons.every(el => { const r = el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.x >= 0 && r.right <= innerWidth })))
     mode = 'slow'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText('Loading trusted feeds…').waitFor(); check(tag, 'loading status')
     await rows.first().waitFor(); mode = 'ok'
     check(tag, 'only three views and To be Read is default', await reading.getByRole('button').count() === 3 && await reading.getByRole('button', { name: 'To be Read', exact: true }).getAttribute('aria-pressed') === 'true')

@@ -49,8 +49,7 @@ export function UnitDetails({ ex, unit, onSelect }: { ex: Exploration; unit: { t
           <span className="text-[12px] text-ink-3">{DEVELOPMENT_HINT[dev.level]}</span>
         </p>
         <div className="mt-2.5 space-y-1.5">
-          {bar(dev.discovered, 'var(--ink-3)', 'Travelled')}
-          {bar(dev.familiar, MASTERY_COLOUR.familiar, 'Familiar')}
+                    {bar(dev.familiar, MASTERY_COLOUR.familiar, 'Familiar')}
           {bar(dev.strong, MASTERY_COLOUR.strong, 'Strong')}
           {bar(dev.mastered, MASTERY_COLOUR.mastered, 'Mastered')}
         </div>

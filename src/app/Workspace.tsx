@@ -30,7 +30,7 @@ export const workspaceColumn = (width: WorkspaceWidth = 'md') => cn('mx-auto w-f
  * The header and toolbar of every workspace share this one column, whatever
  * reading width the content beneath has chosen – so the title, the tabs and
  * the actions are in the same place on every screen and do not move as you
- * navigate. (Focus and Home, which have their own headers, use it too.)
+ * navigate.
  */
 export const HEADER_COLUMN = 'mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8'
 
@@ -74,7 +74,7 @@ export interface WorkspaceProps {
   actions?: ReactNode
   /** A second header row: view tabs, range pickers, filters. */
   toolbar?: ReactNode
-  /** Phones: show a way back to Home (for screens that are not on the tab bar). */
+  /** Phones: show a way back for screens that are not on the tab bar. */
   back?: boolean
   width?: WorkspaceWidth
   children: ReactNode
@@ -92,7 +92,7 @@ export function Workspace({ title, titleId, meta, actions, toolbar, back, width 
       <header className={cn('pt-safe sticky top-0 z-20 -mt-px bg-bg transition-shadow duration-200', stuck && (toolbar ? 'max-md:shadow-[0_1px_0_var(--line)]' : 'shadow-[0_1px_0_var(--line)]'))}>
         <div className={cn(head, 'flex h-14 items-center gap-2')}>
           {back && (
-            // Back goes to the screen you came from inside the app, or Home when this is where the app opened – never out of the app.
+            // Back goes to the previous screen, or Atlas at a fresh launch.
             <IconButton label="Back" tip="none" className="-ml-2 md:hidden" onClick={() => goBack()}>
               <ArrowLeft className="size-5" />
             </IconButton>

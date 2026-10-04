@@ -4,13 +4,11 @@
  * IndexedDB and refers to places by id.
  */
 import { useEffect, useSyncExternalStore } from 'react'
-import type { CountryInfo, Expedition, Place, PlacesFile, SheetId, StateInfo } from './types'
+import type { CountryInfo, Place, PlacesFile, SheetId, StateInfo } from './types'
 
 export interface AtlasData {
   places: Place[]
   byId: Map<string, Place>
-  expeditions: Expedition[]
-  expedition: (id: string | null | undefined) => Expedition | undefined
   states: StateInfo[]
   state: (id: string | null | undefined) => StateInfo | undefined
   countries: CountryInfo[]
@@ -44,14 +42,11 @@ export function indexAtlas(file: PlacesFile): AtlasData {
       }
     }
   }
-  const expById = new Map(file.expeditions.map((e) => [e.id, e]))
   const stateById = new Map(file.states.map((s) => [s.id, s]))
   const countryByIso = new Map(file.countries.map((c) => [c.iso, c]))
   return {
     places: file.places,
     byId,
-    expeditions: file.expeditions,
-    expedition: (id) => (id ? expById.get(id) : undefined),
     states: file.states,
     state: (id) => (id ? stateById.get(id) : undefined),
     countries: file.countries,

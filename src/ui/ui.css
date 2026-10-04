@@ -832,19 +832,13 @@
   animation-name: fade-in !important;
   animation-duration: var(--dur-fast) !important;
 }
-/* Loops are off: halos, breathing rings, pulses, shimmer, ships, flowing rivers, the spinner. */
+/* Loops are off: halos, breathing rings, pulses, shimmer, ships and the spinner. */
 :root[data-motion='reduced'] .animate-pulse,
 :root[data-motion='reduced'] .animate-spin,
 :root[data-motion='reduced'] .animate-breathe,
 :root[data-motion='reduced'] .skeleton,
-:root[data-motion='reduced'] .dial-halo,
-:root[data-motion='reduced'] .dial-digits,
-:root[data-motion='reduced'] .timer-main::after,
-:root[data-motion='reduced'] .ripple,
-:root[data-motion='reduced'] .ambience-drift,
 :root[data-motion='reduced'] .atlas-ring,
 :root[data-motion='reduced'] .atlas-ship,
-:root[data-motion='reduced'] .atlas-flow,
 :root[data-motion='reduced'] circle.atlas-pulse {
   animation: none !important;
 }

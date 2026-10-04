@@ -6,9 +6,6 @@ import { create, patch, remove } from './repo'
 import { ensureSeed } from './seed'
 import { changesSince, applyChanges } from './sync'
 import { createBackup, parseBackup, restoreBackup } from './backup'
-import { importSessionsCsv, sessionsCsv, importTasksCsv, tasksCsv } from './csvio'
-import { addTask, completeTask } from '@/planner/tasks'
-import { todayKey, addDaysKey } from '@/lib/time'
 
 beforeEach(async () => {
   await db.delete()
@@ -20,9 +17,10 @@ describe('data layer', () => {
     await ensureSeed()
     await ensureSeed()
     expect(await db.settings.count()).toBe(1)
-    expect(await db.profiles.count()).toBeGreaterThan(3)
+    expect(await db.profiles.count()).toBe(0)
+    expect(await db.tasks.count()).toBe(0)
     const settings = await db.settings.get('settings')
-    expect(settings?.activeProfileId).toBeTruthy()
+    expect(settings?.activeProfileId).toBeNull()
   })
 
   it('records tombstones on delete and reports changes since a cursor', async () => {
@@ -58,31 +56,6 @@ describe('data layer', () => {
     expect(() => parseBackup('{"app":"other"}')).toThrow()
   })
 
-  it('round-trips sessions and tasks through CSV', async () => {
-    await importSessionsCsv('date,time,minutes,subject,note\n2026-09-01,09:00,50,Chemistry,"Titration, part 2"\n2026-09-02,,25,Chemistry,\n')
-    expect(await db.sessions.count()).toBe(2)
-    expect((await db.labels.toArray()).map((l) => l.name)).toContain('Chemistry')
-    const csv = await sessionsCsv()
-    expect(csv).toContain('Titration, part 2')
-    await db.sessions.clear()
-    const again = await importSessionsCsv(csv)
-    expect(again.imported).toBe(2)
-
-    await importTasksCsv('title,status,priority,due_date,subtasks\nRead ch. 4,open,high,2026-10-01,[x] skim | [ ] notes\n')
-    const [task] = await db.tasks.toArray()
-    expect(task.priority).toBe(3)
-    expect(task.subtasks.map((s) => s.done)).toEqual([true, false])
-    expect(await tasksCsv()).toContain('Read ch. 4')
-  })
-
-  it('completing a recurring task spawns the next instance', async () => {
-    const today = todayKey()
-    const task = await addTask({ title: 'Flashcards', plannedFor: today, recurrence: { freq: 'daily', interval: 1 } })
-    const next = await completeTask(task)
-    expect(next?.plannedFor).toBe(addDaysKey(today, 1))
-    expect(next?.seriesId).toBe(task.seriesId)
-    expect((await db.tasks.get(task.id))?.done).toBe(1)
-  })
 })
 
 describe('Atlas migration (v1 → v2)', () => {

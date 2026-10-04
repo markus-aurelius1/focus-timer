@@ -1,6 +1,6 @@
 /**
  * Catches a render error in its children so one broken screen or dialog never
- * blanks the app. The shell (and with it the running timer) sits outside the
+ * blanks the app. The shell sits outside the
  * route boundary; dialogs carry their own, so the screen beneath stays intact.
  *
  * A boundary clears itself when `resetKey` changes (a new route), or when the
@@ -57,7 +57,7 @@ export function ScreenError({ error, retry }: { error: Error; retry: () => void 
     <div className="pt-safe mx-auto flex min-h-[60dvh] w-full max-w-md flex-col items-center justify-center px-6 py-12 text-center" role="alert">
       <p className="t-title">{chunk ? 'This screen couldn’t load' : 'This screen ran into a problem'}</p>
       <p className="mt-2 text-sm leading-relaxed text-ink-2">
-        {chunk ? 'Tars may have been updated, or the connection dropped. Your timer and your data are safe.' : 'Your timer keeps running and your data is safe on this device.'}
+        {chunk ? 'Tars may have been updated, or the connection dropped. Your data is safe on this device.' : 'Your data is safe on this device.'}
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         {!chunk && <Button onClick={retry}>Try again</Button>}
@@ -75,7 +75,7 @@ export function AppError() {
     <div className="flex min-h-dvh flex-col items-center justify-center gap-3 p-8 text-center" role="alert">
       <LogoMark className="size-10 text-accent" />
       <p className="font-display text-xl">Tars ran into a problem.</p>
-      <p className="max-w-sm text-sm text-ink-2">Your sessions, tasks and progress are saved on this device. Reload to carry on – a running timer picks up where it was.</p>
+      <p className="max-w-sm text-sm text-ink-2">Your Atlas progress and reading state are saved on this device. Reload to carry on.</p>
       <Button variant="primary" className="mt-2" onClick={reload}>
         Reload Tars
       </Button>

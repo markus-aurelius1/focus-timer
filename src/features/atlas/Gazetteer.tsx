@@ -94,7 +94,7 @@ export function GazetteerSheet({ ex, open, onClose, onPick, sheet, initialQuery 
   const known = inScope.filter((r) => ex.state.discovered.has(r.p.id)).length
 
   return (
-    <Sheet open={open} onClose={onClose} title="Gazetteer" subtitle={`${known} of ${inScope.length} travelled`} size="lg">
+    <Sheet open={open} onClose={onClose} title="Gazetteer" subtitle={`${known} of ${inScope.length} Familiar`} size="lg">
       <div className="sticky top-0 z-10 -mx-5 bg-surface px-5 pb-3">
         <label className="relative block">
           <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-3" />
@@ -103,7 +103,7 @@ export function GazetteerSheet({ ex, open, onClose, onPick, sheet, initialQuery 
         <div className="mt-3 flex items-center justify-between gap-3">
           <Segmented value={scope} onChange={setScope} options={[{ value: 'india', label: 'India' }, { value: 'world', label: 'World' }]} />
           <label className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
-            Travelled only <Toggle checked={onlyKnown} onChange={setOnlyKnown} label="Travelled only" />
+            Familiar only <Toggle checked={onlyKnown} onChange={setOnlyKnown} label="Familiar only" />
           </label>
         </div>
         {hasPriority && (
@@ -148,7 +148,7 @@ export function GazetteerSheet({ ex, open, onClose, onPick, sheet, initialQuery 
                 )}
                 {found || atLeast(lvl, 'familiar') ? (
                   <span className="shrink-0 text-[12px] font-bold" style={{ color: lvl === 'discovered' ? 'var(--ink-3)' : MASTERY_TEXT_COLOUR[lvl] }}>
-                    {found && lvl === 'discovered' ? 'Travelled' : MASTERY_LABEL[lvl]}
+                    {found && lvl === 'discovered' ? 'Familiar' : MASTERY_LABEL[lvl]}
                   </span>
                 ) : (
                   <span className="text-xs font-semibold text-ink-3">Accessible</span>

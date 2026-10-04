@@ -19,53 +19,53 @@ afterEach(() => {
 
 describe('useRouteState', () => {
   it('keeps its value across unmount and remount', () => {
-    const first = render(<Counter id="calendar:n" />)
+    const first = render(<Counter id="atlas:n" />)
     act(() => screen.getByRole('button').click())
     act(() => screen.getByRole('button').click())
-    expect(screen.getByRole('button').textContent).toBe('calendar:n=2')
+    expect(screen.getByRole('button').textContent).toBe('atlas:n=2')
     first.unmount()
-    render(<Counter id="calendar:n" />)
-    expect(screen.getByRole('button').textContent).toBe('calendar:n=2')
-    expect(peekRouteState('calendar:n')).toBe(2)
+    render(<Counter id="atlas:n" />)
+    expect(screen.getByRole('button').textContent).toBe('atlas:n=2')
+    expect(peekRouteState('atlas:n')).toBe(2)
   })
 
   it('keeps two components on the same key in step, and different keys apart', () => {
     render(
       <>
-        <Counter id="insights:a" />
-        <Counter id="insights:a" />
-        <Counter id="insights:b" start={10} />
+        <Counter id="current-affairs:a" />
+        <Counter id="current-affairs:a" />
+        <Counter id="current-affairs:b" start={10} />
       </>,
     )
     const [one, two, other] = screen.getAllByRole('button')
     act(() => one.click())
-    expect(one.textContent).toBe('insights:a=1')
-    expect(two.textContent).toBe('insights:a=1')
-    expect(other.textContent).toBe('insights:b=10')
+    expect(one.textContent).toBe('current-affairs:a=1')
+    expect(two.textContent).toBe('current-affairs:a=1')
+    expect(other.textContent).toBe('current-affairs:b=10')
   })
 
   it('resetting a route returns its state to the defaults, live, and leaves other routes alone', () => {
     let seeds = 0
     render(
       <>
-        <Counter id="tasks:filter" start={() => 5 + seeds++ * 0} />
-        <Counter id="calendar:view" />
+        <Counter id="settings:filter" start={() => 5 + seeds++ * 0} />
+        <Counter id="atlas:view" />
       </>,
     )
-    const [tasks, calendar] = screen.getAllByRole('button')
-    act(() => tasks.click())
-    act(() => calendar.click())
-    rememberScroll('tasks', 480)
-    rememberScroll('calendar', 120)
+    const [settings, atlas] = screen.getAllByRole('button')
+    act(() => settings.click())
+    act(() => atlas.click())
+    rememberScroll('settings', 480)
+    rememberScroll('atlas', 120)
     const seen: string[] = []
     const off = onRouteReset((r) => seen.push(r))
-    act(() => resetRoute('tasks'))
+    act(() => resetRoute('settings'))
     off()
-    expect(tasks.textContent).toBe('tasks:filter=5')
-    expect(calendar.textContent).toBe('calendar:view=1')
-    expect(scrollFor('tasks')).toBe(0)
-    expect(scrollFor('calendar')).toBe(120)
-    expect(seen).toEqual(['tasks'])
+    expect(settings.textContent).toBe('settings:filter=5')
+    expect(atlas.textContent).toBe('atlas:view=1')
+    expect(scrollFor('settings')).toBe(0)
+    expect(scrollFor('atlas')).toBe(120)
+    expect(seen).toEqual(['settings'])
     // The lazy default was computed once per mount, not again on reset.
     expect(seeds).toBe(1)
   })
@@ -73,15 +73,15 @@ describe('useRouteState', () => {
   it('a route name that is a prefix of another does not reset it', () => {
     render(
       <>
-        <Counter id="notes:view" />
-        <Counter id="notes-archive:view" />
+        <Counter id="atlas:view" />
+        <Counter id="atlas-archive:view" />
       </>,
     )
     const [a, b] = screen.getAllByRole('button')
     act(() => a.click())
     act(() => b.click())
-    act(() => resetRoute('notes'))
-    expect(a.textContent).toBe('notes:view=0')
-    expect(b.textContent).toBe('notes-archive:view=1')
+    act(() => resetRoute('atlas'))
+    expect(a.textContent).toBe('atlas:view=0')
+    expect(b.textContent).toBe('atlas-archive:view=1')
   })
 })

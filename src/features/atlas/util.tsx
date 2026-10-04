@@ -58,7 +58,7 @@ export const DEVELOPMENT_LABEL: Record<Development, string> = {
   flourishing: 'Flourishing',
 }
 export const DEVELOPMENT_HINT: Record<Development, string> = {
-  uncharted: 'Travel or test a place here to chart it',
+  uncharted: 'Test a place here to chart it',
   charted: '30% of its places Familiar to settle it',
   settled: '60% Strong to develop it',
   developed: '80% Mastered to make it flourish',
@@ -68,7 +68,7 @@ export const DEVELOPMENT_HINT: Record<Development, string> = {
 /** How far a state (or country) has developed – driven by mastery of its places. */
 export function developmentOf(ex: Exploration, unit: string) {
   // Preserve the historical denominator for untouched later additions, while
-  // counting learning independently of focus-powered travel.
+  // counting recall history independently.
   const places = (ex.atlas.inUnit.get(unit) ?? []).filter((p) => !p.added || ex.state.discovered.has(p.id) || ex.mastery.has(p.id))
   const total = places.length
   let discovered = 0
@@ -91,11 +91,6 @@ export function developmentOf(ex: Exploration, unit: string) {
 }
 
 export const masteryFn = (ex: Exploration) => (id: string): MasteryLevel => levelOf(id, ex.state.discovered.has(id), ex.mastery, true)
-
-export function minutesText(m: number): string {
-  const r = Math.max(1, Math.ceil(m))
-  return r >= 90 ? `${Math.floor(r / 60)} h ${r % 60 ? `${r % 60} min` : ''}`.trim() : `${r} min`
-}
 
 /** Designations and study tags, as shown on place cards and matched by search. */
 export const TAG_LABEL: Record<string, string> = {

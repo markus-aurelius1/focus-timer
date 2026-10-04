@@ -1,13 +1,8 @@
 import { BookOpen } from 'lucide-react'
 import { useHotspots } from '@/atlas/useHotspots'
-/**
- * The Atlas: a real atlas map that fills in as you study. Focus time moves your
- * expedition and uncovers places; recall makes them Familiar, Strong and
- * Mastered; mastered regions develop. Every place in the gazetteer is on the
- * map – the ones not yet discovered are drawn quietly until you reach them.
- */
+/** The offline Atlas: freely accessible places, canonical PYQs and recall-based mastery. */
 import { AnimatePresence, motion } from 'motion/react'
-import { Check, ChevronUp, Crosshair, Flag, GraduationCap, Info, Layers, Lock, Maximize2, Minimize2, Minus, PanelRightClose, PanelRightOpen, Plus, Search } from 'lucide-react'
+import { Check, ChevronUp, Crosshair, GraduationCap, Info, Layers, Lock, Maximize2, Minimize2, Minus, PanelRightClose, PanelRightOpen, Plus, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { consumeParams, currentRoute, useRoute, type Route } from '@/app/router'
 import { isTyping } from '@/app/shortcuts'
@@ -28,10 +23,8 @@ import { haptics } from '@/services/haptics'
 import { Button, Chip, IconButton, Segmented, Toggle } from '@/ui/controls'
 import { anyLayerOpen, Sheet } from '@/ui/Sheet'
 import { useIsDesktop } from '@/ui/useMedia'
-import { AtlasMap, type AtlasMapHandle, type Highlight, type MapInsets, type MapTarget, type RouteOverlay, setAtlasMapAwake } from './AtlasMap'
-import { AtlasPanel, expeditionStatus, ExplorerCard } from './AtlasPanel'
-import { BaseCampPicker } from './BaseCamp'
-import { ExpeditionSheet } from './ExpeditionSheet'
+import { AtlasMap, type AtlasMapHandle, type Highlight, type MapInsets, type MapTarget, setAtlasMapAwake } from './AtlasMap'
+import { AtlasPanel, ExplorerCard } from './AtlasPanel'
 import { FieldReviewSheet, type ReviewRequest } from './FieldReview'
 import { GazetteerSheet } from './Gazetteer'
 import { kindsFor, PLACE_GROUPS } from './groups'
@@ -48,7 +41,7 @@ import { onRouteReset, useRouteState } from '@/app/routeState'
 import { useScreenActive } from '@/app/screenActive'
 
 type Selection = { type: 'place'; id: string } | { type: 'state'; id: string } | { type: 'country'; id: string }
-type Panel = 'expeditions' | 'gazetteer' | 'legend' | 'basecamp' | 'more' | null
+type Panel = 'gazetteer' | 'legend' | 'more' | null
 
 const VISIT_KEY = KEYS.atlasVisit
 const readVisit = () => {
@@ -155,7 +148,7 @@ function Atlas({ ex }: { ex: Exploration }) {
       }),
     [],
   )
-  // Base camp stays an optional travel choice; opening knowledge never forces a setup dialog.
+  // Place knowledge and recall are freely accessible.
 
   const view = viewFor(settings.atlasStyle, ex.level.rankIndex)
   const mastery = useMemo(() => masteryFn(ex), [ex])
@@ -187,23 +180,6 @@ function Atlas({ ex }: { ex: Exploration }) {
   }, [places, discovered])
   const explored = useMemo(() => (shownId === 'world' ? new Set([...ex.state.explored].map((u) => u.toLowerCase())) : ex.state.explored), [ex, shownId])
   const kinds = useMemo(() => kindsFor(layers.groups), [layers.groups])
-
-  const routeOverlay = useMemo<RouteOverlay | null>(() => {
-    const a = ex.state.active
-    if (!a || a.complete || a.expedition.sheet !== shownId) return null
-    // The current chapter only: the way travelled, and the leg ahead.
-    const chapter = a.next?.stop.chapter ?? a.stops[a.stops.length - 1]?.chapter ?? 0
-    const shown = a.stops.filter((s) => s.chapter === chapter && (s.reached || s === a.next?.stop))
-    if (!shown.length) return null
-    return { points: shown.map((s) => ({ id: s.place.id, x: s.place.x, y: s.place.y, state: s.reached ? 'reached' : 'next' })) }
-  }, [ex, shownId])
-  const previousExpedition = useRef(ex.state.active?.expedition.id)
-  useEffect(() => {
-    const active = ex.state.active?.expedition
-    if (previousExpedition.current === active?.id) return
-    previousExpedition.current = active?.id
-    if (active) setSheetId(active.sheet)
-  }, [ex.state.active])
 
   const living = useMemo(() => livingWorld(ex, shownId), [ex, shownId])
   const selectedPlace = sel?.type === 'place' ? ex.atlas.byId.get(sel.id) : undefined
@@ -280,7 +256,7 @@ function Atlas({ ex }: { ex: Exploration }) {
     [select, ex, shownId, flyToPlace],
   )
 
-  // Deep links: #/atlas?place=…, ?review=1, ?expeditions=1. Called by <AtlasPresence> with each address the Atlas is opened on.
+  // Deep links: #/atlas?place=…, ?review=1. Called by <AtlasPresence> with each address the Atlas is opened on.
   const onLink = (route: Route) => {
     // The Atlas may already be open on another sheet when a link names one.
     const wanted = route.params.get('sheet')
@@ -293,7 +269,6 @@ function Atlas({ ex }: { ex: Exploration }) {
       flyToPlace(p, { sheetOpen: true })
     }
     if (route.params.get('review') && ex.due.length) setReview({ placeIds: ex.due.slice(0, 8).map((d) => d.id), source: 'review' })
-    if (route.params.get('expeditions')) setPanel('expeditions')
     if (route.params.get('search')) { setSearchQuery(route.params.get('search')!); setPanel('gazetteer') }
     if (route.params.get('test') && ex.atlas.byId.has(route.params.get('test')!)) setReview({ placeIds: [route.params.get('test')!], source: 'card' })
     if (route.params.get('questions')) setBrowserFilter({ placeId: route.params.get('placeId') ?? undefined, family: route.params.get('family') ?? undefined, year: route.params.get('year') ? Number(route.params.get('year')) : undefined, kind: route.params.get('kind') ?? undefined, mode: route.params.get('mode') ?? undefined })
@@ -306,14 +281,12 @@ function Atlas({ ex }: { ex: Exploration }) {
     if (ids.length) setReview({ placeIds: ids, source: 'review' })
   }
   const actions = {
-    openExpeditions: () => setPanel('expeditions'),
     startReview,
     pickState: (id: string) => {
       setPanel(null)
       if (sheetId !== 'india') setSheetId('india')
       setSel({ type: 'state', id })
     },
-    openBaseCamp: () => setPanel('basecamp'),
   }
 
   const details = sel ? (
@@ -336,7 +309,6 @@ function Atlas({ ex }: { ex: Exploration }) {
 
   // Stable while nothing about it changes, so the (memoised) map is not re-rendered by the screen around it.
   const mapInsets = useMemo<MapInsets>(() => (desktop ? { top: 56, bottom: 0, right: inspectorOpen ? INSPECTOR_CLEAR : 0 } : { top: 56, bottom: 160 }), [desktop, inspectorOpen])
-  const status = expeditionStatus(ex)
   const setLayers = (patch: Partial<AtlasLayers>) => void updateSettings({ atlasLayers: { ...layers, ...patch } })
 
   return (
@@ -363,7 +335,6 @@ function Atlas({ ex }: { ex: Exploration }) {
                 pyqPlaceIds={hotspotIds}
                 selectedId={sel?.type === 'place' ? sel.id : undefined}
                 highlights={highlights}
-                route={routeOverlay}
                 mutedLabels={muted}
                 linkedLabels={linked}
                 living={living}
@@ -427,20 +398,9 @@ function Atlas({ ex }: { ex: Exploration }) {
           <div data-map-ui className={cn('absolute inset-x-3 bottom-3', full.on && 'pb-[env(safe-area-inset-bottom)]')}>
             <div className="rounded-[20px] bg-surface p-3.5 shadow-[0_0_0_1px_var(--line),var(--shadow-lift-value)]">
               <ExplorerCard ex={ex} compact />
-              {status && (
-                <button type="button" onClick={() => setPanel('expeditions')} className="mt-2.5 flex w-full items-center gap-2 text-left">
-                  <Flag className="size-4 shrink-0" style={{ color: status.color }} />
-                  <span className="min-w-0 flex-1 truncate text-[13.5px]">
-                    <b>{status.title}</b> <span className={cn(status.blocked ? 'font-semibold text-accent' : 'text-ink-2')}>· {status.line}</span>
-                  </span>
-                </button>
-              )}
               <div className="mt-3 flex gap-2">
                 <Button size="sm" variant={ex.due.length ? 'primary' : 'secondary'} className="flex-1" icon={<GraduationCap className="size-3.5" />} onClick={startReview} disabled={!ex.due.length}>
                   Review{ex.due.length ? ` · ${Math.min(ex.due.length, 99)}` : ''}
-                </Button>
-                <Button size="sm" className="flex-1" icon={<Flag className="size-3.5" />} onClick={() => setPanel('expeditions')}>
-                  Expeditions
                 </Button>
                 <IconButton label="More" size="sm" variant="secondary" onClick={() => setPanel('more')}>
                   <ChevronUp className="size-4" />
@@ -480,19 +440,6 @@ function Atlas({ ex }: { ex: Exploration }) {
           <AtlasPanel ex={ex} actions={actions} /><OfflineAtlas />
         </Sheet>
       )}
-      <ExpeditionSheet
-        ex={ex}
-        open={panel === 'expeditions'}
-        onClose={() => setPanel(null)}
-        onCheckpoint={(ids, title) => {
-          setPanel(null)
-          setReview({ placeIds: ids, source: 'checkpoint', title })
-        }}
-        onPlace={(id) => {
-          setPanel(null)
-          selectAndShow({ type: 'place', id })
-        }}
-      />
       <GazetteerSheet
         ex={ex}
         sheet={sheetId}
@@ -508,9 +455,6 @@ function Atlas({ ex }: { ex: Exploration }) {
         }}
       />
       <LegendSheet open={panel === 'legend'} onClose={() => setPanel(null)} />
-      <Sheet open={panel === 'basecamp'} onClose={() => setPanel(null)} title={settings.baseCamp ? 'Move base camp' : 'Choose your base camp'} subtitle="Your home state starts explored, and free survey spreads outward from it." size="md">
-        <BaseCampPicker atlas={ex.atlas} current={settings.baseCamp} onDone={() => setPanel(null)} />
-      </Sheet>
       <FieldReviewSheet request={review} onClose={() => setReview(null)} />
     </div>
   )
@@ -683,7 +627,7 @@ function LayersMenu({ current, rankIndex, layers, onLayers }: {
             })}</div>
             <div className="my-1.5 border-t border-line" />
             <p className="px-3 pt-1 pb-1 t-label text-[12px] text-ink-3">Show</p>
-            <p className="px-3 py-2 text-xs text-ink-3">Every place is accessible. Focus powers travel; recall powers learning.</p>
+            <p className="px-3 py-2 text-xs text-ink-3">Every place is accessible. Recall builds familiarity and mastery.</p>
             <label className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-surface-2">
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold">Protected areas &amp; disputed regions</span>

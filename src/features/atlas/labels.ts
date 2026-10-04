@@ -25,16 +25,22 @@ export interface PlacedLabel {
   size: number
   /** Screen-space path for river labels. */
   path?: string
+  /** Prefix advances measured with the layout worker's exact bundled font; curve painters never shape text on the frame path. */
+  glyphAdvances?: number[]
+  measuredWidth?: number
+  baseline?: number
+  /** Transient worker raster; copied by curve canvases and closed when its layout is superseded/unmounted. Never stored. */
+  curveBitmap?: ImageBitmap
   muted?: boolean
   placeId?: string
-  /** Laid out beyond the view (in the overscan): it is not kept at its size during a zoom. */
+  /** Laid out beyond the view (in the overscan); the label layer keeps every word at screen size. */
   beyond?: boolean
   /** Point names: which of the four positions around the symbol was used (kept on the next layout when it still fits). */
   opt?: number
 }
 
 export interface PlacedSymbol {
-  place: Place
+  place: Pick<Place, 'id' | 'name' | 'kind' | 'level' | 'elevation'>
   x: number
   y: number
   mastery: MasteryLevel
@@ -53,28 +59,48 @@ interface Box {
 
 const overlaps = (a: Box, b: Box) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0
 
-let ctx: CanvasRenderingContext2D | null = null
+let ctx: Pick<CanvasRenderingContext2D, 'font' | 'measureText'> | null = null
 const widthCache = new Map<string, number>()
 export const FONT_SANS = 'Manrope, ui-sans-serif, system-ui, sans-serif'
 
-function measure(text: string, size: number, weight: number, italic: boolean, spacing: number): number {
-  const key = `${text}|${size}|${weight}|${italic}|${spacing}`
-  const hit = widthCache.get(key)
-  if (hit !== undefined) return hit
-  if (!ctx && typeof document !== 'undefined') ctx = document.createElement('canvas').getContext('2d')
-  let w = text.length * size * 0.58
-  if (ctx) {
-    ctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${FONT_SANS}`
-    w = ctx.measureText(text).width
+/** Manrope has no optical-size axis: measure once at 100px and scale its advances, avoiding a font parse per zoom. */
+export function measureLabel(text: string, size: number, weight: number, italic: boolean, spacing: number): number {
+  const key = text + '|' + weight + '|' + italic
+  let width = widthCache.get(key)
+  if (width === undefined) {
+    if (!ctx && typeof document !== 'undefined') ctx = document.createElement('canvas').getContext('2d')
+    width = text.length * 58
+    if (ctx) {
+      const font = (italic ? 'italic ' : '') + weight + ' 100px ' + FONT_SANS
+      if (ctx.font !== font) ctx.font = font
+      width = ctx.measureText(text).width
+    }
+    widthCache.set(key, width)
   }
-  w += spacing * size * text.length
-  widthCache.set(key, w)
-  return w
+  return (width / 100 + spacing * text.length) * size
 }
+const measure = measureLabel
 
 export function resetMeasureCache() {
   widthCache.clear()
   metricsCache.clear()
+}
+
+export function glyphAdvances(text: string, size: number, weight: number, italic: boolean, spacing: number) {
+  const chars = [...text]
+  let previous = 0
+  return chars.map((_, i) => {
+    const width = measureLabel(chars.slice(0, i + 1).join(''), size, weight, italic, spacing)
+    const advance = width - previous
+    previous = width
+    return advance
+  })
+}
+
+/** Worker layout uses the same bundled-font metrics and placement algorithm as the HTML renderer. */
+export function setLabelMeasureContext(context: Pick<CanvasRenderingContext2D, 'font' | 'measureText'>) {
+  ctx = context
+  resetMeasureCache()
 }
 
 const metricsCache = new Map<string, { ascent: number; descent: number }>()
@@ -91,7 +117,8 @@ export function fontMetrics(weight: number, italic: boolean): { ascent: number; 
   let out = { ascent: 1.09, descent: 0.31 }
   if (!ctx && typeof document !== 'undefined') ctx = document.createElement('canvas').getContext('2d')
   if (ctx) {
-    ctx.font = `${italic ? 'italic ' : ''}${weight} 100px ${FONT_SANS}`
+    const font = `${italic ? 'italic ' : ''}${weight} 100px ${FONT_SANS}`
+    if (ctx.font !== font) ctx.font = font
     const m = ctx.measureText('Hg')
     if (m.fontBoundingBoxAscent) out = { ascent: m.fontBoundingBoxAscent / 100, descent: m.fontBoundingBoxDescent / 100 }
   }
@@ -277,9 +304,10 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
     const [sx, sy] = toScreen(l.x, l.y)
     if (!inView(sx, sy)) continue
     const screenSize = l.size * t.k
+    const fontExtent = l.size * input.kFit
     if (l.kind === 'state') {
       const r = (l.radius ?? 20) * t.k
-      const size = Math.max(9, Math.min(14.5, 7 + screenSize / 55))
+      const size = Math.max(9, Math.min(14.5, 7 + fontExtent / 55))
       const w = measure(l.name.toUpperCase(), size, 700, false, 0.08)
       // Small states fall back to their standard abbreviation (e.g. "H.P.").
       let text = l.name
@@ -294,7 +322,7 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
       continue
     }
     if (l.kind === 'country') {
-      const size = input.sheetId === 'world' ? Math.max(9, Math.min(15, 6 + screenSize / 60)) : 12.5
+      const size = input.sheetId === 'world' ? Math.max(9, Math.min(15, 6 + fontExtent / 60)) : 12.5
       if (input.sheetId === 'world' && screenSize < 40 && z < 2) continue
       add({ key: `country:${l.id}`, text: l.name, style: 'country', x: sx, y: sy + size * 0.35, anchor: 'middle', size }, 90 + screenSize / 60)
       continue
@@ -303,7 +331,8 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
       const major = l.kind === 'ocean' || l.kind === 'sea' || (l.kind === 'bay' && screenSize > 200)
       if (l.kind === 'lake' && screenSize < 22 && z < 2.5) continue
       if ((l.kind === 'strait' || l.kind === 'gulf') && screenSize < 30 && z < 1.8) continue
-      const size = major ? Math.max(10, Math.min(16, 6 + screenSize / 70)) : Math.max(10, Math.min(12.5, 9 + screenSize / 150))
+      const fontMajor = l.kind === 'ocean' || l.kind === 'sea' || (l.kind === 'bay' && fontExtent > 200)
+      const size = fontMajor ? Math.max(10, Math.min(16, 6 + fontExtent / 70)) : Math.max(10, Math.min(12.5, 9 + fontExtent / 150))
       const key = `${l.kind === 'lake' ? 'lake' : 'marine'}:${l.id}`
       add({ key, text: l.name, style: major ? 'water-major' : 'water', x: sx, y: sy, anchor: 'middle', size, muted: input.mutedIds.has(key), placeId: input.linked.get(key) }, (major ? 70 : 35) + screenSize / 100 + (input.linked.has(key) ? 15 : 0))
       continue
@@ -311,7 +340,7 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
     // physical regions
     if (screenSize < 55 && z < 2.2) continue
     const major = screenSize > 160
-    const size = major ? Math.max(10, Math.min(14, 7 + screenSize / 90)) : 11
+    const size = Math.max(11, Math.min(14, 7 + fontExtent / 90))
     const key = `region:${l.id}`
     add({ key, text: l.name, style: major ? 'physical-major' : 'physical', x: sx, y: sy, anchor: 'middle', size, muted: input.mutedIds.has(key), placeId: input.linked.get(key) }, 50 + screenSize / 100 + (input.linked.has(key) ? 15 : 0))
   }
@@ -386,7 +415,8 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
       const win = c.windows.find((w) => !w.boxes.some(collides))
       if (!win) continue
       win.boxes.forEach(insert)
-      out.push({ ...c.label, x: win.x, y: win.y, path: win.d })
+      const spec = STYLE_SPEC[c.label.style]
+      out.push({ ...c.label, x: win.x, y: win.y, path: win.d, glyphAdvances: glyphAdvances(c.label.text, c.label.size, spec.weight, spec.italic, spec.spacing) })
       continue
     }
     const boxes = Array.isArray(c.box) ? c.box : [c.box]
@@ -394,5 +424,8 @@ export function layoutLabels(input: LayoutInput): PlacedLabel[] {
     boxes.forEach(insert)
     if (c.label.text) out.push(c.label)
   }
-  return out
+  return out.map((label) => {
+    const spec = STYLE_SPEC[label.style]
+    return { ...label, measuredWidth: measureLabel(label.text, label.size, spec.weight, spec.italic, spec.spacing), baseline: baselineFromTop(label.style, label.size) }
+  })
 }

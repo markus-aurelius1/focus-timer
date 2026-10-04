@@ -17,10 +17,12 @@ const ok = (name, cond, extra = '') => {
   console.log(`${cond ? 'PASS' : 'FAIL'} ${name}${extra ? ` (${extra})` : ''}`)
 }
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
-const scaleOf = (page) => page.evaluate(() => Number(document.querySelector('.atlas-layer svg > g')?.getAttribute('transform')?.match(/scale\(([\d.]+)\)/)?.[1] ?? 0))
+const scaleOf = (page) => page.evaluate(() => (document.querySelector('.atlas-base')?.atlasView?.k ?? Number(document.querySelector('.atlas-layer svg > g')?.getAttribute('transform')?.match(/scale\(([\d.]+)\)/)?.[1] ?? 0)))
 const sheetRect = (page) => page.evaluate(() => {
   const map = document.querySelector('[role=application]')?.getBoundingClientRect()
-  const sheet = document.querySelector('.atlas-layer svg > g > rect')?.getBoundingClientRect()
+  const base = document.querySelector('.atlas-base')
+  const v = base?.atlasView, size = base?.atlasSheet
+  const sheet = v && size && map ? new DOMRect(map.x + v.x, map.y + v.y, size.width * v.k, size.height * v.k) : document.querySelector('.atlas-layer svg > g > rect')?.getBoundingClientRect()
   return map && sheet ? { map: map.toJSON(), sheet: sheet.toJSON() } : null
 })
 const settle = (page, ms = 700) => page.waitForTimeout(ms)
@@ -35,6 +37,22 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
   const box = await page.locator('[role=application]').boundingBox()
   const cx = box.x + box.width * 0.45
   const cy = box.y + box.height * 0.55
+  const cdp = await ctx.newCDPSession(page)
+  const doubleClick = async (shift = false) => {
+    const timestamp = Date.now() / 1000
+    const events = [
+      ['mousePressed', 1, 0], ['mouseReleased', 1, 0.01],
+      ['mousePressed', 2, 0.10], ['mouseReleased', 2, 0.11],
+    ]
+    // Preserve the synthetic click interval independently of paint/CDP delays.
+    await Promise.all(events.map(([type, clickCount, offset]) => cdp.send('Input.dispatchMouseEvent', {
+      type, x: cx, y: cy, button: 'left', clickCount, modifiers: shift ? 8 : 0, timestamp: timestamp + offset,
+    })))
+  }
+  const waitScale = (previous, direction) => page.waitForFunction(({ previous, direction }) => {
+    const scale = (document.querySelector('.atlas-base')?.atlasView?.k ?? Number(document.querySelector('.atlas-layer svg > g')?.getAttribute('transform')?.match(/scale\(([\d.]+)\)/)?.[1] ?? 0))
+    return !document.querySelector('.atlas.atlas-moving') && (direction === 'in' ? scale > previous * 1.6 : scale > 0 && scale < previous / 1.6)
+  }, { previous, direction }, { timeout: 10000 })
   const bounds = await sheetRect(page)
   ok('desktop: sheet covers the viewport', bounds && bounds.sheet.left <= bounds.map.left + 2 && bounds.sheet.top <= bounds.map.top + 2 && bounds.sheet.right >= bounds.map.right - 2 && bounds.sheet.bottom >= bounds.map.bottom - 2, JSON.stringify(bounds))
 
@@ -43,9 +61,9 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
   await page.mouse.move(cx, cy)
   const frames = await page.evaluate(() => {
     window.__k = []
-    const g = document.querySelector('.atlas-layer')
+    const g = document.querySelector('.atlas-base') ?? document.querySelector('.atlas-layer')
     const loop = () => {
-      window.__k.push(g.style.transform)
+      window.__k.push(g.atlasView ? JSON.stringify(g.atlasView) : g.style.transform)
       if (window.__k.length < 40) requestAnimationFrame(loop)
     }
     requestAnimationFrame(loop)
@@ -53,32 +71,33 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
   })
   await page.mouse.wheel(0, -100)
   await page.waitForTimeout(700)
+  await page.waitForFunction(() => !document.querySelector('.atlas.atlas-moving'))
   const steps = await page.evaluate(() => new Set(window.__k).size)
   const k1 = await scaleOf(page)
   ok('wheel notch zooms in', frames && k1 > k0 * 1.1, `${k0} → ${k1}`)
   ok('wheel notch animates over several frames', steps >= 5, `${steps} distinct frames`)
 
-  await page.mouse.dblclick(cx, cy)
-  await settle(page)
+  await doubleClick()
+  await waitScale(k1, 'in')
   const k2 = await scaleOf(page)
   ok('double-click zooms in', k2 > k1 * 1.6, `${k1} → ${k2}`)
   await page.keyboard.down('Shift')
-  await page.mouse.dblclick(cx, cy)
+  await doubleClick(true)
   await page.keyboard.up('Shift')
-  await settle(page)
+  await waitScale(k2, 'out')
   const k3 = await scaleOf(page)
   ok('shift+double-click zooms out', k3 < k2 / 1.6, `${k2} → ${k3}`)
 
   await page.locator('[role=application]').focus()
-  const tf0 = await page.evaluate(() => document.querySelector('.atlas-layer svg > g').getAttribute('transform'))
+  const tf0 = await page.evaluate(() => (document.querySelector('.atlas-base')?.atlasView ? JSON.stringify(document.querySelector('.atlas-base').atlasView) : document.querySelector('.atlas-layer svg > g').getAttribute('transform')))
   // These check what the keys do, not how fast the map repaints (gesture-audit budgets that): the painted transform is
   // read once the repaint that follows the move has happened, however long this machine takes over it.
-  const repainted = (was) => page.waitForFunction((was) => document.querySelector('.atlas-layer svg > g').getAttribute('transform') !== was, was, { timeout: 5000 }).then(() => true, () => false)
+  const repainted = (was) => page.waitForFunction((was) => (document.querySelector('.atlas-base')?.atlasView ? JSON.stringify(document.querySelector('.atlas-base').atlasView) : document.querySelector('.atlas-layer svg > g').getAttribute('transform')) !== was, was, { timeout: 5000 }).then(() => true, () => false)
   await page.keyboard.press('ArrowRight')
   ok('arrow key pans', await repainted(tf0))
   await settle(page, 300)
   const k4 = await scaleOf(page)
-  const tf1 = await page.evaluate(() => document.querySelector('.atlas-layer svg > g').getAttribute('transform'))
+  const tf1 = await page.evaluate(() => (document.querySelector('.atlas-base')?.atlasView ? JSON.stringify(document.querySelector('.atlas-base').atlasView) : document.querySelector('.atlas-layer svg > g').getAttribute('transform')))
   await page.keyboard.press('+')
   await repainted(tf1)
   await settle(page, 300)
@@ -148,7 +167,7 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
   page.on('pageerror', (e) => errors.push(e.message))
   await prepare(page, base, { sample: true, route: '#/atlas' })
   const cdp = await ctx.newCDPSession(page)
-  const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i })) })
+  const touch = (type, pts, timestamp) => cdp.send('Input.dispatchTouchEvent', { type, ...(timestamp === undefined ? {} : { timestamp }), touchPoints: pts.map(([x, y], i) => ({ x, y, id: i })) })
   const tapAt = async (x, y) => {
     await touch('touchStart', [[x, y]])
     await touch('touchEnd', [])
@@ -165,15 +184,23 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
   // A tap may have opened a card; close it.
   if (await page.locator('[role=dialog]').isVisible().catch(() => false)) await page.keyboard.press('Escape')
   await settle(page, 400)
+  await page.waitForFunction(() => !document.querySelector('.atlas.atlas-moving'))
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   // Not awaited: CDP answers a touch only once the page has handled it, and if the map happens to be repainting after
   // the zoom above, that answer is late – the "lift" would then be sent hundreds of milliseconds after the "touch" and
   // would not be a tap at all. Real fingers are not held down by a busy frame; the app times taps by the events' own
   // timestamps for the same reason.
-  const down = touch('touchStart', [[170, 420], [230, 420]])
+  // Explicit input timestamps preserve the intended 60 ms contact even if CDP
+  // delivery or the harness's own scheduling is delayed by a busy renderer.
+  const tapTime = Date.now() / 1000
+  const down = touch('touchStart', [[170, 420], [230, 420]], tapTime)
   await page.waitForTimeout(60)
-  await touch('touchEnd', [])
+  await touch('touchEnd', [], tapTime + 0.06)
   await down
-  await settle(page)
+  await page.waitForFunction((previous) => {
+    const scale = (document.querySelector('.atlas-base')?.atlasView?.k ?? Number(document.querySelector('.atlas-layer svg > g')?.getAttribute('transform')?.match(/scale\(([\d.]+)\)/)?.[1] ?? 0))
+    return scale > 0 && scale < previous / 1.6 && !document.querySelector('.atlas.atlas-moving')
+  }, k1, { timeout: 10000 })
   const k2 = await scaleOf(page)
   ok('two-finger tap zooms out', k2 < k1 / 1.6, `${k1} → ${k2}`)
 

@@ -14,10 +14,10 @@ for (let i = 0; i < 4; i++) {
   await page.waitForTimeout(700); await page.keyboard.press('Escape'); await page.waitForTimeout(450)
   await page.evaluate(async () => { if (document.fullscreenElement) await document.exitFullscreen() })
   await page.setViewportSize({ width: 1920, height: 1080 })
-  await page.goto(base + '#/focus'); await page.waitForTimeout(1500)
+  await page.goto(base + '#/current-affairs'); await page.waitForTimeout(1500)
   const state = await page.evaluate(() => ({ hash: location.hash, width: innerWidth, height: innerHeight, chrome: document.documentElement.dataset.chrome, fs: !!document.fullscreenElement, collapsed: document.querySelector('#sidebar')?.dataset.collapsed, sidebar: document.querySelector('#sidebar') && getComputedStyle(document.querySelector('#sidebar')).display, buttons: [...document.querySelectorAll('button[aria-label]')].map((b) => b.getAttribute('aria-label')).filter((b) => /sidebar/i.test(b)) }))
   console.log(state)
-  if (state.fs || state.chrome !== undefined || state.width !== 1920 || state.height !== 1080 || state.sidebar !== 'flex') throw new Error('Fullscreen exit did not restore Focus chrome and viewport')
+  if (state.fs || state.chrome !== undefined || state.width !== 1920 || state.height !== 1080 || state.sidebar !== 'flex') throw new Error('Fullscreen exit did not restore News chrome and viewport')
   await page.screenshot({ path: `tools/perf/out/fullscreen-${i}.png` })
 }
 await browser.close()

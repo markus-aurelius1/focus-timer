@@ -1,8 +1,5 @@
 /**
- * Shared setup for the perf scripts: launch Chromium as a phone, finish
- * onboarding, optionally add the sample history, and open a route.
- *
- *   CHROMIUM_PATH=/path/to/chrome   use a specific Chromium (else playwright-core's own)
+ * Shared browser setup for Atlas and News on a fresh database.
  */
 import { chromium } from 'playwright-core'
 
@@ -13,32 +10,22 @@ export async function launch({ touch = false, dpr = 3 } = {}) {
   return { browser, ctx, page }
 }
 
-/** Fresh profile → onboarding done (no base camp) → optional sample data → route. */
-export async function prepare(page, base, { sample = true, route = '#/atlas' } = {}) {
+/** Wait for shared settings initialization, then open a route. */
+export async function prepare(page, base, { route = '#/atlas' } = {}) {
   await page.goto(base + '#/settings')
-  await page.waitForTimeout(1500)
-  const dialog = page.getByRole('dialog')
-  const cont = dialog.getByRole('button', { name: /^continue$/i })
-  if (await cont.isVisible().catch(() => false)) {
-    await cont.click()
-    await page.waitForTimeout(500)
-  }
-  const skip = dialog.getByRole('button', { name: /skip for now/i })
-  if (await skip.isVisible().catch(() => false)) {
-    await skip.click()
-    await page.waitForTimeout(500)
-  }
-  if (sample) {
-    const add = page.getByText('Preview with sample data')
-    if (await add.isVisible().catch(() => false)) {
-      await add.click()
-      await page.waitForTimeout(4000)
+  await page.locator('main.stage:not([aria-busy="true"])').waitFor()
+  const settingsHandle = await page.waitForFunction(() => new Promise((resolve) => {
+    const request = indexedDB.open('lodestar')
+    request.onerror = () => resolve(false)
+    request.onsuccess = () => {
+      const db = request.result
+      if (!db.objectStoreNames.contains('settings')) { db.close(); resolve(false); return }
+      const read = db.transaction('settings').objectStore('settings').get('settings')
+      read.onsuccess = () => { db.close(); resolve(read.result?.updatedAt > 0 ? read.result : false) }
+      read.onerror = () => { db.close(); resolve(false) }
     }
-  }
+  }))
+  await settingsHandle.dispose()
   await page.goto(base + route)
   await page.waitForTimeout(3000)
-  // The Atlas asks for a base camp on first visit.
-  const close = page.getByRole('button', { name: /close/i }).first()
-  if (await close.isVisible().catch(() => false)) await close.click()
-  await page.waitForTimeout(1000)
 }

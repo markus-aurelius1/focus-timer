@@ -1,10 +1,7 @@
-import { executeAction } from '@/tars/runtime'
 import { App as CapApp } from '@capacitor/app'
 import { MotionConfig, motion } from 'motion/react'
 import { Suspense, useDeferredValue, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { installSoundFollow, setSoundFollowsTimer } from '@/audio/follow'
-import { installAudio } from '@/audio/store'
-import { useLookups, useProfiles, useSettings, useTask } from '@/data/hooks'
+import { useSettings } from '@/data/hooks'
 import { ensureSeed } from '@/data/seed'
 import { cn } from '@/lib/cn'
 import { loadAtlas } from '@/atlas/data'
@@ -14,18 +11,11 @@ import { whenIdle } from '@/lib/lazy'
 import { useMotionPreference } from '@/lib/motion'
 import { isNative } from '@/lib/platform'
 import { setHapticsEnabled } from '@/services/haptics'
-import { onNotificationTap } from '@/services/notifications'
-import { configureReminders, startReminders } from '@/services/reminders'
-import { keepAwake } from '@/services/wakelock'
-import { enterFullscreen } from '@/services/fullscreen'
-import { clockText, useTimerValue } from '@/timer/clock'
-import type { TimerState } from '@/timer/engine'
-import { bootTimer, configureTimerRuntime, PHASE_LABEL, useTimer } from '@/timer/store'
 import { AppError, ErrorBoundary, ScreenError } from '@/ui/ErrorBoundary'
 import { ConfirmHost, Toaster } from '@/ui/feedback'
 import { LogoMark } from '@/ui/Logo'
 import { toast } from '@/ui/toast'
-import { consumeParams, currentRoute, navigate, RouteContext, useRoute, type RouteName } from './router'
+import { currentRoute, navigate, RouteContext, useRoute, type RouteName } from './router'
 import { useOnline } from '@/lib/useOnline'
 import { screenEnter } from '@/ui/motion'
 import { TarsContextBridge } from '@/tars/useContext'
@@ -53,9 +43,6 @@ function useBoot(): BootState {
         await ensureSeed()
         // Ask the browser not to evict our local-first data under storage pressure.
         void navigator.storage?.persist?.().catch(() => {})
-        bootTimer()
-        installAudio()
-        installSoundFollow()
         if (!cancelled) setState('ready')
       } catch (err) {
         console.error('[boot]', err)
@@ -72,8 +59,7 @@ function useBoot(): BootState {
 export function App() {
   const boot = useBoot()
   const settings = useSettings()
-  const immersive = useUi((s) => s.immersive)
-  useApplyTheme(settings.theme, immersive ? 'dark' : null)
+  useApplyTheme(settings.theme)
   const motion = useMotionPreference()
 
   if (boot === 'error') {
@@ -97,7 +83,7 @@ export function App() {
 }
 
 /** How a screen meets the stage: scrolling inside it, fitting it (and scrolling only if it must), or filling it. */
-const stageScroll = (route: RouteName) => (route === 'atlas' ? 'none' : route === 'focus' ? 'fit' : 'page')
+const stageScroll = (route: RouteName) => (route === 'atlas' ? 'none' : 'page')
 
 function Main({ ready }: { ready: boolean }) {
   const route = useRoute()
@@ -222,7 +208,7 @@ function Main({ ready }: { ready: boolean }) {
     }
   }, [atlasInFront, atlasKept])
   useEffect(() => (ready ? preloadRoutesWhenIdle() : undefined), [ready])
-  // Home's review count and the action context use the gazetteer if it is there. It is fetched once the app has settled, not during start-up.
+  // The review count and the action context use the gazetteer if it is there. It is fetched once the app has settled, not during start-up.
   useEffect(() => {
     if (!ready) return
     let cancel = () => {}
@@ -233,8 +219,7 @@ function Main({ ready }: { ready: boolean }) {
     }
   }, [ready])
   const scroll = stageScroll(shown)
-  // Scrolling workspaces reserve room for their scrollbar; Focus fills the stage edge to edge. Its header allows for
-  // the same width (focus.css), so the title is at the same x on both.
+  // Scrolling workspaces reserve room for their scrollbar.
   useLayoutEffect(() => {
     const el = stage.current
     if (!el || scroll !== 'page') return
@@ -247,8 +232,6 @@ function Main({ ready }: { ready: boolean }) {
           <GlobalShortcuts />
           <RuntimeSync />
           <TarsContextBridge />
-          <DeepLinks />
-          <TitleSync />
         </>
       )}
       <ShellSync route={route.name} />
@@ -275,7 +258,7 @@ function Main({ ready }: { ready: boolean }) {
                 {!atlasInFront && (
                   // Enter-only transition: the old screen leaves at once (nothing can hold it on screen), the new one rises into place.
                   <motion.div key={shown} className={cn(scroll !== 'page' && 'md:h-full')} initial={firstScreen.current ? false : screenEnter.initial} animate={screenEnter.animate}>
-                    {/* A screen that fails takes only the stage with it: the rail, the tab bar and the timer stay. */}
+                    {/* A screen that fails takes only the stage with it: the rail and the tab bar stay. */}
                     <ErrorBoundary resetKey={shown} fallback={(error, retry) => <ScreenError error={error} retry={retry} />}>
                       <Suspense fallback={<ScreenSkeleton />}>
                         <CrashTest where="route" />
@@ -314,13 +297,11 @@ function GlobalShortcuts() {
 
 /**
  * Mirrors shell state onto <html> for CSS: the rail width, hidden chrome for
- * the full-screen Atlas, and the calm "in session" look while focus runs.
+ * the full-screen Atlas, while the Atlas fills the screen.
  */
 function ShellSync({ route }: { route: RouteName }) {
   const collapsed = useUi((s) => s.sidebarCollapsed)
   const atlasFullscreen = useUi((s) => s.atlasFullscreen)
-  const immersive = useUi((s) => s.immersive)
-  const inSession = useTimer((s) => s.timer.status === 'running' && s.timer.phase === 'focus')
   // Both of these move the stage: one layout, and the movement as a transform (shellShift.ts).
   useEffect(() => {
     const root = document.documentElement.dataset
@@ -332,22 +313,14 @@ function ShellSync({ route }: { route: RouteName }) {
   }, [collapsed])
   useEffect(() => {
     const root = document.documentElement.dataset
-    const hide = (atlasFullscreen && route === 'atlas') || (immersive && route === 'focus')
+    const hide = atlasFullscreen && route === 'atlas'
     const set = () => {
       if (hide) root.chrome = 'hidden'
       else delete root.chrome
-      // Named for the checks in tools/perf and for styles that only apply to immersive focus.
-      if (immersive && route === 'focus') root.focus = 'immersive'
-      else delete root.focus
     }
     if ((root.chrome === 'hidden') === hide) set()
     else shiftStage(set)
-  }, [atlasFullscreen, immersive, route])
-  useEffect(() => {
-    const root = document.documentElement.dataset
-    if (inSession && route === 'focus') root.session = 'active'
-    else delete root.session
-  }, [inSession, route])
+  }, [atlasFullscreen, route])
   // Say when the connection comes and goes – nothing is lost either way.
   const online = useOnline()
   const first = useRef(true)
@@ -376,9 +349,7 @@ function OverlayBoundary({ children }: { children: ReactNode }) {
       fallback={() => null}
       onError={() => {
         const ui = useUi.getState()
-        ui.closeTask()
-        ui.set({ soundOpen: false, contextOpen: false, profileOpen: false, captureOpen: false, paletteOpen: false, shortcutsOpen: false, immersive: false })
-        useTimer.getState().dismissLastSession()
+        ui.set({ paletteOpen: false, shortcutsOpen: false })
         toast({ title: 'That couldn’t open', body: 'Nothing was lost. Try it again.', tone: 'warning' })
         const now = Date.now()
         failures.current = [...failures.current.filter((t) => now - t < 10_000), now]
@@ -411,92 +382,25 @@ function Screen({ name }: { name: RouteName }) {
   return <Current />
 }
 
-/** Keeps the timer, reminders, audio and device services in step with settings and data. */
+/** Shared device services; no timer, audio, reminder or session subscriptions. */
 function RuntimeSync() {
   const settings = useSettings()
-  const profiles = useProfiles()
-  const timer = useTimer((s) => s.timer)
-  const { label } = useLookups()
-  const task = useTask(timer.context.taskId)
-
-  useEffect(() => {
-    configureTimerRuntime({
-      minSessionMs: settings.minSessionSeconds * 1000,
-      endSound: settings.endSound,
-      endVolume: settings.endVolume,
-      notifications: settings.notifications,
-    })
-    configureReminders({ notifications: settings.notifications, use24h: settings.use24h })
-    setHapticsEnabled(settings.haptics)
-    setSoundFollowsTimer(settings.ambientFollowsTimer)
-  }, [settings])
-
-  useEffect(() => {
-    if (!profiles.length) return
-    const p = profiles.find((x) => x.id === settings.activeProfileId) ?? profiles[0]
-    useTimer.getState().applyProfile(p)
-  }, [profiles, settings.activeProfileId])
-
-  const labelName = label(timer.context.labelId)?.name
-  useEffect(() => {
-    configureTimerRuntime({ contextTitle: [labelName, task?.title].filter(Boolean).join(' · ') })
-  }, [labelName, task?.title])
-
-  useEffect(() => {
-    void keepAwake(settings.keepAwake && timer.status === 'running')
-  }, [settings.keepAwake, timer.status])
-
-  // Sound follows the timer through a store subscription – see audio/follow.ts.
-
-  // Optional: go immersive the moment a focus session starts.
-  const prevStatus = useRef(timer.status)
-  useEffect(() => {
-    const was = prevStatus.current
-    prevStatus.current = timer.status
-    if (settings.immersiveOnStart && was === 'idle' && timer.status === 'running' && timer.phase === 'focus') {
-      useUi.getState().set({ immersive: true })
-      void enterFullscreen()
-    }
-  }, [timer.status, timer.phase, settings.immersiveOnStart])
-
-  // Reminders + notification taps + native back button.
-  useEffect(() => {
-    const stop = startReminders((r) => navigate(r))
-    onNotificationTap((r) => navigate(r))
-    const onMessage = (e: MessageEvent) => {
-      // 'lodestar:navigate' comes from a service worker installed before the rename to Tars.
-      if ((e.data?.type === 'tars:navigate' || e.data?.type === 'lodestar:navigate') && typeof e.data.route === 'string') navigate(e.data.route)
-    }
-    navigator.serviceWorker?.addEventListener('message', onMessage)
-    return () => {
-      stop()
-      navigator.serviceWorker?.removeEventListener('message', onMessage)
-    }
-  }, [])
-
+  useEffect(() => setHapticsEnabled(settings.haptics), [settings.haptics])
+  useEffect(() => { document.title = 'Tars — Atlas & News' }, [])
   useEffect(() => {
     if (!isNative) return
     const back = CapApp.addListener('backButton', () => {
-      const ui = useUi.getState()
-      if (ui.immersive) return ui.set({ immersive: false })
-      // Back walks up to Home; from Home it leaves the app.
-      if (currentRoute().name !== 'home') navigate('#/home')
+      if (currentRoute().name !== 'atlas') navigate('#/atlas')
       else void CapApp.minimizeApp()
     })
-    // tars://focus?start=1 → #/focus?start=1 (launcher shortcuts, links, widgets).
-    // The pre-rename lodestar:// scheme stays registered for shortcuts pinned before.
-    const openDeepLink = (link: string) => {
-      const m = link.match(/^(?:tars|lodestar):\/\/(.*)$/i)
-      if (m) navigate(`#/${m[1]}`)
+    const open = (link: string) => {
+      const match = link.match(/^(?:tars|lodestar):\/\/(.*)$/i)
+      if (match) navigate('#/' + match[1])
     }
-    const url = CapApp.addListener('appUrlOpen', ({ url }) => openDeepLink(url))
-    void CapApp.getLaunchUrl().then((r) => r?.url && openDeepLink(r.url))
-    return () => {
-      void back.then((h) => h.remove())
-      void url.then((h) => h.remove())
-    }
+    const url = CapApp.addListener('appUrlOpen', ({ url }) => open(url))
+    void CapApp.getLaunchUrl().then(r => r?.url && open(r.url))
+    return () => { void back.then(h => h.remove()); void url.then(h => h.remove()) }
   }, [])
-
   useSwUpdates()
   return null
 }
@@ -511,7 +415,7 @@ function useSwUpdates() {
         onNeedRefresh() {
           toast({
             title: 'A new version is ready',
-            body: 'Reload to update – your timer keeps running.',
+            body: 'Reload to update – your data is saved on this device.',
             duration: 0,
             action: { label: 'Reload', run: () => void update(true) },
           })
@@ -526,47 +430,4 @@ function useSwUpdates() {
     }
   }, [])
 }
-
-/** Handle one-shot deep links from shortcuts, notifications and reminders. */
-function DeepLinks() {
-  const route = useRoute()
-  const params = route.params.toString()
-  useEffect(() => {
-    const p = route.params
-    if (route.name === 'focus') {
-      const blockId = p.get('block')
-      if (blockId) {
-        void executeAction('calendar.startBlock', { eventId:blockId })
-        consumeParams('block', 'date')
-      }
-      if (p.get('start') === '1') {
-        const t = useTimer.getState()
-        if (t.timer.status !== 'running') void executeAction(t.timer.status === 'paused' ? 'timer.resume' : 'timer.start', {})
-        consumeParams('start')
-      }
-    }
-    if (route.name === 'tasks') {
-      if (p.get('add') === '1') {
-        useUi.getState().set({ quickAddOpen: true })
-        consumeParams('add')
-      }
-      const taskId = p.get('task')
-      if (taskId) {
-        void executeAction('task.open', { taskId })
-        consumeParams('task')
-      }
-    }
-  }, [route.name, params])
-  return null
-}
-
-/** Show the countdown in the tab title – handy on desktop. */
-function TitleSync() {
-  const title = useTimerValue(windowTitle)
-  useEffect(() => {
-    document.title = title
-  }, [title])
-  return null
-}
-const windowTitle = (timer: TimerState, now: number) => (timer.status === 'idle' ? 'Tars — Study & Focus' : `${timer.status === 'paused' ? '❚❚ ' : ''}${clockText(timer, now)} · ${PHASE_LABEL[timer.phase]} — Tars`)
 

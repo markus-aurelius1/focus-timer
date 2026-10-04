@@ -1,111 +1,92 @@
-/**
- * Touch smoke test on a phone viewport: onboarding, timer, sheets, the other
- * screens, Atlas pan / pinch / fling / tap-to-card, and offline reload.
- *
- *   node smoke.mjs [baseUrl]      (default http://localhost:4173/, i.e. `npm run preview`)
- */
-import { launch, prepare } from './lib.mjs'
-
+/** Product regression: Atlas + News, retired links/actions, historical data and offline Atlas. */
+import assert from 'node:assert/strict'
+import { chromium } from 'playwright-core'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { prepare } from './lib.mjs'
 const base = process.argv[2] ?? 'http://localhost:4173/'
-const { browser, ctx, page } = await launch({ touch: true, dpr: 2 })
-const errors = []
-page.on('pageerror', (e) => errors.push(e.message))
-let failed = 0
-const ok = (name, cond) => {
-  if (!cond) failed++
-  console.log(`${cond ? 'PASS' : 'FAIL'} ${name}`)
-}
-
-await prepare(page, base, { sample: true, route: '#/focus' })
-
-// Timer
-await page.getByRole('button', { name: /^start focus/i }).click()
-await page.waitForTimeout(2300)
-const t1 = await page.getByRole('timer').getAttribute('aria-label')
-ok(`timer runs (${t1})`, /remaining|elapsed/.test(t1 ?? '') && !/^25:00/.test(t1 ?? ''))
-await page.getByRole('button', { name: /^pause$/i }).click()
-await page.waitForTimeout(1200)
-const t2 = await page.getByRole('timer').getAttribute('aria-label')
-await page.waitForTimeout(1200)
-ok('timer pauses', t2 === (await page.getByRole('timer').getAttribute('aria-label')))
-await page.getByRole('button', { name: /stop the timer/i }).click()
-await page.waitForTimeout(600)
-if (await page.getByRole('button', { name: /discard and reset/i }).isVisible().catch(() => false)) await page.getByRole('button', { name: /discard and reset/i }).click()
-
-// Sheets close from the backdrop
-await page.getByRole('button', { name: /timer profile/i }).first().click()
-await page.waitForTimeout(600)
-ok('profile sheet opens', await page.locator('[role=dialog]').isVisible())
-await page.touchscreen.tap(195, 30)
-await page.waitForTimeout(700)
-ok('backdrop tap closes sheet', !(await page.locator('[role=dialog]').isVisible().catch(() => false)))
-
-for (const r of ['#/home', '#/tasks', '#/calendar', '#/notes', '#/insights', '#/settings']) {
-  await page.goto(base + r)
-  await page.waitForTimeout(700)
-}
-
-// Atlas
-await page.goto(base + '#/atlas')
-await page.waitForTimeout(2500)
-// First visit asks for a base camp.
-const closeCamp = page.getByRole('button', { name: /close/i }).first()
-if (await closeCamp.isVisible().catch(() => false)) await closeCamp.click()
-await page.waitForTimeout(800)
-const cdp = await ctx.newCDPSession(page)
-const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i })) })
-const worldT = () => page.evaluate(() => document.querySelector('.atlas-layer svg > g')?.getAttribute('transform'))
-ok(`atlas names rendered (${await page.locator('.atlas-name').count()})`, (await page.locator('.atlas-name').count()) > 5)
-
-// Tap a place symbol → its card stays open → backdrop closes it.
-const sym = await page.evaluate(() => {
-  const b = [...document.querySelectorAll('.atlas-labels svg g[transform^=translate]')].map((g) => g.getBoundingClientRect()).find((r) => r.width > 5 && r.width < 30 && r.top > 120)
-  return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null
-})
-if (sym) {
-  await page.touchscreen.tap(sym.x, sym.y)
-  await page.waitForTimeout(900)
-  ok('tap on a place opens its card', await page.locator('[role=dialog]').isVisible().catch(() => false))
-  await page.touchscreen.tap(195, 30)
-  await page.waitForTimeout(700)
-} else ok('found a place symbol to tap', false)
-
-const before = await worldT()
-await touch('touchStart', [[200, 400]])
-for (let i = 1; i <= 20; i++) {
-  await touch('touchMove', [[200 - i * 5, 400 - i * 2]])
-  await page.waitForTimeout(16)
-}
-await page.waitForTimeout(80)
-await touch('touchEnd', [])
-await page.waitForTimeout(600)
-ok('one-finger pan moves the map', before !== (await worldT()))
-
-const k0 = await page.evaluate(() => document.querySelector('.atlas-layer svg > g')?.getAttribute('transform')?.match(/scale\(([\d.]+)\)/)?.[1])
-await touch('touchStart', [[170, 420], [230, 420]])
-for (let i = 1; i <= 20; i++) {
-  await touch('touchMove', [[170 - i * 4, 420], [230 + i * 4, 420]])
-  await page.waitForTimeout(16)
-}
-await touch('touchEnd', [])
-await page.waitForTimeout(700)
-const k1 = await page.evaluate(() => document.querySelector('.atlas-layer svg > g')?.getAttribute('transform')?.match(/scale\(([\d.]+)\)/)?.[1])
-ok(`pinch zooms in (${k0} → ${k1})`, Number(k1) > Number(k0) * 1.5)
-ok('moving state clears after settle', !(await page.evaluate(() => document.querySelector('[role=application]')?.classList.contains('atlas-moving'))))
-
-// Offline
-ok('service worker registered', await page.evaluate(async () => !!(await navigator.serviceWorker?.getRegistration())))
-// Wait until the worker is active (its precache complete) before going offline.
-await page.evaluate(async () => {
-  await navigator.serviceWorker.ready
-})
-await page.waitForTimeout(1500)
-await ctx.setOffline(true)
-await page.reload()
-await page.waitForTimeout(2500)
-ok('app loads offline', (await page.locator('[role=application]').count()) > 0)
-await ctx.setOffline(false)
-
-ok('no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''), errors.length === 0)
-await browser.close()
-process.exit(failed ? 1 : 0)
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
+const checks = [], errors = []
+mkdirSync('tools/perf/out/product', { recursive: true })
+const check = (tag, name, value) => { assert(value, `${tag}: ${name}`); checks.push({ tag, name }); console.log(`PASS ${tag}: ${name}`) }
+try {
+  for (const width of [375, 1366]) for (const theme of ['light', 'dark']) {
+    const tag = `${width}-${theme}`
+    const ctx = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, hasTouch: width < 600 })
+    const page = await ctx.newPage()
+    page.on('pageerror', e => errors.push(e.message))
+    await ctx.route('**/api/current-affairs*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ version: 1, fetchedAt: new Date().toISOString(), sources: [], items: [] }) }))
+    await prepare(page, base)
+    await page.goto(base)
+    await page.getByRole('application').waitFor()
+    check(tag, 'landing is Atlas', page.url().endsWith('#/atlas'))
+    const nav = width < 600 ? page.getByRole('navigation', { name: 'Main', exact: true }) : page.getByRole('navigation', { name: 'Workspaces', exact: true })
+    check(tag, 'primary destinations are Atlas and News', await nav.getByRole('button', { name: 'Atlas', exact: true }).isVisible() && await nav.getByRole('button', { name: 'News', exact: true }).isVisible() && !/Focus|Plan|Home|Insights|Notes/.test(await nav.innerText()))
+    await page.waitForFunction(() => document.querySelectorAll('.atlas-name').length > 5)
+    check(tag, 'map has places', await page.locator('.atlas-name').count() > 5)
+    await page.evaluate(async () => {
+      localStorage.setItem('tars.timer.v1', JSON.stringify({ status: 'running', phase: 'focus', startedAt: 1, marker: 'keep-verbatim' }))
+      localStorage.setItem('lodestar.timer.v1', 'legacy-keep-verbatim')
+      const database = await new Promise((resolve, reject) => { const req = indexedDB.open('lodestar'); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error) })
+      const transaction = database.transaction(['sessions', 'tasks', 'expeditions'], 'readwrite')
+      for (const name of ['sessions', 'tasks', 'expeditions']) transaction.objectStore(name).put({ id: 'historical-' + name, createdAt: 1, updatedAt: 2, marker: 'keep-verbatim' })
+      await new Promise((resolve, reject) => { transaction.oncomplete = resolve; transaction.onerror = () => reject(transaction.error) })
+      database.close()
+    })
+    const snapshot = () => page.evaluate(async () => {
+      const database = await new Promise(resolve => { const req = indexedDB.open('lodestar'); req.onsuccess = () => resolve(req.result) })
+      const values = await Promise.all(['sessions', 'tasks', 'expeditions'].map(name => new Promise(resolve => { const req = database.transaction(name).objectStore(name).getAll(); req.onsuccess = () => resolve(req.result) })))
+      database.close()
+      return { values, timer: localStorage.getItem('tars.timer.v1'), legacy: localStorage.getItem('lodestar.timer.v1') }
+    })
+    const before = await snapshot()
+    await page.reload()
+    await page.getByRole('application').waitFor()
+    for (const route of ['focus', 'tasks', 'calendar', 'planning', 'home', 'notes', 'insights', 'audio', 'unknown']) {
+      await page.goto(base + `#/${route}?start=1&task=old&minutes=25`)
+      await page.getByRole('application').waitFor()
+      check(tag, `${route} link safely returns to Atlas`, page.url().endsWith('#/atlas'))
+    }
+    check(tag, 'retired timer never mounts', await page.getByRole('timer').count() === 0)
+    await page.getByRole('button', { name: 'Ask Tars', exact: true }).locator('visible=true').click()
+    const input = page.getByRole('combobox', { name: 'Search and commands' })
+    await input.waitFor()
+    check(tag, 'palette copy describes retained commands', await input.getAttribute('placeholder') === 'Search places or run a command…')
+    check(tag, 'default commands have no retired surfaces', !/Start focus|Pomodoro|Plan tomorrow|Quick capture|Expedition|Soundscape|Timer profile/.test(await page.getByRole('dialog').innerText()))
+    for (const query of ['Start 25 minutes', 'Plan tomorrow', 'Start expedition', 'Quick capture']) {
+      await input.fill(query)
+      await page.waitForTimeout(180)
+      check(tag, `${query} has no executable command`, await page.getByRole('option').count() === 0)
+    }
+    await input.fill('Settings')
+    await input.press('Enter')
+    await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor()
+    check(tag, 'settings expose shared preferences only', !/Timer|Pomodoro|Notifications|Base camp|Wallpaper|Sounds|Profiles|Keep awake/.test(await page.locator('main').innerText()))
+    await nav.getByRole('button', { name: 'News', exact: true }).click()
+    await page.getByRole('group', { name: 'Reading filter' }).waitFor()
+    check(tag, 'News queues load independently', /To be Read|To be read/.test(await page.locator('main').innerText()))
+    await nav.getByRole('button', { name: 'Atlas', exact: true }).click()
+    await page.getByRole('application').waitFor()
+    await page.goto(base + '#/atlas?search=Nathu%20La')
+    const gazetteer = page.getByRole('dialog', { name: 'Gazetteer', exact: true })
+    await gazetteer.waitFor()
+    await gazetteer.getByRole('button').filter({ hasText: 'Nathu La' }).first().click()
+    await page.getByRole('heading', { name: 'Nathu La', exact: true }).waitFor()
+    check(tag, 'place opens without focus time', await page.getByRole('button', { name: 'Test me', exact: true }).isVisible())
+    check(tag, 'place has no timer expedition actions', !/minutes to|expedition|base camp|Revision task/i.test(await page.locator('main').innerText()))
+    await page.goto(base + '#/atlas')
+    await page.evaluate(async () => { await navigator.serviceWorker.ready })
+    await page.reload()
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller)
+    await ctx.setOffline(true)
+    await page.reload()
+    await page.getByRole('application').waitFor()
+    await page.waitForFunction(() => document.querySelectorAll('.atlas-name').length > 5)
+    check(tag, 'Atlas reloads offline', await page.locator('.atlas-name').count() > 5)
+    assert.deepEqual(await snapshot(), before, `${tag}: retired history changed or timer resumed`)
+    check(tag, 'stored sessions, tasks, expeditions and timer state remain verbatim', true)
+    await page.screenshot({ path: `tools/perf/out/product/${tag}.png` })
+    await ctx.close()
+  }
+  assert.deepEqual(errors, [])
+  console.log(`PASS ${checks.length} product checks; no page errors`)
+} finally { await browser.close(); writeFileSync('tools/perf/out/product/results.json', JSON.stringify({ checks, errors }, null, 2)) }

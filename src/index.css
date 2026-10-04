@@ -50,9 +50,6 @@
   --color-accent-ink: var(--accent-ink);
   --color-primary: var(--primary);
   --color-primary-ink: var(--primary-ink);
-  --color-focus: var(--phase-focus);
-  --color-break: var(--phase-break);
-  --color-long: var(--phase-long);
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-warning: var(--warning);
@@ -106,7 +103,6 @@
   --layer-sticky: 10;
   --layer-chrome: 20;
   --layer-floating: 30;
-  --layer-immersive: 40;
   --layer-modal: 50;
   --layer-palette: 60;
   --layer-popover: 70;
@@ -144,9 +140,6 @@
   --accent-ink: #fff8ea;
   --primary: #1c2033;
   --primary-ink: #f7f3ea;
-  --phase-focus: #895911;
-  --phase-break: #226f5e;
-  --phase-long: #5e57c9;
   --danger: #a63c2c;
   --success: #246b40;
   /* Feedback colours: each is an ink that keeps ≥4.5:1 on bg, surface, surface-2 and surface-3 (job4-visual asserts it), with a soft fill. */
@@ -187,9 +180,6 @@
   --accent-ink: #1b1405;
   --primary: #f2c46d;
   --primary-ink: #1b1405;
-  --phase-focus: #f2c46d;
-  --phase-break: #7fd1b9;
-  --phase-long: #aba4f7;
   --danger: #f07a68;
   --success: #73d19a;
   --warning: #f0a955;
@@ -323,9 +313,6 @@
   .layer-floating {
     z-index: var(--layer-floating);
   }
-  .layer-immersive {
-    z-index: var(--layer-immersive);
-  }
   .layer-modal {
     z-index: var(--layer-modal);
   }
@@ -350,14 +337,6 @@
   }
   .tabular {
     font-variant-numeric: tabular-nums;
-  }
-  /* Timer and stopwatch digits: Manrope semibold, tabular, tight – legible at a glance. */
-  .timer-digits {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: 'tnum' 1;
-    letter-spacing: -0.035em;
   }
   .font-display {
     font-optical-sizing: auto;
@@ -704,26 +683,6 @@ html {
     visibility 0s linear var(--dur-layout);
 }
 
-/* In session: while focus runs on the timer screen, everything around it
-   recedes – the frame melts into the stage and the navigation dims (it comes
-   back on hover, keyboard focus, pause or stop). */
-:root[data-session='active'] {
-  --page-bg: var(--bg);
-}
-:root[data-session='active'] .stage {
-  box-shadow: 0 0 0 1px transparent;
-}
-.chrome-dim {
-  transition: opacity 700ms var(--motion-ease-in-out);
-}
-:root[data-session='active'] .chrome-dim:not(:hover):not(:focus-within) {
-  opacity: 0.28;
-}
-:root[data-session='active'] .chrome-dim:hover,
-:root[data-session='active'] .chrome-dim:focus-within {
-  transition-duration: var(--dur-base);
-}
-
 /* Switching theme: one soft cross-fade instead of a hard cut (class set briefly by app/theme.ts). */
 html.theme-fade,
 html.theme-fade :not(.atlas, .atlas *) {
@@ -833,12 +792,22 @@ html.theme-fade :not(.atlas, .atlas *) {
 .atlas-labels svg {
   pointer-events: none;
 }
-/* A name: a zero-size anchor at the label point (counter-scaled from script while the map zooms), holding the text. */
+/* One unscaled geographic word anchor, positioned outside the scaled map layers. */
 .atlas-name {
   position: absolute;
+  left: 0;
+  top: 0;
+  animation: atlas-word-in var(--dur-base) var(--motion-ease-out) backwards;
   width: 0;
   height: 0;
   transform-origin: 0 0;
+}
+.atlas-marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
 }
 .atlas-name-text {
   position: absolute;
@@ -849,15 +818,14 @@ html.theme-fade :not(.atlas, .atlas *) {
   paint-order: stroke fill;
   stroke-linejoin: round;
   font-synthesis: none;
-  /* Ink in by colour (a repaint), never by opacity (a layer per name). */
-  animation: atlas-ink-in 220ms ease-out;
+
 }
-@keyframes atlas-ink-in {
-  from {
-    color: transparent;
-    -webkit-text-stroke-color: transparent;
-  }
+@keyframes atlas-word-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
+:root[data-motion="reduced"] .atlas-name { animation: none; }
+.atlas-names { pointer-events: none; contain: layout style; }
 .atlas:focus-visible {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
@@ -909,7 +877,7 @@ html.theme-fade :not(.atlas, .atlas *) {
   }
 }
 
-/* A slow pulse for the next waypoint and new discoveries (transform + opacity only). */
+/* A slow pulse for newly Familiar places (transform + opacity only). */
 .atlas-ring {
   position: absolute;
   width: 26px;
@@ -929,22 +897,7 @@ html.theme-fade :not(.atlas, .atlas *) {
     transform: scale(1.6);
   }
 }
-/* SVG variant (the immersive chart). */
-circle.atlas-pulse {
-  animation: atlas-pulse 2.2s ease-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-/* The Atlas, filling in: flowing rivers and ships at sea. */
-.atlas-flow {
-  animation: atlas-flow 2.6s linear infinite;
-}
-@keyframes atlas-flow {
-  to {
-    stroke-dashoffset: -24;
-  }
-}
+/* Ships at sea, derived from recall mastery. */
 .atlas-ship-at {
   position: absolute;
   width: 0;
@@ -971,14 +924,12 @@ circle.atlas-pulse {
 
 /* While the map moves, decorative motion holds still. */
 .atlas-moving .atlas-ring,
-.atlas-moving .atlas-ship,
-.atlas-moving .atlas-flow {
+.atlas-moving .atlas-ship {
   animation-play-state: paused;
 }
 /* Low-power devices and reduced motion: no decorative motion at all. */
 .atlas-calm .atlas-ring,
-.atlas-calm .atlas-ship,
-.atlas-calm .atlas-flow {
+.atlas-calm .atlas-ship {
   animation: none;
 }
 .atlas-calm .atlas-ring {
@@ -991,7 +942,6 @@ circle.atlas-pulse {
     animation: none;
     transition: none;
   }
-  .atlas-flow,
   .atlas-ship,
   .atlas-ring,
   circle.atlas-pulse {

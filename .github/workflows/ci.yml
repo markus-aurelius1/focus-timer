@@ -34,6 +34,19 @@ jobs:
       - run: npm ci --prefix tools/perf
       - run: cd tools/perf && npx playwright-core install --with-deps chromium
       - run: npm run build
+      - name: Atlas StrictMode cold-start regression
+        run: |
+          node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4174 --strictPort > /tmp/tars-dev.log 2>&1 &
+          dev_pid=$!
+          trap 'kill "$dev_pid" 2>/dev/null || true; wait "$dev_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:4174/ >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" != 1 ]; then cat /tmp/tars-dev.log; exit 1; fi
+          node tools/perf/atlas-cold-start.mjs http://localhost:4174/
+          node tools/perf/atlas-recall-check.mjs http://localhost:4174/
       - name: Production browser regression
         run: |
           node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/tars-preview.log 2>&1 &
@@ -45,33 +58,20 @@ jobs:
             sleep 1
           done
           if [ "$ready" != 1 ]; then cat /tmp/tars-preview.log; exit 1; fi
+          node tools/perf/atlas-cold-start.mjs http://localhost:4173/
+          node tools/perf/atlas-label-visibility.mjs http://localhost:4173/
           node tools/perf/smoke.mjs http://localhost:4173/
           node tools/perf/atlas-check.mjs http://localhost:4173/
           node tools/perf/fullscreen-regression.mjs http://localhost:4173/
-          node tools/perf/tars-check.mjs http://localhost:4173/
           node tools/perf/vnext-learning.mjs http://localhost:4173/
           SCHEME=dark node tools/perf/vnext-learning.mjs http://localhost:4173/
           VIEWPORTS=375,1366 node tools/perf/ui-audit.mjs http://localhost:4173/
           node tools/perf/job4-offline.mjs http://localhost:4173/
-          node tools/perf/job4-control-contrast.mjs http://localhost:4173/
           node tools/perf/error-recovery.mjs http://localhost:4173/
-          node tools/perf/dial-check.mjs http://localhost:4173/
-          # Budgets on counts (repaints, label layouts, skeletons, frame callbacks), which do not depend on the runner's speed.
+          node tools/perf/current-affairs-check.mjs
+          node tools/perf/product-health.mjs http://localhost:4173/
+          # Retained Atlas count-based regression; no unfinished performance job is resumed.
           node tools/perf/gesture-audit.mjs http://localhost:4173/ desktop --counts --budget=tools/perf/budgets/gesture.json
-          node tools/perf/app-audit.mjs http://localhost:4173/ desktop --budget=tools/perf/budgets/app.json
-      - name: Dev browser action regression
-        run: |
-          node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173 --strictPort > /tmp/tars-dev.log 2>&1 &
-          dev_pid=$!
-          trap 'kill "$dev_pid" 2>/dev/null || true; wait "$dev_pid" 2>/dev/null || true' EXIT
-          ready=0
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://localhost:5173/ >/dev/null; then ready=1; break; fi
-            sleep 1
-          done
-          if [ "$ready" != 1 ]; then cat /tmp/tars-dev.log; exit 1; fi
-          node tools/perf/features-check.mjs http://localhost:5173/
-          node tools/perf/job4-actions.mjs http://localhost:5173/
       - uses: actions/upload-artifact@v4
         if: always()
         with:

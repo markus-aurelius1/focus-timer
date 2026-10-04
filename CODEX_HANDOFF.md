@@ -1,12 +1,32 @@
-# CODEX_HANDOFF.md — Tars (study planner · focus timer · UPSC/UPPCS Atlas)
+# CODEX_HANDOFF.md — Tars (Atlas · News)
 
-Last updated: 2026-10-02 (handoff checkpoint on branch `handoff/claude-overhaul`; see §0). Before that: 2026-10-01 (app-shell UI overhaul). The vNext base is `fbac02d` on `main` in `C:\Users\hario\Downloads\T.A.R.S\focus-timer`, remote `markus-aurelius1/focus-timer`. It was clean before vNext Job 1. After Job 6 acceptance, the user authorized committing and pushing Jobs 1–6 to `origin/main` on 2026-10-01. No separate release/deployment was requested. Earlier uncommitted/unpushed statements describe the historical implementation checkpoints; current HEAD is available with `git rev-parse HEAD`. Older branch/worktree descriptions below are historical context, superseded by §5.
+Last updated: 2026-10-04 (Atlas runtime regression repair; overhaul paused again per §0a). Prior checkpoint: 2026-10-03 (Codex continuation on `handoff/claude-overhaul` from `3e43def`; see §0). Before that: 2026-10-01 (app-shell UI overhaul). The vNext base is `fbac02d` on `main` in `C:\Users\hario\Downloads\T.A.R.S\focus-timer`, remote `markus-aurelius1/focus-timer`. It was clean before vNext Job 1. After Job 6 acceptance, the user authorized committing and pushing Jobs 1–6 to `origin/main` on 2026-10-01. No separate release/deployment was requested. Earlier uncommitted/unpushed statements describe historical checkpoints; current HEAD is available with `git rev-parse HEAD`. Older branch/worktree descriptions below are historical context, superseded by §5.
 
 **Maintenance rule (for every agent; the full protocol and the "done" checklist are in `AGENTS.md`):** update this file as part of any change: features, fixes, refactors, dependencies, config or design decisions. Edit the relevant section; do not rewrite the whole file. If the change touches a feature that produces user-facing content, update that feature's entry in §4 so it states the **current standard**, not only that the feature exists. Add one line to §6. `docs/HANDOFF.md` is the older, longer milestone log (measurements, user requirements per milestone); keep the two consistent. Verify every claim here against the code before relying on it.
 
 ---
 
-## 0. Handoff checkpoint – 2026-10-02 (read this first)
+## 0a. Current product contract – 2026-10-03 (read this first)
+
+**2026-10-04 owner instruction: the overhaul is paused again; only the Atlas runtime and label-rendering regression repairs are authorized.** `docs/TARS-ATLAS-NEWS-ROADMAP.md` records retained future scope, not an executable queue. J-23 remains accepted; J-24/J-25 remain unaccepted. Focus/Planning jobs and their mixed-job subtasks are retired, including immersive/onboarding and media follow-ups. The owner subsequently authorized committing and pushing the current Atlas + News checkpoint to GitHub on 2026-10-04. This does not authorize resuming overhaul work, merging to main, opening a PR or deploying. Repair evidence: `docs/TARS-ATLAS-RUNTIME-FIX.md`.
+
+Tars now has two primary products: **Atlas | News**. Landing/unknown/retired routes canonicalize to `#/atlas`; `#/settings` remains an auxiliary shared preferences/backup surface. Existing rail, mobile shell, surfaces, themes and Atlas renderer work are retained except for removed feature coupling.
+
+**Atlas rendering contract (2026-10-04 repair):** worker river bitmaps remain owned by the committed label layout. Canvases copy pixels without consuming the bitmap; the owner closes superseded/stale/unmounted resources, not the currently visible snapshot. StrictMode effect replay and direct cold starts must render painted river lettering with no boundary/console errors. This is a regression repair, not J-24/J-25 acceptance.
+
+**Atlas paint order (2026-10-04 second regression):** the `.atlas-base` container establishes its own stacking context with `isolation: isolate`. Overview/detail/studied tile z-indices order rasters inside that container; they must never cover sibling SVG symbols or HTML labels. Verify actual paint order, not just DOM counts or computed opacity, before/during/after zoom and India/World switches. The browser regression runs at 1920/1366/390 px in both themes.
+
+**Removed:** Focus pages/timer engine/store/reconciliation/session writes; Pomodoro, profiles, onboarding, Focus analytics, ambient audio/music/wallpapers/quotes, reminders/notifications/wake lock; Planning/tasks/calendar/habits/goals/quick capture and standalone Home/Notes/Insights surfaces; timer expeditions/base camp/revision tasks/travel overlay and Focus-time XP/challenges. Removed exclusive packages: Capacitor keep-awake/local-notifications and dexie-react-hooks. Web/native launcher shortcuts now point to Atlas and News. Obsolete feature browser harnesses and their CI invocations were replaced with the reduced product regression.
+
+**Retained shared infrastructure:** shell-first/deferred loading, kept Atlas, commands, route state, UI/motion/AnswerTile/surfaces, themes/haptics/fullscreen/install, lifecycle/files, Dexie/repo/tombstones/sync, v1–v3 JSON backup/restore, News note hook/storage/archive and publisher gateway. Atlas map/entities/ids/PYQs/questions/filters/offline inventory stay intact. Mastery/coverage/XP use recall history; existing daily review and weekly recall/pass challenges remain. Historical Focus/expedition/discovery challenge claims remain stored but no longer contribute to active XP. Warm coverage styling now denotes recall familiarity. No replacement gamification was introduced.
+
+**Database decision:** `lodestar` Dexie v1/v2 declarations and migrations are unchanged. Historical sessions/tasks/profiles/calendar/goals/habits/audio/expeditions and their types remain for compatibility, sync and export. Their runtime hooks/seeding/initializers are gone. Existing settings fields and raw `tars.timer.v1` / `lodestar.timer.v1` / audio keys remain untouched and unused; fresh installs seed shared settings only. Explicit user-requested backup replacement/erase continues its existing confirmation flow. News reading state/notes/archive and quiz-attempt persistence retain their current stores/keys/backup behavior. Generated Atlas source still contains inert expedition metadata; no runtime expedition index, hook or action reads it. All 2,273 place ids and canonical data remain unchanged.
+
+**Current output specs (supersede removed-feature entries in §4):** News remains the existing To be Read / Read / Saved list with publisher links, archive and dated short notes. No content rewriting, expansion or scraping. Atlas factual/PYQ provenance remains unchanged; mastery and due recall use existing rules and ids. Export preserves historical records and supports old backup formats. User-visible navigation/commands contain no removed feature references; inert backup counts can identify historical tables. Brand preview/manifest describe Atlas and News.
+
+Validation and dependency map: `docs/TARS-ATLAS-NEWS-REDUCTION.md`. Browser results below are historical unless explicitly listed in that document. Changes remain uncommitted and pre-existing Atlas work is preserved.
+
+## 0. Historical handoff checkpoint – 2026-10-02
 
 Claude stopped the premium-roadmap overhaul here at the owner's request and handed over to Codex. This section is the state of play; §5a has the per-job detail and measurements, `docs/TARS-PREMIUM-PRODUCT-AUDIT.md` §23 has every job's definition and acceptance criteria.
 
@@ -22,25 +42,27 @@ Claude stopped the premium-roadmap overhaul here at the owner's request and hand
 
 The audit's execution order is: J-01, J-02, J-27, J-11a, J-11b, J-11c, J-10, J-10b, J-03, J-28, J-04, J-05a–d, J-06, J-07a–c, J-08, J-09, J-23, J-24, J-25, J-15, J-18b, J-12, J-13, J-14, J-16, J-16b, J-17, J-18, J-29, J-30, J-19, J-20, J-21, J-22, J-26.
 
-- **Reached:** everything up to and including **J-09** in that order is done, plus J-16, J-18 and J-19 from further down (they had no unmet dependencies).
+- **Checkpoint reached:** everything up to and including **J-09** was done, plus J-16, J-18 and J-19 from further down. **Codex continuation, 2026-10-03:** J-23 accepted; J-24 and the owner-approved necessary J-25 label work are in progress. Neither has passed final acceptance. Details: `docs/TARS-PREMIUM-J23.md`, `docs/TARS-PREMIUM-J24.md` and `docs/TARS-PREMIUM-J25.md`.
 - **Stopped before:** J-23 (the Atlas renderer track) and J-18b (the question surface). Neither was started. J-18b had only been read: the QA contracts for it are listed under "next action" below.
 
 | State | Jobs |
 | --- | --- |
-| Done (24) | J-01, J-02, J-27, J-11a, J-11b, J-11c, J-10 (superseded by the Focus redesign), J-10b, J-03, J-28, J-04, J-05a, J-05b, J-05c, J-05d, J-06, J-07a, J-07b, J-07c, J-08, J-09, J-16, J-18, J-19 |
+| Done (25) | J-23, J-01, J-02, J-27, J-11a, J-11b, J-11c, J-10 (superseded by the Focus redesign), J-10b, J-03, J-28, J-04, J-05a, J-05b, J-05c, J-05d, J-06, J-07a, J-07b, J-07c, J-08, J-09, J-16, J-18, J-19 |
 | Done outside the job list, at the owner's request | Focus redesign (full-stage study room, 264 generated wallpapers, 520 lines); study-audio engine (34 sounds, 36 generated tracks, persistent across routes); backups carrying notes and Current Affairs reading state (format v3) |
 | Partly done | **J-14** Focus surfaces: completion card in place, Stop morphs to Save/Discard, no backdrop – *remaining:* context and timer-profile surfaces are still `Sheet`s, not popovers, on wide layouts (sounds is a `SidePanel`). **J-22**: immersive mode is the same screen with the chrome hidden (done); *remaining:* onboarding as a full-screen first run. **J-06**: tokens and reduced motion done; *remaining:* a lint rule for numeric Motion timings and migrating inline transitions. **J-07c**: *remaining:* wire the Capacitor back button to `closeTopSurface()` (`src/ui/surface/core.ts`). **J-20**: Stepper hold-repeat and Slider detent haptics exist in the primitives; nothing else started. |
-| Not started, in execution order | J-23, J-24, J-25, J-15, J-18b, J-12, J-13, J-16b, J-17, J-29, J-30, J-20 (rest), J-21, J-22 (rest), J-26 |
+| In progress | J-24 (tile worker/cache) and the J-25 label work needed for its phone gate; owner approved this limited sequencing exception on 2026-10-03. Both acceptance gates remain pending. |
+| Not started, in execution order | J-15, J-18b, J-12, J-13, J-16b, J-17, J-29, J-30, J-20 (rest), J-21, J-22 (rest), J-26. J-25 is in progress under the limited exception above; its separate final gate remains pending. |
 | Expected to be deferred | **J-30** needs a WebKit browser download and a manual pass on a physical iPhone and Android phone. **J-26** needs new map data (network, pipeline run) and the owner's approval. |
 
 **Owner's decisions and constraints (still in force)**
 
+- **Owner correction, 2026-10-03 (supersedes the generated-content acceptance and next-action advice below):** generated Focus wallpapers/audio are not acceptable quality, and generated lines are too generic. Keep them unchanged during J-23–J-25, but a content-quality follow-up is required. Future replacements must use genuinely high-quality, legitimately reusable/licensed media with source, licence and credit metadata, and verified real quotations with evidence for the exact wording and author. Never fabricate quotations or authors. Counts, synthetic audio checks and screenshots do not establish content quality. Resume the formal order: J-23 → J-24 → J-25 → J-15 → J-18b → remaining jobs; do not repeat completed jobs without verified regressions. No commit, push, merge to main or deployment is authorized.
 - Commit, push, PR and deploy only when the owner asks. The checkpoint commit and the push of `handoff/claude-overhaul` were asked for explicitly; that does not extend to `main` or to deploying.
 - Dev dependencies named by the audit are approved (ESLint/Prettier, `happy-dom`, Testing Library, `fake-indexeddb` are installed). No new *runtime* dependency without asking.
 - Dexie schema work for backups was approved but turned out not to be needed (the data lives in localStorage and a separate IndexedDB store). Any other schema change still needs asking.
 - Atlas: places the learner has **not** travelled must not be greyed, fogged or hatched; travel is shown positively (warm wash, edge and ring). This is implemented – do not reintroduce fog.
 - Focus is a full-screen study room in the spirit of pomodorotimer.online: very large centred clock, wallpaper, minimal chrome, secondary controls disclosed on demand.
-- Wallpapers, sounds, music and the lines under the clock are all **generated by code or written for Tars** (§4.15). Bulk third-party media (downloaded wallpapers, recordings, real quotations) was deliberately not added: it needs the owner's go-ahead on source, licence and size. The owner asked for "200+ reusable wallpapers" and "500+ quotes"; the counts are met with original material, and the owner has not yet reviewed how they look and sound.
+- Wallpapers, sounds, music and the lines under the clock are currently **generated by code or written for Tars** (§4.15). Their counts meet the earlier numeric request, but the owner has rejected their quality (2026-10-03). Replacements are a required later follow-up, with verified sources, reusable/licensed rights, credits and real quotations; retain the existing content during J-23–J-25.
 - Audio must keep playing for the whole Focus session: one engine at module level, never owned by a component (§3, `audio/store.ts`).
 - Surfaces: Dialog, BottomSheet, SidePanel, Popover, Menu, Tooltip from `src/ui/surface/`; no glass or `backdrop-filter`; no giant modals where a panel or popover fits.
 - Quiz (J-18b, not started): one tactile system on `AnswerTile`; grading, saved attempts and explanations must not change.
@@ -103,17 +125,17 @@ All run on 2026-10-02 against the final tree (production build via `npm run prev
 
 **Recommended next action for Codex**
 
-1. Check out `handoff/claude-overhaul`, run `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, then `npm run preview` and the suites in the table above to confirm the checkpoint on your machine.
-2. Ask the owner to review Focus (wallpapers, lines) and listen to the audio before building further on them.
-3. Continue with **J-18b (one question surface)** – it is self-contained, the owner asked for it by name, and its primitive (`src/ui/patterns/question/AnswerTile.tsx`, styles under `.answer` in `src/ui/ui.css`) already exists and is in the gallery. Files: `src/features/atlas/CanonicalQuiz.tsx`, `FieldReview.tsx`, `PyqBrowser.tsx`, `PlaceQuestions.tsx`. Contracts the suites depend on (keep them): the article has `data-question-id` and `data-question-type`; exactly four elements with role `radio` inside it, which `.check()`/`.click()` select and which report disabled after saving; a button named exactly `Submit answer`; the text `Accepted answer` after saving; dialogs named `Previous question` and `Previous questions`; selects labelled `Question exam`, `Question year`, `Catalogue view`; the section labelled `Previous questions` on a place card; in `FieldReview` a `fieldset` with choice buttons and `Check order`/`Reset`. `AnswerTile` already renders role `radio` with `aria-checked`; locked tiles use `aria-disabled`, so either give them the `disabled` attribute or update the two `isDisabled()` assertions. Durability rules are in the audit under J-18b: feedback only after a durable save, attempts lock, accepted answers only from the packs.
-4. Then **J-15 (Atlas chrome)** on the surface primitives, then the Plan jobs (J-12, J-13), J-16b, J-17, J-29.
-5. Treat **J-23 → J-24 → J-25** (renderer modules, tile cache, label layer) as its own project: it is the largest remaining risk and the only fix for the repaint stalls. Start with the J-23 spike and record numbers before committing to an approach.
+1. Continue on `handoff/claude-overhaul` from `3e43def`; reproduce the checkpoint before changing completed work. On 2026-10-03, locked dependency restore, typecheck, 282 tests, lint (0 errors / 402 warnings) and build (236 entries / 7,456.56 KiB) matched. Production smoke 12/12, Atlas 21/21 on a quiet rerun, fullscreen, shell 49/49, header 19/19, Tars 51/51, learning 104/104 (Paper), Current Affairs 279/279, dial 24/24, error recovery 7/7, contrast 40/40 and layout 375/1366 Paper/Night passed. Dev actions 23/23 and audio 28/28 passed. Dev features 21/21 passed after the readiness fix below. J-23 acceptance is complete (292 tests, typecheck/build, lint 0/402, Atlas 21/21, smoke 12/12, fullscreen, Tars 51/51, dev features 21/21, layout 375/1366 Paper/Night, all 29 gesture and 10 app budgets, isolated spike and quiet replay); raw logs are in ignored `tools/perf/out/codex-checkpoint/`.
+2. The baseline dev feature setup skipped late lazy onboarding because `tools/perf/lib.mjs:prepare` waited only 1.5 s. It now waits for the seeded settings and, on a fresh profile, the actual Welcome surface. No app onboarding or timer behaviour changed. The unchanged production tree initially had a two-finger tap QA failure, then passed 21/21 quietly. Route restoration is 26/27 under load (Atlas shown 243 ms, painted 299 ms, worst subsequent frame 19 ms); the documented 100 ms revisit threshold remains unresolved, not a new regression.
+3. Follow the formal execution order: **J-23 → J-24 → J-25 → J-15 → J-18b → remaining jobs** in audit §23. Finish each acceptance gate and update this handoff before proceeding. Keep completed jobs unless verification proves a regression. Preserve the owner correction in §4.15 as a required later content follow-up.
+4. For later **J-18b**, preserve its QA names and durability contracts: article `data-question-id` / `data-question-type`, four role `radio` options locked after saving, `Submit answer`, `Accepted answer`, dialogs `Previous question` / `Previous questions`, selects `Question exam` / `Question year` / `Catalogue view`, place section `Previous questions`, FieldReview `fieldset` choice buttons and `Check order` / `Reset`. Feedback requires a durable save; accepted answers come only from the packs.
+5. No commit, push, merge to main or deployment is authorized. Physical-device gates and added Atlas data retain their explicit boundaries.
 
 ---
 
 ## 1. Project summary
 
-Tars (called **Lodestar** until 2026-09-26) is a local-first study app for UPSC / UPPCS aspirants: plan → focus → track → review → improve. It combines a timestamp-based Pomodoro/countdown/stopwatch timer, a task planner with calendar and habits, and analytics. **The Atlas** provides 2,273 freely accessible places across India and the World: focus advances Travelled history, while recall establishes Familiar/Strong/Mastered independently. Canonical PYQ questions and legacy study-priority evidence have separate contracts. It runs as an installable PWA with no account; learner data lives locally in IndexedDB plus legacy timer/preferences storage. Capacitor projects wrap it for Android and iOS.
+Tars (called **Lodestar** until 2026-09-26) is a local-first Atlas and News app for UPSC / UPPCS. Atlas has 2,273 freely accessible India/World places, canonical PYQs and recall mastery. News has source-linked Current Affairs, reading queues, archive and short notes. It runs as a PWA and Capacitor Android/iOS app; historical Focus/Planning data remains inert and backup-compatible. The overhaul has resumed for retained products only (see §0a and `docs/TARS-ATLAS-NEWS-ROADMAP.md`).
 
 ## 2. Tech stack
 
@@ -125,10 +147,10 @@ Versions are the ranges in `package.json`; the lockfile pins the exact ones.
 | Language | TypeScript `^7.0.2` (`tsc -b`, project refs `tsconfig.app.json` + `tsconfig.node.json`), ES2022 target |
 | UI | React `^19.3.0`, Tailwind CSS `^4.3.3` (`@tailwindcss/vite`), Motion `^13.4.2`, lucide-react `^1.48.0` |
 | Fonts | `@fontsource-variable/manrope` + `@fontsource-variable/fraunces` `^5.3.0`, self-hosted via `@font-face` in `src/index.css` |
-| State / data | Zustand `^5.0.15` (timer, UI, audio stores), Dexie `^4.4.6` + dexie-react-hooks `^4.4.0` (IndexedDB) |
+| State / data | Zustand `^5.0.15` (shared UI stores), Dexie `^4.4.6` (IndexedDB/liveQuery) |
 | Build | Vite `^8.3.0` (rolldown; `rolldownOptions.advancedChunks` vendor split), `@vitejs/plugin-react` `^6.1.1`, vite-plugin-pwa `^1.3.0` + workbox-window `^7.4.1` |
-| Maps | Bundled TopoJSON and relief sheets with `topojson-client` `^3.1.0`; `AtlasMap.tsx` renders the map and recall. Charts and audio are hand-built. |
-| Native | Capacitor `^8.5.2` (android, ios, core, cli), app `^8.1.1`, local-notifications `^8.3.1`, haptics, filesystem, share, status-bar, `@capacitor-community/keep-awake` `^8.0.1` |
+| Maps | Bundled TopoJSON and relief sheets with `topojson-client` `^3.1.0`; `AtlasMap.tsx` renders the map and recall. The existing tile and label workers are retained. |
+| Native | Capacitor `^8.5.2` (android, ios, core, cli), app `^8.1.1`, haptics, filesystem, share, status-bar |
 | Tests | Vitest `^5.0.1` (`src/**/*.test.ts`, node env) + `fake-indexeddb` `^6.2.5`. The data pipeline uses `node --test`. |
 | Data pipeline (`tools/atlas-build`, own package) | d3-geo `^3.1.1`, d3-geo-projection `^4.0.0`, mapshaper `^0.7.66`, sharp `^0.35.4`, topojson-server/simplify `^3`, shapefile, pngjs, polylabel |
 | Perf / QA (`tools/perf`, own package) | playwright-core `^1.56.0` driving headless Chromium |
@@ -136,63 +158,19 @@ Versions are the ranges in `package.json`; the lockfile pins the exact ones.
 
 ## 3. Architecture overview
 
-```
-src/
-  main.tsx, index.css     entry; design tokens (surface layers, type roles, motion), the app-shell frame, map CSS
-  app/                    App.tsx (frame: rail + stage, shell sync, screen transitions, SW update/offline
-                          toasts, deep links), Shell.tsx (navigation rail / phone tab bar, both carrying the
-                          timer), Workspace.tsx (the shared workspace header + content column), router.ts
-                          (hash routes: home [default], focus, tasks, calendar, current-affairs, atlas, notes,
-                          insights, settings), theme.ts, ui-store.ts, CommandPalette.tsx, ShortcutsSheet.tsx,
-                          shortcuts.ts
-  data/                   types.ts (model), db.ts (Dexie, DB name 'lodestar', schema v2), repo.ts
-                          (create/update/remove → tombstones/restore), seed.ts (defaults, normalizeSettings),
-                          hooks.ts (live queries), backup.ts, csvio.ts, sync.ts (changesSince/applyChanges),
-                          demo.ts (sample history)
-  timer/                  engine.ts (pure, timestamp-based state + reconcile), store.ts (Zustand, effects,
-                          alert scheduling, notification text), useNow.ts
-  planner/                recurrence.ts, quickAdd.ts (natural-language grammar), tasks.ts, habits.ts
-  stats/aggregate.ts      every Insights number, derived from sessions
-  game/                   progression.ts (XP, levels, ranks, map styles), challenges.ts
-  atlas/                  data.ts (gazetteer index), sheet.ts (TopoJSON + overlay decode), explore.ts
-                          (expeditions, checkpoints, free survey), mastery.ts (recall levels, Leitner review),
-                          questions.ts (recall question generators), living.ts (routes, ships, wildlife),
-                          spatial.ts (grid index), types.ts (Place, PyqHistory, StudyPriority)
-  audio/                  catalog.ts (names only), dsp.ts, sounds.ts + sounds-more.ts (34 ambient sounds), music.ts (36 generated tracks), store.ts (the one engine), follow.ts, chimes.ts, context.ts
-                          (sound follows the timer via store subscription), youtube.ts
-  services/               notifications.ts, reminders.ts (derived), haptics, wakelock, lifecycle, fullscreen,
-                          files, install
-  ui/                     Sheet.tsx (dialogs), controls.tsx, Popover, Menu, feedback/toast, motion.ts,
-                          scrollLock.ts, Ring, Logo
-  features/<screen>/      focus, tasks, atlas (AtlasMap.tsx renders the bundled map and recall), calendar, insights,
-                          settings, audio, onboarding, shared
-tools/atlas-build/        offline data pipeline → public/atlas/v1 (see §8)
-  content/*.mjs           hand-authored gazetteer (P(...)), expeditions.mjs, states.mjs
-  content/candidates/     what to add for v2 (C/G(...)) + official lists (lists/*.json)
-  content/generated/      v2 places generated from Wikipedia/Wikidata (JSON, do not hand-edit)
-  content/sources/        links.json (v1 place → Wikipedia/Wikidata), link-overrides.mjs, v1-lock.json
-  content/pyq/            PYQ ledger (Q(...)), not-mapped.mjs
-  gazetteer/              lists.mjs, link-existing.mjs, generate.mjs, facts.mjs, match.mjs, audit-coords.mjs
-  lib/                    places.mjs (compilePlaces), pyq.mjs (attach + score), overlay.mjs, wiki.mjs, sheetBuild…
-  reports/                pyq-review.json, generate-review.json, links-review.json, coords-audit.json
-tools/perf/               headless-Chromium profile, smoke, screenshots, UI audit, feature checks
-scripts/generate-icons.mjs  assets/icon.svg → every PNG + public/og-image.png
-android/, ios/            Capacitor projects (app id app.lodestar.study)
-docs/HANDOFF.md, docs/screenshots/
-pyq-sources/              the user's PYQ PDFs — git- and Vercel-ignored (copyrighted), local only
-```
+- `app/`: shell-first startup, deferred screens, kept Atlas, rail/phone navigation, `#/atlas` landing, News and auxiliary Settings; retained route state/scroll memory, theme, palette, shortcuts and recovery.
+- `atlas/` and `features/atlas/`: source data/index, existing map renderer/workers, entities/search/filters, canonical PYQs, quizzes and recall. `game/` retains recall XP/ranks/map styles and native recall challenges; exploration no longer reads Focus sessions/expedition runs.
+- `current-affairs/` and `features/current-affairs/`: existing relevance/gateway, reading state/archive/UI; `features/notes/` is the preserved News note collection/hook.
+- `data/`: unchanged Dexie v2 schema/migrations, legacy-compatible types, repo/tombstones/sync and JSON backup v1–v3. Only settings/recalls/claims have shared live-query hooks. Fresh startup seeds shared settings only.
+- `services/` and `ui/`: shared install/lifecycle/files/haptics/fullscreen and existing design-system/surface primitives. Timer/audio/reminder/wake-lock services are deleted.
+- `public/atlas/v1`, `pyq-atlas/v1`, `atlas-assets/v1`, `current-affairs/v1`: unchanged generated geography, curated PYQs, offline hashes and relevance data. `tools/atlas-build` stays authoritative; no pipeline/content change.
+- `tars/`: validated Atlas/PYQ/review/navigation/preferences actions only; deterministic commands and context. Removed actions cannot execute through any client.
 
-**Data flows**
-- **User data:** UI → `data/repo.ts` (sets `id`, `createdAt`, `updatedAt`; deletes write tombstones) → Dexie → `useLiveQuery` hooks → derived views. XP, levels, mastery, exploration, streaks, challenge progress and reminders are **computed from history on read**. None of them is a stored counter.
-- **Timer:** `timer/engine.ts` stores timestamps (segment start + banked ms), persisted to `localStorage` on every transition. `reconcile(state, now)` replays phases that ended while the app slept (on tick, visibilitychange, focus, pageshow, online, Capacitor resume, reload, another tab). Effects → `saveSession` (session id = phase id, so replays can't double-count) → `tars:session` window event → atlas/XP recompute. Native alerts are scheduled with the OS (`LocalNotifications`); on the web, a one-shot timeout plus a service-worker notification.
-- **Audio:** one engine for the app, at module level in `audio/store.ts`, driven only by the `useAudio` store – no component owns a player, so re-renders, closing the sound panel and route changes cannot restart or drop playback. Ambient layers (any number, each with volume and mute) and one music track are seamless loops rendered once with an `OfflineAudioContext`; music hands over to the next track after about 3.5 minutes with a 3 s crossfade and simply keeps looping if the hand-over is late, so there is never silence. `audio/follow.ts` subscribes to the timer store: focus plays, pause pauses (voices are released; the music keeps its place), stop stops and rewinds, breaks fade. `MusicDock` does the same for the YouTube IFrame player. The sound panel (`features/audio/SoundSheet.tsx`, a `SidePanel`) is only a remote control.
-- **Atlas static data:** `tools/atlas-build` → `public/atlas/v1/{india,world}.json` (pre-projected TopoJSON), `*-relief.webp`, `*-shade.webp`, `*-overlay.json`, `places.json`. The app fetches these at runtime (`atlas/sheet.ts`, `atlas/data.ts`), and workbox precaches them for offline use. User progress refers to places only by stable id (`in.pass.nathu-la`).
-- **Atlas:** `features/atlas/AtlasMap.tsx` renders the bundled India and World sheets, exploration overlays, expedition route, places and recall interactions. Camera and gestures are local to the renderer; the map covers its viewport and keeps zoom anchors stable at scale limits. The Gazetteer selects destinations on either sheet. Layers control map styles and study overlays; no live tile provider or API token is involved.
-- **Canonical Atlas PYQs (vNext Job 1):** `tools/atlas-build/canonical-pyq.mjs` verifies a read-only external release ZIP, scans broad geographic coverage, then applies runtime → premium rendering → Atlas relevance gates. It writes `public/pyq-atlas/v1/{manifest,place-pyq-index}.json` plus separate `papers/` and `answers/` packs. Reports/HTML preview stay under `tools/atlas-build/reports/`. `src/atlas/pyq/{types.ts,loaders.ts,QuestionBody.tsx,quality.mjs,render.mjs,blocks.css}` supplies lazy loaders and a shared semantic block renderer; no normal screen is wired to it in Job 1. The existing ledger, `places.json`, study-priority formula, mastery, expeditions and database are unchanged.
-
-- **Current Affairs (Jobs 5–6):** lazy `#/current-affairs` → `api/current-affairs.ts` (`/api/current-affairs`, Vercel Node function; same handler in Vite dev/preview) → allowlisted RSS/Atom normalization (`src/current-affairs/`) → compact `public/current-affairs/v1/relevance-index.json` → deterministic CSE filtering/clustering → original publisher links. Job 6 adds a daily reading workspace (`src/current-affairs/workspace.ts`), URL-keyed localStorage read/save/removal state (`personal-state.ts`), separate short dated notes (`notes.ts`), derived analytics and inline actions with RSS thumbnails. Article popups and Study mode were subsequently removed at the user’s request. Workbox NetworkFirst still caches only successful API metadata responses; a separate native IndexedDB archive retains accepted metadata across refreshes. No Dexie changes.
+Detailed dependency disposition, retained legacy schema and local validation: [TARS-ATLAS-NEWS-REDUCTION.md](docs/TARS-ATLAS-NEWS-REDUCTION.md). Earlier architecture is recoverable in Git history; roadmap checkpoints above are historical.
 
 ## 4. Output Quality Specs
+
+Current feature set is §0a. Focus/Planning/expedition/notification/sample-history specs below are archived historical requirements; their runtime surfaces are removed. Atlas factual/PYQ/question and News fidelity rules remain in force. Timer-driven progression/challenges are superseded by recall-only rules in §0a.
 
 Every feature below produces text or assets a user reads. Each entry gives the standard that is in force now, with real examples from the repo. Where a rule is enforced by code, the file is named.
 
@@ -416,7 +394,9 @@ Where: `src/atlas/questions.ts`. Used by Field review, "Test me", and the two op
 
 **Known weak spot:** designation facts ("Designated a Ramsar site on … (901 km²).") pass the clue filter but fit many places equally, so they make weak fact clues. This is not fixed.
 
-### 4.7 Expeditions
+### 4.7 Expeditions — removed product mechanic
+
+No timer expeditions, travel conversion or checkpoints run. Static generated expedition metadata remains inert for source preservation. The following is historical:
 
 Where: `tools/atlas-build/content/expeditions.mjs`. There are 7: Himalayan, Indian River Journey, Peninsular India, Northeast India, Coastal India, Indian Islands, World Physical Geography.
 
@@ -428,6 +408,8 @@ Where: `tools/atlas-build/content/expeditions.mjs`. There are 7: Himalayan, Indi
 - **Presentation:** the relief image and all vector/label overlays share one sheet coordinate system. At rest and at minimum zoom the sheet covers the central viewport; panning never reveals the paper around it. India and World remain separate bundled projections. Zoom clamps before applying a cursor, tap or pinch anchor, so reaching the zoom limit cannot shift the view. Search, full-screen, map styles, layers and recall remain available offline.
 
 ### 4.8 Challenges
+
+Current: retain only existing d-review, w-recall and w-pass definitions, ids, targets/rewards and deterministic period seeding. Claims from removed challenge ids remain stored but do not contribute to active XP. The broader challenge set below is historical.
 
 Where: `src/game/challenges.ts`. Each day shows 3 daily challenges (from 11) and 2 weekly ones (from 7). The set is chosen deterministically from the date (`seededRandom('daily:<day>')` / `weekly:<weekStart>`), so all devices match and nothing is stored until a claim.
 
@@ -507,6 +489,8 @@ Short notes (top `Short notes` action, small Sheet; the same collection as the N
 
 ### 4.15 Focus room content: lines, wallpapers, sounds, music
 
+**Required quality follow-up (owner, 2026-10-03):** the generated wallpapers/audio and generic lines below are the existing implementation, not accepted content quality. Do not replace them during J-23–J-25. Future media must meet the owner's quality bar and have verifiable reusable/licensed rights plus source/credit metadata; future quotations must be real, with verified exact wording, author and source. Never invent an attribution. Preserve the persistent audio and timer contracts when replacing content. The historical generation rubrics below remain implementation checks only.
+
 Everything the Focus room shows or plays is **original to Tars and made by code or written for it** – no third-party artwork, recordings or quotations, so there is nothing to license, attribute or download, and all of it works offline. Do not add downloaded media or real quotations without asking the user (source, licence and size need their go-ahead).
 
 **Lines under the clock** (`src/features/focus/quotes.ts`, 520 lines in six groups: focus, discipline, learning, calm, perseverance, beginning).
@@ -531,14 +515,17 @@ Everything the Focus room shows or plays is **original to Tars and made by code 
 - Avoid: convolution reverb (ten times the render cost), a low-pass in a feedback loop (it resonates above unity and runs away), per-note oscillator nodes (cost scales with notes × loop length), adding a track without checking it with `audio-check.mjs`.
 - Ready-made mixes: 14 in `catalog.ts` (`MIXES`) plus the six seeded into `audioPresets`; a mix is 2–3 layers at 0.2–0.6.
 
-## 5. Current state (2026-10-02)
+## 5. Current state (2026-10-03)
 
-**Premium roadmap (local/uncommitted, on top of the app-shell overhaul):** the jobs in `docs/TARS-PREMIUM-PRODUCT-AUDIT.md` §23 are being executed in dependency order. The running record of what is done, what was measured and what is deferred is §5a below; read it before touching the shell, the Atlas renderer, the Focus dial or `src/ui`.
+**Current product and active work:** Atlas + News reduction is complete, with validation and legacy data decisions in `docs/TARS-ATLAS-NEWS-REDUCTION.md`. On 2026-10-04 the owner paused the scoped overhaul again and authorized only the runtime crash repair in `docs/TARS-ATLAS-RUNTIME-FIX.md`. J-23 stays accepted; J-24/J-25 remain unaccepted. No roadmap or retired feature job is executable. The table below records earlier checkpoints; its removed-feature entries and older validation counts are historical, superseded by §0a.
 
-### 5a. Premium roadmap progress
+### 5a. Historical premium roadmap progress
 
 | Job | State | What changed, and the evidence |
 | --- | --- | --- |
+| J-24 Tile worker/cache | in progress | Bounded24/48-tile worker/idle renderer, independent progress tiles, cancellation and release/recreate. Renderer5/5 passes after fixing an overview regression: coarse fallback strokes now use the requested ink scale, the preceding overview stays until replacement coverage, and fallback layers remain beneath detail. Expanded pixel checks exposed downsampling differences; investigation continues, tolerance remains provisional and requires owner agreement. Latest shared-commit source309 tests/36 files and typecheck/build pass (238 entries/7503.21KiB); overview build238/7503.67KiB passes. Latest full phone run before the shared-commit/overview fixes failed9/11: zoom116.6/133.4ms p95,4/6 frames>100,whole-pan maxima133.3/83.3/166.6ms,heap20.7MiB. Latest source still requires full timing/browser/offline/learning and lint reruns. Neither job accepted; docs/TARS-PREMIUM-J24.md. |
+| J-25 Label layer | in progress under owner exception | HTML point names retain paused positioning animations and individual fades. Shared worker placement/font metrics/curve rasterisation retains exact algorithms and bundled Manrope, main-thread fallback and bounded cache. Real-font placement18/18 and327 curve rasters match exactly (MAE0); five hook tests cover replies, failure, bitmap closure and committing symbol identities with their matching name snapshot. SVG symbols retain checkpoint appearance; one group compensation keeps pending snapshots aligned. Shared-commit source309 tests/build pass. Pinch6/6 cases passes size/position budgets (max1.23% width variation,0.8ms desktop/3.7ms phone), but an earlier full gesture produced67.9ms positioning and failed timing. Phone counts9/9 passed after shared commits; its offscreen tap selector is repaired and requires rerun. Complete style/timing/browser acceptance remains pending. Unshipped alternatives have not passed; docs/TARS-PREMIUM-J25.md. |
+| J-23 Renderer extraction and spike | done | `AtlasMap.tsx` reduced to 514 lines; `renderer/{types,palette,glyphs,SvgLayers,useMapCamera,gestures}` split out with the same public exports. Ten gesture sequence tests cover pan, fling/rest, pinch, handover, wheel easing, trackpad, double/two-finger tap, keys and detach. Palette, glyph, SVG and gesture bodies compared text-identical to `3e43def` apart from exports/indentation. Typecheck, 292 tests, lint 0/402, build (236 entries / 7,457.46 KiB), Atlas 21/21, smoke 12/12, fullscreen, Tars 51/51, dev features 21/21 and responsive Paper/Night layout pass; 29 gesture and 10 app budgets pass. Spike selects CSS tile containers and unscaled HTML names (J-25 must still meet its positioning budget). Quiet checkpoint/J-23 pan p95 16.8/16.9 ms; zoom-out is highly variable in both builds, with the same 9 >100 ms frames. No performance improvement claimed. Source bodies and protected paths reviewed, no app regression found. Full evidence: `docs/TARS-PREMIUM-J23.md`. |
 | J-01 Error boundaries | done | `src/ui/ErrorBoundary.tsx` (`ErrorBoundary`, `ScreenError`, `AppError`), `src/lib/lazy.ts` (`lazyScreen`: one automatic reload for a stale chunk, guarded by `sessionStorage['tars.chunk-reload']`). `App.tsx` has three boundaries: whole app, the route host (reset on route change), and global overlays (`OverlayBoundary`: closes the overlay, toasts "That couldn’t open", gives up after three failures in 10 s). `Sheet` wraps its body so a throwing dialog closes itself. `src/lib/crashTest.tsx` throws in DEV for `?crash=route|sheet`. `tools/perf/error-recovery.mjs`: 12/12. |
 | J-02 Lint and format | done | `eslint.config.js` (ESLint 9 flat; `@babel/eslint-parser` because TypeScript 7 has no JS API for `typescript-eslint`; react-hooks, jsx-a11y; project rules `tars/raw-button` and `tars/arbitrary-token` as warnings). `npm run lint` must report 0 errors; `npm run lint:counts` prints warnings per rule – the baseline was 445 (284 arbitrary-token, 121 raw-button, 15 exhaustive-deps, 25 jsx-a11y) and may only go down. `npm run format` (Prettier, `.prettierrc.json`) is opt-in per file: the tree was never formatted and is not reformatted wholesale. |
 | J-27 Budgets in CI | done | `tools/perf/budget.mjs`; `--budget=<json>` on `gesture-audit.mjs` and `app-audit.mjs`; `tools/perf/budgets/{gesture,app}.json`. Budgets are counts (repaints, label commits, rAF callbacks, skeletons, touch targets), not milliseconds, so they hold on slow runners. Tighten a budget in the same change that improves the number. |
@@ -588,8 +575,33 @@ Everything the Focus room shows or plays is **original to Tars and made by code 
 
 **Known broken:** no known failing application tests. Map detail/physical-device limitations and source-content review queues remain open. Functional gaps are listed in §9 and §10.
 
+### 5b. Resumed Atlas + News overhaul checkpoint — 2026-10-03
+
+Historical scope/order (paused again on 2026-10-04): `docs/TARS-ATLAS-NEWS-ROADMAP.md`. Focus/Planning jobs J-10/J-10b/J-12/J-13/J-14/J-17/J-18/J-22 and media follow-ups are retired; mixed jobs keep only retained-product/shared work. The audit §23 execution index and definitions are narrowed; older findings are explicitly historical. J-23 stays accepted. Completed shared UI work is preserved.
+
+J-24 continuation: `renderer/BaseLayer.tsx` preserves equivalent ready tile queues and LRU order, including adjacent-level prefetch coverage, without skipping incomplete coverage retries. Pause/style reset/fallback/release invalidate the reuse key. The renderer correctness suite caught an initial queue-readiness regression during development; the corrected final candidate passes all five modes, cache/ink/coverage and hidden recovery checks. No schema, source data, dependency or label architecture change. The parity harness uses the actual preview URL and captures bounded pairs instead of an oversized page bitmap.
+
+Tile parity passes 120/120 (maximum MAE1.180472/255, high-delta fraction0.421524%, unchanged provisional limits); owner tolerance agreement remains pending. Real-font worker/main placement passes18/18 with327 curve comparisons at MAE0. Held-pinch cases pass6/6 across desktop/HiDPI/phone and both themes: ≤1.23% size variation,0.5ms desktop/3.4ms phone positioning, no page errors.
+
+**Acceptance remains open:** three serial final-code phone CPU4× runs fail8/11,9/11,8/11 timing budgets. Zoom p95 medians53.3ms in /100ms out (ranges33.4–99.8 /83.4–150), with >100ms frames in every run. Heap median18.5MiB (18.3–18.7); full-gesture positioning has a6.3ms outlier. Free RAM was2094/1482/1776MB at run start; memory is not a waiver or a sufficient explanation. Existing hard gates were not changed; no attributable speedup is claimed. Full results and trace pointers: `docs/TARS-PREMIUM-J24.md`, J-25 verification: `docs/TARS-PREMIUM-J25.md`. Next renderer investigation remains the measured layerization/style/commit cost; keep HTML names and no per-frame React/SVG writes. J-15 and later jobs have not been advanced past this gate.
+
+Final source typecheck/build pass (154 precache entries/7015.33KiB),224/224 tests across29 files, lint0 errors/188 existing warnings. Browser product smoke100/100, Atlas interactions21/21, learning104/104 in each theme, News279/279, clean-install offline9/9 and settled map/console health pass with no unexpected runtime errors. UI audit passes at375/768/1366/1920px in both themes; four repeated fullscreen exits and recovery6/6 pass. Expected failed-image/503/offline network errors belong to News fault fixtures. Source/schema/id diffs remain empty and whitespace review is clean. Physical-device and WebKit acceptance are still separate J-30 work. Changes remain local/uncommitted; no push/merge/PR/deployment.
+
 ## 6. Recent changes (newest first)
 
+- **2026-10-04 — Atlas labels/markers obscured at rest:** reproduced opaque detail tiles painting above visible label/symbol DOM (`z-index: 2` escaped the base parent). Isolated the base stacking context without changing renderer, density, hit targets or zoom logic. New browser regression fails on the old build and passes 90 checks across India/World, zoom/settlement and selection at three widths/both themes. Unit225, Atlas21, learning104, cold-start6, typecheck/lint/build pass; full evidence in `docs/TARS-ATLAS-RUNTIME-FIX.md`. No data/schema or paused-roadmap changes.
+
+- **2026-10-04 — Atlas runtime regression:** direct development cold start reproduced `InvalidStateError` in `WorkerCurve` while React replayed layout effects. River rasters now use non-consuming 2D copies; layout ownership retains current bitmaps until replacement/unmount. Added StrictMode/resource-lifecycle unit coverage and direct cold-start browser coverage in development and production CI. Schema, historical records and removed features remain unchanged; overhaul paused again. Exact validation is recorded in `docs/TARS-ATLAS-RUNTIME-FIX.md`.
+
+- **2026-10-03 — Atlas + News overhaul resumed:** retired obsolete feature jobs and mixed subtasks; published the scoped queue and resumed J-24 with ready-coverage queue reuse and bounded parity screenshots. Renderer5/5, tile parity120/120, label parity18/18, pinch6/6 and retained functional regressions pass; three final phone timing runs still fail, so J-24/J-25 remain unaccepted. No source-data/schema changes or commit/push/deploy.
+
+- **2026-10-03 — Atlas + News reduction:** removed Focus, Planning and timer expeditions and their exclusive dependencies/surfaces. Preserved shared UI/Atlas/News, all existing data/schema and backup compatibility; replaced obsolete browser harnesses. Typecheck/lint/build and 224 remaining unit/data tests pass; product, Atlas/PYQ/News/offline/recovery/layout browser results are recorded in `docs/TARS-ATLAS-NEWS-REDUCTION.md`. Entire overhaul roadmap paused; no commit/push/deploy.
+
+- 2026-10-03 — Owner approved the J-25 label work needed for J-24; implemented the tile/label candidates and separate acceptance records. Found and repaired new park-visibility and opaque relief-nodata regressions.304 tests, lint0/402, Atlas21/21, learning104/104 each theme and clean offline pass; provisional parity96/96. Phone timing still fails; both jobs remain in progress, later jobs unstarted. Unshipped canvas comparison remains unaccepted. No commit, push, merge or deployment.
+
+- 2026-10-03 — Accepted premium roadmap J-23: split the unchanged Atlas camera, gestures, palette and drawing modules; 514-line map component, ten gesture tests, production acceptance and an isolated compositing/label spike — establish the renderer boundary and measured J-24/J-25 choices without altering timer, data, cartography or media. No commit, push, merge or deployment.
+
+- 2026-10-03 — Started Codex continuation at `3e43def`; recorded the owner's content-quality rejection and formal execution order; repaired cold-start QA readiness after reproducing its onboarding timeout — preserve the checkpoint contracts and avoid mistaking setup timing for an application regression. J-23 is accepted; J-24 is next.
 - 2026-10-02 — Handoff checkpoint: the whole working tree (app-shell overhaul, Current Affairs cleanup, premium roadmap through J-09 plus J-16, J-18, J-19, the Focus redesign, the study-audio engine and backups v3) committed to `handoff/claude-overhaul` for Codex to continue from — the owner stopped the overhaul here; state, verification and next action are in §0.
 
 - 2026-10-02 — Premium roadmap J-11b/c, J-10b, J-03, J-28, J-04, J-05a–d, J-06, J-07a–c, J-08, J-09, J-16, J-18, J-19; Focus rebuilt as a full-stage study room with generated wallpapers and original lines; one persistent audio engine with layered ambience and generated study music; backups carry notes and reading state — make the app feel like one fast, tactile product; per-job evidence in §5a.
@@ -678,7 +690,7 @@ Everything the Focus room shows or plays is **original to Tars and made by code 
 
 ## 8. Environment setup
 
-The repo path contains a space (`…/Focus Timer`); quote paths. Windows shells may warn about LF→CRLF; the warning is harmless.
+The checkout is `C:\Users\hario\Downloads\T.A.R.S\focus-timer`; quote paths. Windows shells may warn about LF→CRLF; the warning is harmless.
 
 ```bash
 npm ci                         # root app (Node 22 as in CI; Node 24 also works)
@@ -705,53 +717,18 @@ node gazetteer/lists.mjs       # refresh official lists            ┐ need netw
 node gazetteer/link-existing.mjs  # link v1 places to Wikipedia  │ Overpass, Nominatim); cached in
 node gazetteer/generate.mjs    # candidates → content/generated   ┘ .cache/wiki, rate-limited
 
-# QA tools (own package; production except the explicitly marked dev-only suites)
-cd tools/perf && npm install && npx playwright-core install chromium   # or set CHROMIUM_PATH
-node smoke.mjs http://localhost:4173/        # touch smoke test, exits non-zero on failure
-node atlas-check.mjs                          # Atlas interactions, desktop + phone
-node ui-audit.mjs [url] [filter]              # unwanted scrollbars at 375/768/1366/1920, light+dark → out/audit/
-node features-check.mjs                       # against npm run dev: audio-follows-timer, quick add, undo, palette…
-node route-state-check.mjs                    # workspaces as you left them: scroll, views, Plan view, the Atlas kept alive
-node header-check.mjs                         # header x per route at 1366/1920, one layout per rail/full-screen change, phone tabs, Back, Plan tabs
-node shell-check.mjs                          # the shell end to end (49 checks)
-node audio-check.mjs [--quick]                # against npm run dev: every sound and track renders, loops without a click; one engine,
-                                              #   nothing restarts across routes/panel/immersive; hand-over without silence; pause/stop release
-                                              # dev-only suites import app modules through Vite: restart the dev server after editing a module
-                                              #   they import, or the page and the test get different instances (?t= HMR URLs)
-node bundle-profile.mjs ../../dist [output.json] # static initial graph and route sizes
-node load-profile.mjs [baselineUrl] [currentUrl] # warmed Atlas route/JS/heap comparison
-node profile.mjs <label> [url]                # frame times at 4× CPU throttle; ROUTE='#/atlas?sheet=world' for World
-node screens.mjs | node pyqcheck.mjs | node trace.mjs wheel|pan|pinch
-node tars-check.mjs [url]        # production actions/context/Calendar→Focus→travel→PYQ→Insights/offline
-node vnext-learning.mjs [url]    # 104 checks; SCHEME=dark for Night
-node fullscreen-regression.mjs [url] # four repeated exits
-node job4-offline.mjs [url] [old-dist-directory] # clean install, HTTP cache disabled, SW responses/hash counts; optional upgrade
-node job4-actions.mjs http://localhost:5173/ # DEV: real repo failure/concurrency/context/midnight checks
-node job4-visual.mjs [url]       # production: every quiz type + expanded screen states at four widths/two themes
-node job4-state-matrix.mjs http://localhost:5173/ # DEV fixtures: travelled/untravelled × Familiar/Strong/Mastered
-node job4-control-contrast.mjs [url] # production: 40 actual checkbox/switch boundary/glyph/target checks, four widths/both themes
-node job4-integrity.mjs <absolute-snapshot-directory> # compare protected bytes against external safety snapshot
-node profile-summary.mjs job4-job1 job4-before job4-candidate job4-post-fixes job4-final # aggregate all three runs/cohort, including rejected candidate
-node canonical-pyq-audit.mjs    # generated canonical preview at 375/1280px + all block fixtures → ignored out/canonical-pyq
-node gesture-audit.mjs [url] [desktop|laptop-hidpi|phone] # production: Atlas frame times, repaint/label-layout counts, labels while a drag is held, tap latency, trace summary → out/gesture-audit (SHOTS=1 for screenshots)
-node app-audit.mjs [url] [desktop|phone] # production: Focus main-thread cost per second, route-change times + skeleton flag, cold start, touch targets under 44 px → out/app-audit
-node gesture-audit.mjs [url] desktop --counts --budget=budgets/gesture.json # counts only (fast) and fail on a budget; same flag on app-audit with budgets/app.json
-node error-recovery.mjs [url] [devUrl]   # production: a route chunk that fails to load reloads once and recovers; with devUrl also ?crash=route|sheet
-node dial-check.mjs [url]                # production: Focus dial angle against the engine (pause, resume, +5 min, clock jump, reduced motion, immersive bar)
-
-# Additive asset manifest (never regenerates Job 1)
-npm run atlas:assets            # from root
-# Development-only map spike (from tools/map-spike)
-npm ci && npm run prepare:data # existing Atlas vectors → ignored data/controlled.pmtiles
-node server.mjs                # localhost:4176
-node check.mjs                 # headless results in tools/perf/out/spike/
-
-# Icons (after any change to assets/icon.svg)
-npm i -D playwright-core && node scripts/generate-icons.mjs   # or PLAYWRIGHT_FROM=tools/perf
-
-# Native
-npm run cap:android            # needs Android Studio
-npm run cap:ios                # needs macOS + Xcode
+# QA tools (own package; against the production preview)
+cd tools/perf && npm install && npx playwright-core install chromium # or CHROMIUM_PATH
+node smoke.mjs http://localhost:4173/        # Atlas + News, retired links/actions, preserved legacy data, offline
+node atlas-check.mjs http://localhost:4173/  # map interaction/search on desktop + phone
+node vnext-learning.mjs http://localhost:4173/ # canonical quizzes/recall/persistence/offline; SCHEME=dark repeats Night
+node current-affairs-check.mjs              # self-hosted production fixtures; 279 daily workflow/cache checks
+node ui-audit.mjs http://localhost:4173/     # retained surfaces, responsive light/dark bounds
+node fullscreen-regression.mjs http://localhost:4173/
+node job4-offline.mjs http://localhost:4173/ # fresh-install SW cache/hash integrity
+node error-recovery.mjs http://localhost:4173/
+node product-health.mjs http://localhost:4173/ # settled bitmap tiles and console health
+# Active renderer/parity checks and job sequencing: docs/TARS-ATLAS-NEWS-ROADMAP.md.
 ```
 
 - **Env vars:** none are required. Optional: `BASE`, `SITE_URL` (canonical/OG URL; on Vercel `VERCEL_PROJECT_PRODUCTION_URL` fills `%SITE_URL%`), `CHROMIUM_PATH`, `PLAYWRIGHT_FROM`, `ROUTE`.
@@ -764,11 +741,11 @@ npm run cap:ios                # needs macOS + Xcode
 1. **Publication scope:** Jobs 1–6 were initially held uncommitted; the user subsequently authorized committing/pushing that completed tree to `origin/main` on 2026-10-01. New commits/pushes/deployments still require user authorization. The canonical ZIP is an external build input and is not shipped; full package integration tests require it (without it: 36 pass / 6 explicitly skip). Coverage dictionaries cannot prove exhaustive entity recognition; unresolved/potential-name queues require review before any new coordinates or places are added.
 2. **Precache limit:** `public/atlas/v1/places.json` is 2,548,302 bytes, against workbox `maximumFileSizeToCacheInBytes: 3 * 1024 * 1024` in `vite.config.ts`. Above 3 MiB it silently drops out of the precache and the Atlas stops working offline. Raise the limit or split the file if the gazetteer grows.
 3. `--places-only` can't add river courses. 21 Indian rivers have no course in Natural Earth or OSM and are drawn as symbols; tracing them needs a full `node build.mjs` with `line: trace(...)`.
-4. `ATLAS_V2_AT = Date.UTC(2026, 8, 26)` (`src/atlas/explore.ts`) sets the survey order: finds before it follow the v1 order, so existing histories uncover the same places. Don't change it. Don't drop `added: 2` from v2 places.
+4. `ATLAS_V2_AT = Date.UTC(2026, 8, 26)` is retained unchanged as historical provenance. The time-based survey/conversion runtime has been removed. Keep the generated source metadata and stable place ids unchanged.
 5. `content/pyq/not-mapped.mjs`: 159 of its 259 names never match an unmatched reference any more (e.g. "Mandakini" is now `in.river.mandakini`). This is harmless, because it only applies to unmatched refs, but it is misleading when read.
 6. The fact-quality imperfections in §4.2: 33 places with a duplicated Ramsar fact; straight apostrophes in the designation templates; Wikipedia vs GoI framing (an undecided policy).
-7. A task reminder body shows the raw ISO date and the stored time ("Due 2026-09-30 at 17:30") and ignores the 12/24 h setting, unlike event reminders (`services/reminders.ts:42`).
-8. **World travel gap:** only 45 World places lie on an expedition and free survey is India-only, so most World places cannot become Travelled. All World information/testing remains freely accessible and can become Familiar/Strong/Mastered. Additional travel routes remain an open design question; do not change allocation semantics implicitly.
+7. Historical task-reminder formatting issue is obsolete: reminders and Planning runtime are removed.
+8. Historical World travel gap is obsolete: timer expeditions/free survey are removed. All World places and their independent recall/mastery remain accessible.
 9. Only headless Chromium has been tested. HTML map-name halos rely on `paint-order`, and iOS Safari has no Fullscreen API, so the Atlas falls back to filling the window. Real iOS Safari and Android WebView checks are pending.
 10. Profiling the dev server is meaningless (React dev overhead); use `npm run build && npm run preview`.
 11. Three Ramsar sites (Sakhya Sagar, Ankasamudra, Gogabeel) and Glaw Lake have no position in any open source, so they are left out rather than guessed.
@@ -787,9 +764,11 @@ npm run cap:ios                # needs macOS + Xcode
 
 19. **QA contracts changed by the roadmap:** immersive focus is `<html data-focus="immersive" data-chrome="hidden">` (there is no "Immersive focus" dialog any more); `IconButton` shows a `Tooltip` instead of a `title`; the sound panel's header button is `Play sound` / `Pause sound`; rail items are in `navigation "Workspaces"` and `"Library"`, the phone tab bar is `navigation "Main"`; Plan views on phones are three tabs plus a `Lists` menu; `Segmented` renders tabs (role `tab`, `aria-selected`), `SegmentedControl` radios.
 
-## 10. Next steps (priority order)
+## 10. Historical next steps (superseded by the scoped roadmap)
 
-0. **Premium roadmap:** continue from §0 ("Recommended next action"): confirm the checkpoint, owner review of Focus and audio, then J-18b, J-15, J-12, J-13, J-16b, J-17, J-29, and the Atlas renderer track J-23 → J-24 → J-25 as its own project.
+Do not execute this historical list. The current Atlas + News contract and entire-roadmap pause in §0a supersede it.
+
+0. **Premium roadmap:** continue from §0 in the owner-confirmed formal order: J-23 → J-24 → J-25 → J-15 → J-18b → remaining jobs in audit §23. Finish each job’s acceptance before proceeding. The content-quality follow-up in §4.15 is required after J-23–J-25.
 
 1. **Physical-device validation and map detail:** test the completed Jobs 2–3 flows on iOS Safari and Android/WebView before release. Optional regional detail needs sourced/licensed content, a bounded installation/removal policy, and renderer parity before any production MapLibre adoption. The isolated spike is not a production map or a phone-GPU acceptance test. Review the 6,829 unresolved geographic occurrences through the gazetteer pipeline independently; do not infer coordinates or inflate the 149-question inventory.
 2. **User decision:** the World discovery gap (more World expeditions, or letting the survey reach the World sheet after the v2 release date).

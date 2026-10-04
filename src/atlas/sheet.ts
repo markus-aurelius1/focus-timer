@@ -3,6 +3,7 @@
  * Coordinates are already projected into sheet pixels by the build step.
  */
 import { useEffect, useState } from 'react'
+import { chunkPath, type ChunkedPath } from '@/features/atlas/renderer/geometry'
 import { feature, mesh, neighbors } from 'topojson-client'
 import type { Feature, Geometry, MultiLineString, MultiPolygon, Polygon } from 'geojson'
 import type { GeometryCollection, Topology } from 'topojson-specification'
@@ -45,6 +46,7 @@ export interface Sheet {
   marine: MapFeature[]
   /** Overlay outlines (parks, wetlands, disputed and physical regions), keyed `area:<id>` by places. */
   areas: AreaFeature[]
+  chunks?: Record<string, ChunkedPath>
   lines: Record<'indiaBorder' | 'indiaCoast' | 'coasts' | 'intlBorders' | 'graticule' | 'stateBorders', string>
   labels: MapLabel[]
   /** State/country adjacency (by index into `states` / `countries`). */
@@ -153,7 +155,7 @@ export function decodeSheet(file: SheetFile, base: string, overlay?: OverlayFile
     ? states.reduce<[number, number, number, number]>((a, s) => [Math.min(a[0], s.bbox[0]), Math.min(a[1], s.bbox[1]), Math.max(a[2], s.bbox[2]), Math.max(a[3], s.bbox[3])], [Infinity, Infinity, -Infinity, -Infinity])
     : [file.width * 0.38, file.height * 0.06, file.width * 0.98, file.height * 0.94]
 
-  return {
+  const result: Sheet = {
     id: file.sheet,
     title: file.title,
     width: file.width,
@@ -179,6 +181,11 @@ export function decodeSheet(file: SheetFile, base: string, overlay?: OverlayFile
     shadeUrl: `${base}atlas/v1/${file.sheet}-shade.webp`,
     focus,
   }
+  result.chunks = {}
+  for (const [key, d] of Object.entries(result.lines)) result.chunks[key] = chunkPath(d)
+  for (const group of ['states', 'countries', 'lakes', 'rivers', 'areas'] as const)
+    for (const f of result[group]) result.chunks[group + ':' + f.id] = chunkPath(f.d)
+  return result
 }
 
 /** Kinds of the overlay's areas, in geometry order (kept beside `polygons`, which drops properties it doesn't know). */

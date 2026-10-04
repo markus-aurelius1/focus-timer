@@ -46,15 +46,15 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: false,
       // og-image.png is a social preview: crawlers fetch it, the installed app never does, so it is not precached.
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'sw-notifications.js'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         // The manifest id is the installed app's identity. It predates the rename to
         // Tars and must stay, or browsers would treat Tars as a different app and
         // existing installs would never pick up the new name and icons.
         id: 'lodestar-study',
-        name: 'Tars — Study & Focus',
+        name: 'Tars — Atlas & News',
         short_name: 'Tars',
-        description: 'A calm study planner, focus timer and progress tracker that works offline.',
+        description: 'An offline Atlas and a source-linked Current Affairs reading workspace.',
         lang: 'en',
         start_url: '.',
         scope: '.',
@@ -71,30 +71,8 @@ export default defineConfig({
           { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
         shortcuts: [
-          {
-            name: 'Start focus',
-            short_name: 'Focus',
-            url: './#/focus?start=1',
-            icons: [{ src: 'icons/shortcut-focus.png', sizes: '96x96', type: 'image/png' }],
-          },
-          {
-            name: "Today's tasks",
-            short_name: 'Today',
-            url: './#/tasks?view=today',
-            icons: [{ src: 'icons/shortcut-today.png', sizes: '96x96', type: 'image/png' }],
-          },
-          {
-            name: 'Add a task',
-            short_name: 'Add task',
-            url: './#/tasks?add=1',
-            icons: [{ src: 'icons/shortcut-add.png', sizes: '96x96', type: 'image/png' }],
-          },
-          {
-            name: 'Insights',
-            short_name: 'Insights',
-            url: './#/insights',
-            icons: [{ src: 'icons/shortcut-insights.png', sizes: '96x96', type: 'image/png' }],
-          },
+          { name: 'Atlas', url: './#/atlas' },
+          { name: 'News', url: './#/current-affairs' },
         ],
       },
       workbox: {
@@ -121,7 +99,6 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
-        importScripts: ['sw-notifications.js'],
       },
       devOptions: { enabled: false },
     }),
@@ -136,7 +113,7 @@ export default defineConfig({
           groups: [
             { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
             { name: 'motion', test: /node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/ },
-            { name: 'data', test: /node_modules[\\/](dexie|dexie-react-hooks|zustand)[\\/]/ },
+            { name: 'data', test: /node_modules[\\/](dexie|zustand)[\\/]/ },
             { name: 'native', test: /node_modules[\\/]@capacitor/ },
           ],
         },
