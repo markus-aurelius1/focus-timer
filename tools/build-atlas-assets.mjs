@@ -31,7 +31,7 @@ function writeControlledIndiaBorder() {
     return out
   }
   const stitch=indexes=>{const line=[];for(const index of indexes){const arc=decodeArc(index);if(line.length&&arc.length&&line[line.length-1][0]===arc[0][0]&&line[line.length-1][1]===arc[0][1])arc.shift();line.push(...arc)}return line.map(([x,y])=>inverse(x,y))}
-  const geojson={type:'FeatureCollection',features:obj.arcs.map((indexes,i)=>({type:'Feature',properties:{id:'india-controlled-border-'+i,source:'Tars controlled India sheet'},geometry:{type:'LineString',coordinates:stitch(indexes)}}))}
+  const geojson={type:'FeatureCollection',features:obj.arcs.map((indexes,i)=>({type:'Feature',properties:{id:'india-controlled-border-'+i,source:'Legacy India-view fallback (Natural Earth India perspective + DataMeet sheet)',authority:'fallback-not-soi'},geometry:{type:'LineString',coordinates:stitch(indexes)}}))}
   writeFileSync(join(out,'india-controlled-border.geojson'),JSON.stringify(geojson))
 }
 writeControlledIndiaBorder()
@@ -44,6 +44,6 @@ const walk=dir=>{for(const name of readdirSync(dir,{withFileTypes:true})){const 
 walk('public/atlas/v1');walk('public/pyq-atlas/v1');walk(out)
 // Exclude this manifest from its own content identity.
 const assets=files.filter(f=>f.path!=='atlas-assets/v1/manifest.json').sort((a,b)=>a.id.localeCompare(b.id))
-const manifest={schema:'tars-atlas-assets/v1',version:sha(JSON.stringify(assets)),renderer:'tars-svg/v1',indiaBoundaryPolicy:'Existing controlled Atlas India sheet and overlays; no generic service substitution',tiers:{CORE:{policy:'Always bundled and precached. Complete curated study data and world context.'},INDIA:{policy:'Bundled India vectors, overlays and relief.'},REGIONAL:{policy:'Optional verified packs only; none published in this release.',packs:[]},ONLINE:{policy:'No online map provider in this release.',cacheBudgetBytes:0}},assets,totalBytes:assets.reduce((n,a)=>n+a.bytes,0)}
+const manifest={schema:'tars-atlas-assets/v1',version:sha(JSON.stringify(assets)),renderer:'tars-svg/v1',indiaBoundaryPolicy:'Production uses the existing India-view sheet. MapLibre preview uses a derived fallback only; promotion requires a locally bundled official Survey of India boundary asset.',tiers:{CORE:{policy:'Always bundled and precached. Complete curated study data and world context.'},INDIA:{policy:'Bundled India vectors, overlays and relief.'},REGIONAL:{policy:'Optional verified packs only; none published in this release.',packs:[]},ONLINE:{policy:'Production has no online map provider. Opt-in MapLibre preview uses OpenFreeMap and falls back to the bundled renderer if the style cannot initialize.',cacheBudgetBytes:0}},assets,totalBytes:assets.reduce((n,a)=>n+a.bytes,0)}
 writeFileSync(join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\n')
 console.log(`Atlas assets: ${assets.length} files · ${manifest.totalBytes} bytes · ${Object.keys(hotspots).length} meaningful PYQ places`)
