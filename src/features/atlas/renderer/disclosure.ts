@@ -56,9 +56,9 @@ function priority(place: Place, isKnown: boolean, pyqWeight: number, selected: b
 
 export function studySourceLimit(zoom: number) {
   if (zoom < 1.15) return 80
-  if (zoom < 1.65) return 160
-  if (zoom < 2.25) return 300
-  if (zoom < 3.1) return 500
+  if (zoom < 2.25) return 160
+  if (zoom < 3.1) return 300
+  if (zoom < 4) return 500
   return 800
 }
 
