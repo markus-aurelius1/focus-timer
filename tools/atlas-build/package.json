@@ -7,7 +7,8 @@
     "build": "node build.mjs",
     "test": "node --test test/*.test.mjs",
     "places": "node build.mjs --places-only",
-    "pyq:canonical": "node canonical-pyq.mjs"
+    "pyq:canonical": "node canonical-pyq.mjs",
+    "import:soi": "node import-soi-boundary.mjs"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",
