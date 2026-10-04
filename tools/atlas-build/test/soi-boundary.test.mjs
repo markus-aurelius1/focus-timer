@@ -19,7 +19,7 @@ test('accepts an India-scale geographic outline with the north-western claimed s
 })
 
 test('rejects a boundary missing the north-western claimed sector', () => {
-  const shifted = validLines.map(line => line.map(([lon, lat]) => [Math.max(77, lon), lat]))
+  const shifted = validLines.map(line => line.map(([lon, lat]) => lat >= 34.5 && lon <= 76.5 ? [77, lat] : [lon, lat]))
   assert.throws(() => validateSoiBoundary({ type: 'MultiLineString', coordinates: shifted }), /north-western claimed-territory/)
 })
 
