@@ -92,6 +92,7 @@ function Atlas({ ex }: { ex: Exploration }) {
   const settings = useSettings()
   const desktop = useIsDesktop()
   const mapLibrePreview = new URLSearchParams(location.search).get('atlasRenderer') === 'maplibre'
+  const [mapLibreFailed, setMapLibreFailed] = useState(false)
   // Kept for the session (app/routeState.ts): on devices where the Atlas is not kept alive, returning still opens the same sheet.
   const [sheetId, setSheetId] = useRouteState<SheetId>('atlas:sheet', () => (currentRoute().params.get('sheet') === 'world' ? 'world' : 'india'))
   const { sheet: loaded, error } = useSheet(sheetId)
@@ -323,7 +324,7 @@ function Atlas({ ex }: { ex: Exploration }) {
         {sheet ? (
           <AnimatePresence initial={false}>
             <motion.div key={sheet.id} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: prefersReducedMotion() ? 0 : 0.26, ease: 'easeOut' }}>
-              {mapLibrePreview ? <Suspense fallback={<MapLoading />}><MapLibreAtlasMap
+              {mapLibrePreview && !mapLibreFailed ? <Suspense fallback={<MapLoading />}><MapLibreAtlasMap
                 ref={setMap}
                 sheet={sheet}
                 plate={view.plate}
@@ -346,6 +347,7 @@ function Atlas({ ex }: { ex: Exploration }) {
                 onSelect={select}
                 instantSelect={desktop}
                 insets={mapInsets}
+                onFailure={() => setMapLibreFailed(true)}
               /></Suspense> : <AtlasMap
                 ref={setMap}
                 sheet={sheet}
