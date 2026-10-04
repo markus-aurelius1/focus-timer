@@ -1,5 +1,5 @@
 name: Verify Atlas News architecture
-# verification revision 3
+# verification revision 4
 
 on:
   push:
