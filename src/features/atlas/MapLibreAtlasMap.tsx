@@ -248,7 +248,7 @@ export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, MapLibreAtlasProps>(f
     refreshSource()
   }, [props.places, props.kinds, props.showPlaces, props.showUndiscovered, props.discovered, props.pyqWeights, props.selectedId])
 
-  return <div ref={node} data-renderer="maplibre" className="absolute inset-0 size-full" role="application" aria-label="Interactive Tars vector Atlas" />
+  return <div ref={node} data-renderer="maplibre" data-sheet={props.sheet.id} className="absolute inset-0 size-full" role="application" aria-label={`${props.sheet.title} interactive Tars vector Atlas`} />
 })
 
 export default MapLibreAtlasMap
