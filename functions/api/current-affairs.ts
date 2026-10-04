@@ -33,9 +33,15 @@ export async function onRequest({ request, waitUntil }: { request: Request; wait
   const data = await collectShared()
   const available = data.sources.some(source => source.status !== 'failed')
   const headers = new Headers(baseHeaders)
-  headers.set('Cache-Control', available ? FEED_CACHE_CONTROL : 'no-store')
-  headers.set('X-Tars-News-Cache', 'miss')
+  headers.set('Cache-Control', force ? 'no-store' : available ? FEED_CACHE_CONTROL : 'no-store')
+  headers.set('X-Tars-News-Cache', force ? 'bypass' : 'miss')
   const response = new Response(JSON.stringify(available ? data : { error: 'All publishers are unavailable', sources: data.sources }), { status: available ? 200 : 503, headers })
-  if (available && cache) waitUntil(cache.put(cacheKey, response.clone()))
+  if (available && cache) {
+    const cachedHeaders = new Headers(response.headers)
+    cachedHeaders.set('Cache-Control', FEED_CACHE_CONTROL)
+    cachedHeaders.set('X-Tars-News-Cache', 'miss')
+    const cachedResponse = force ? new Response(response.clone().body, { status: response.status, statusText: response.statusText, headers: cachedHeaders }) : response.clone()
+    waitUntil(cache.put(cacheKey, cachedResponse))
+  }
   return response
 }
