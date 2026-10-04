@@ -54,12 +54,15 @@ try {
     check('MapLibre remains active after selection', await renderer.isVisible())
 
     await page.getByRole('tab', { name: 'World', exact: true }).click()
+    const worldRenderer = page.locator('[data-renderer="maplibre"][data-sheet="world"]')
+    await worldRenderer.waitFor({ timeout: 10000 })
     await page.waitForFunction(() => {
-      const el = document.querySelector('[data-renderer="maplibre"]')
+      const el = document.querySelector('[data-renderer="maplibre"][data-sheet="world"]')
       return el && Number(el.dataset.studyCount ?? 0) > 0
     })
-    const worldCount = Number(await page.locator('[data-renderer="maplibre"]').getAttribute('data-study-count'))
-    check('World overview study source is bounded', worldCount > 0 && worldCount <= 160, `${worldCount} features`)
+    const worldCount = Number(await worldRenderer.getAttribute('data-study-count'))
+    const worldZoom = await worldRenderer.getAttribute('data-study-zoom')
+    check('World overview study source is bounded', worldCount > 0 && worldCount <= 160, `${worldCount} features at semantic z${worldZoom}`)
     check('MapLibre preview has no page errors', errors.length === 0, errors.join(' | '))
     await ctx.close()
   }
