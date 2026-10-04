@@ -8,7 +8,12 @@ test('Pages preserves GET, partial failure, total failure and method contracts',
   const originalFetch = globalThis.fetch
   let calls = 0
   try {
-    globalThis.fetch = async () => { calls++; return new Response('<rss><channel></channel></rss>') }
+    globalThis.fetch = async (_input, init) => {
+      assert.equal(init?.redirect, 'manual')
+      assert.ok(init?.signal)
+      calls++
+      return new Response('<rss><channel></channel></rss>')
+    }
     const request = new Request('https://example.test/api/current-affairs?url=https://untrusted.test')
     const available = await onRequest({ request })
     assert.equal(available.status, 200)
@@ -27,6 +32,10 @@ test('Pages preserves GET, partial failure, total failure and method contracts',
     assert.equal(failed.status, 503)
     assert.equal(failed.headers.get('Cache-Control'), 'no-store')
     assert.equal((await failed.json()).error, 'All publishers are unavailable')
+    globalThis.fetch = async () => new Response('', { status: 302, headers: { Location: 'https://untrusted.test' } })
+    const redirects = await onRequest({ request })
+    assert.equal(redirects.status, 503)
+    assert.ok((await redirects.json()).sources.every((source: { status: string }) => source.status === 'failed'))
     globalThis.fetch = async () => { throw new Error('Unsupported methods must not fetch') }
     const unsupported = await onRequest({ request: new Request(request.url, { method: 'POST' }) })
     assert.equal(unsupported.status, 405)

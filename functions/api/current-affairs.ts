@@ -7,7 +7,8 @@ export async function onRequest({ request }: { request: Request }): Promise<Resp
     headers.set('Allow', 'GET')
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers })
   }
-  const data = await collectFeeds()
+  // Workers rejects redirect: 'error'; manual keeps the gateway's existing !ok rejection of all 3xx responses.
+  const data = await collectFeeds((input, init) => fetch(input, { ...init, redirect: 'manual' }))
   const available = data.sources.some(source => source.status !== 'failed')
   headers.set('Cache-Control', available ? FEED_CACHE_CONTROL : 'no-store')
   return new Response(JSON.stringify(available ? data : { error: 'All publishers are unavailable', sources: data.sources }), { status: available ? 200 : 503, headers })

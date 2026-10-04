@@ -1,3 +1,5 @@
+**2026-10-05 authorized deployment follow-up:** initial checkpoint `0758615696eed2c53558920f4f17a8ce51181456` is pushed only to the handoff branch. The owner explicitly authorized one adapter-fix commit after live Workers rejected `redirect: error`. Pages translates it to `manual`; the existing gateway rejects 3xx without following redirects, preserving the original security and ingestion contract. Gateway/application source and budgets are unchanged. Contract/typecheck/local Workers checks pass. Live redeployment results are recorded in the task response and ignored release logs.
+
 # Current Cloudflare release configuration — 2026-10-05
 
 - Production origin: `https://tars-atlas-news.pages.dev`.
