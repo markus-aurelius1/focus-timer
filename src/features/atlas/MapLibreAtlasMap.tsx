@@ -59,7 +59,7 @@ function hideGenericIndiaBoundaries(map: LibreMap) {
 }
 
 function addStudyLayers(map: LibreMap, data: FeatureCollection<Point, PlaceProps>, sheet: AtlasMapProps['sheet']['id']) {
-  map.addSource(SOURCE, { type: 'geojson', data, cluster: true, clusterMaxZoom: 6, clusterRadius: 44 })
+  map.addSource(SOURCE, { type: 'geojson', data, cluster: true, clusterMaxZoom: 3, clusterRadius: 44 })
   map.addLayer({
     id: 'tars-clusters',
     type: 'circle',
@@ -91,7 +91,14 @@ function addStudyLayers(map: LibreMap, data: FeatureCollection<Point, PlaceProps
       'circle-color': ['case', ['>', ['get', 'pyqWeight'], 0], '#b3832d', '#294968'],
       'circle-stroke-color': '#fffdf7',
       'circle-stroke-width': ['case', ['get', 'selected'], 3, 1.5],
-      'circle-opacity': ['case', ['>=', ['zoom'], ['get', 'minZoom']], 0.95, 0],
+      'circle-opacity': ['step', ['zoom'], 0,
+        1, ['case', ['<=', ['get', 'minZoom'], 1], 0.95, 0],
+        1.5, ['case', ['<=', ['get', 'minZoom'], 1.5], 0.95, 0],
+        2, ['case', ['<=', ['get', 'minZoom'], 2], 0.95, 0],
+        2.5, ['case', ['<=', ['get', 'minZoom'], 2.5], 0.95, 0],
+        3, ['case', ['<=', ['get', 'minZoom'], 3], 0.95, 0],
+        3.5, 0.95,
+      ],
     },
   })
   map.addLayer({
@@ -105,7 +112,6 @@ function addStudyLayers(map: LibreMap, data: FeatureCollection<Point, PlaceProps
       'text-color': '#17283a',
       'text-halo-color': '#fffdf7',
       'text-halo-width': 1.4,
-      'text-opacity': ['case', ['>=', ['zoom'], ['get', 'minZoom']], 1, 0],
     },
   })
   if (sheet === 'india') {
