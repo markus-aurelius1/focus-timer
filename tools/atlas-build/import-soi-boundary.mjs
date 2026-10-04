@@ -45,7 +45,7 @@ function readGeoJson() {
   const file = resolve(String(args.geojson || ''))
   if (!args.geojson || !existsSync(file)) throw new Error('Pass --geojson=<path> or --shp=<path>')
   const bytes = readFileSync(file)
-  return { input: JSON.parse(bytes.toString('utf8')), sourceSha256: sha([bytes]), files: [file] }
+  return { input: JSON.parse(bytes.toString('utf8')), sourceSha256: String(args['source-sha256'] || sha([bytes])), convertedSha256: sha([bytes]), files: [file] }
 }
 
 const source = args.geojson ? readGeoJson() : await readShapefile()
@@ -63,6 +63,7 @@ writeFileSync(metaOut, JSON.stringify({
   sourcePage: SOI_OUTLINE_PAGE,
   sourceUrl: SOI_OUTLINE_URL,
   sourceSha256: source.sourceSha256,
+  convertedSha256: source.convertedSha256 ?? source.sourceSha256,
   importedFiles: source.files.map(file => file.split(/[\\/]/).pop()),
   geometry: stats,
 }, null, 2) + '\n')
