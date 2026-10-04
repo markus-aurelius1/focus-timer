@@ -74,9 +74,9 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
   for (const [label, list] of back) rels.push({ label, items: list.map((q) => <LinkChip key={q.id} place={q} ex={ex} onClick={() => onSelect({ type: 'place', id: q.id })} />) })
 
   return (
-    <div>
+    <div className="place-knowledge">
       <div className="flex items-start gap-3">
-        <span className="mt-1 flex size-10 items-center justify-center rounded-2xl bg-surface-2">
+        <span className="mt-1 flex size-10 items-center justify-center rounded-lg bg-knowledge-soft text-knowledge">
           <PlaceIcon kind={p.kind} tags={p.tags} size={24} />
         </span>
         <div className="min-w-0 flex-1">
@@ -101,7 +101,7 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
           <span key={i} className="flex items-center gap-1">
             {i > 0 && <ChevronRight className="size-3" />}
             {c.target ? (
-              <button type="button" className="rounded px-0.5 text-ink-2 underline-offset-2 hover:underline" onClick={() => onSelect(c.target!)}>
+              <button type="button" className="place-breadcrumb rounded px-0.5 text-ink-2 underline-offset-2 hover:underline" onClick={() => onSelect(c.target!)}>
                 {c.label}
               </button>
             ) : (
@@ -113,11 +113,10 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
 
       {(
         <>
-          <MasteryRow level={level} m={m} />
           <ul className="mt-4 space-y-2">
             {p.facts.map((f, i) => (
               <li key={i} className="flex gap-2.5 text-[15px] leading-relaxed">
-                <span className="mt-2.5 size-1.5 shrink-0 rounded-full bg-accent" />
+                <span className="mt-2.5 size-1.5 shrink-0 rounded-full bg-knowledge" />
                 <span>{f}</span>
               </li>
             ))}
@@ -133,7 +132,8 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
             </div>
           )}
           <PlaceQuestions placeId={p.id} onOpen={onPyq} />
-          <div className="mt-6 grid grid-cols-2 gap-2">
+          <MasteryRow level={level} m={m} />
+          <div className="mt-6 flex flex-wrap gap-2">
             <Button variant="primary" icon={<GraduationCap className="size-4" />} onClick={() => onTest(p.id)}>
               Test me
             </Button>
@@ -154,7 +154,7 @@ export function PlaceDetails({ ex, place: p, onSelect, onTest, onShow, onPyq }: 
 function LinkChip({ place, ex, onClick }: { place: Place; ex: Exploration; onClick: () => void }) {
   const known = ex.state.discovered.has(place.id)
   return (
-    <button type="button" onClick={onClick} className={cn('flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[13px] font-semibold transition-colors hover:bg-surface-2', known ? 'border-line-strong' : 'border-dashed border-line text-ink-2')}>
+    <button type="button" onClick={onClick} className={cn('flex min-h-11 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[13px] font-semibold transition-colors hover:bg-surface-2', known ? 'border-line-strong' : 'border-dashed border-line text-ink-2')}>
       <PlaceIcon kind={place.kind} tags={place.tags} size={16} />
       {place.name}
     </button>
@@ -171,7 +171,7 @@ export function MasteryRow({ level, m }: { level: ReturnType<ReturnType<typeof m
     else if (m.level === 'mastered') hint = 'Mastered – keep it fresh with spaced reviews.'
   }
   return (
-    <div className="mt-4 rounded-2xl bg-surface-2 p-3.5">
+    <div className="place-mastery mt-4 bg-surface-2 p-3.5">
       <div className="flex items-center justify-between">
         <span className="text-[13px] font-bold" style={{ color: MASTERY_TEXT_COLOUR[level] }}>
           {level === 'unknown' || level === 'discovered' ? m?.attempts ? 'Recall started' : 'Not yet tested' : MASTERY_LABEL[level]}

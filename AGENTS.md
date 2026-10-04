@@ -1,3 +1,7 @@
+**Current owner deployment authorization — 2026-10-05:** prepare one release checkpoint, push only `handoff/claude-overhaul`, and deploy the accepted Atlas/News/Settings application to Cloudflare Pages. Application behavior stays frozen; no performance work or J-25. No authentication configuration. Earlier publication prohibitions below describe prior tasks and are superseded for this deployment only.
+
+**Current owner release freeze (2026-10-04): STOP PERFORMANCE WORK.** Application source is accepted and frozen. No J-25 investigation, renderer/compositor experiments or further Windows/headless gesture attempts. The owner accepts private Cloudflare deployment with a documented synthetic gesture-benchmark exception on this host; the four failures and all unchanged budgets remain recorded for future stable/physical-device validation. Preserve profiling evidence and personal state. Run only the eight requested minimal sanity checks, update the release report/handoff, then stop. No deployment, authentication configuration, commit or push is authorized.
+
 # AGENTS.md
 
 This file is read automatically by Codex (and other agents) at the start of
@@ -9,11 +13,13 @@ correction.
 Read `CODEX_HANDOFF.md` next: it holds the architecture, the current state and
 the Output Quality Specs this file refers to.
 
+Current release decision: `docs/TARS-PRODUCTION-READINESS.md`; deployment-only handoff: `docs/TARS-CLOUDFLARE-DEPLOYMENT-HANDOFF.md`. `docs/TARS-J24-GESTURE-REPAIR.md` preserves historical investigation evidence (29/33 pass, four failed limits), not authorization to continue performance work. Preserve Phase 1, all accepted application/runtime changes, canonical content, migrations, stable IDs and user state. The exception is an explicit owner release decision, not a passing gesture test or permission to weaken budgets. No publication is authorized in this task.
+
 ---
 
 ## 1. Project summary
 
-Tars (called Lodestar until 2026-09-26) is a local-first Atlas and News app for UPSC / UPPCS study. Atlas provides offline geography, canonical PYQs and recall mastery; News provides source-linked Current Affairs, reading queues, archives and short notes. Focus, Planning and timer-driven expeditions were removed on 2026-10-03. On 2026-10-04 the owner paused the overhaul again and authorized only the Atlas runtime regression fix. Follow `docs/TARS-ATLAS-NEWS-ROADMAP.md` for retained scope, but do not execute its queue. Preserve accepted work; J-23 is accepted, J-24/J-25 remain unaccepted. Never restore retired features to repair Atlas.
+Tars (called Lodestar until 2026-09-26) is a local-first Atlas and News app for UPSC / UPPCS study. Atlas provides offline geography, canonical PYQs and recall mastery; News is an RSS collection of external publisher links with Read, Saved, search, filters and archives. News has no reader, Notes controls or article-detail surface; both historical note stores remain dormant and intact. Focus, Planning and timer-driven expeditions were removed on 2026-10-03. The latest 2026-10-04 owner instruction authorizes the Editorial Cartography presentation/interaction redesign, superseding the earlier pause. See `docs/TARS-EDITORIAL-REDESIGN.md` and `docs/TARS-ATLAS-NEWS-ROADMAP.md`. J-23 remains accepted. The final owner contract supersedes the earlier broad runtime-repair authorization: J-24/J-25 and protected Atlas internals are out of scope. The only final-pass renderer change invalidates a removed packed GPU surface in the existing native fallback; camera, labels, painter and cache budgets stay unchanged. Never restore retired features to repair Atlas. No commit, push, PR or deployment is authorized.
 
 ## 2. Repo layout
 
@@ -21,7 +27,7 @@ Tars (called Lodestar until 2026-09-26) is a local-first Atlas and News app for 
 - `src/data` — Dexie `lodestar` schema v2, legacy-compatible types, repo timestamps/tombstones, shared settings/hooks, JSON backups v1–v3 and sync. Historical Focus/Planning tables remain inert for preservation and backup compatibility; never delete them on boot.
 - `src/tars` — validated Atlas/News/navigation/preferences actions, deterministic intents and context
 - `src/atlas` — gazetteer, recall-based exploration, mastery, spaced review, PYQ runtime and living map; `src/game` — recall XP/ranks and existing recall challenges
-- `src/current-affairs`, `src/features/current-affairs` — feed/gateway, archive, reading state and News UI; `src/features/notes` holds the retained News notes hook
+- `src/current-affairs`, `src/features/current-affairs` — feed/gateway, archive, Read/Saved state and external-link News UI; `src/features/notes` holds the dormant historical notes hook
 - `src/services`, `src/ui` — shared lifecycle, haptics, files, install/fullscreen and design-system primitives
 - `src/features/atlas` — map, filters/search, entity details, recall, questions and offline status
 - `public/atlas/v1/` — **generated** Atlas data; never hand-edit. Static legacy expedition metadata is retained in this immutable source package but has no runtime index/consumer.
@@ -51,7 +57,7 @@ Full command list: `CODEX_HANDOFF.md` §8.
 - **Files:** components `PascalCase.tsx` under `src/features/<screen>/`; pure logic in lower-case `.ts` with colocated `*.test.ts`; import via `@/…` (= `src/`).
 - **Data:** every record has a UUID `id`, `createdAt`, `updatedAt`; write only through `src/data/repo.ts` (deletes leave tombstones). XP, mastery, exploration and challenge progress are **derived from history** — never add a stored counter.
 - **Determinism:** user-visible randomness uses `seededRandom(hashString(...))` so every device shows the same questions, challenges.
-- **UI:** Tailwind v4 tokens – surface layers `bg-canvas` → `bg-bg` (stage) → `bg-surface` (raised) → `bg-surface-2/3` (wells), `text-ink-2`, `text-accent`…; themes Paper (light) / Night (`.dark`); type roles `t-display` / `t-title` / `t-heading` / `t-label` / `t-meta` / `t-num` (Manrope for UI and all numbers, Fraunces only for display moments such as the wordmark and Atlas place names; sentence-case labels, no all-caps eyebrows); screens use `app/Workspace.tsx` and rows on the stage rather than cards; motion tokens 140/220/320/520 ms; respect reduced motion; dialogs via `ui/Sheet.tsx` with actions in the footer; Undo toasts instead of confirm dialogs; no glass/`backdrop-filter`. Full rules and the QA-script contracts: `CODEX_HANDOFF.md` §7 and §9 item 15.
+- **UI:** Editorial Cartography; retained semantic tokens, Ivory Atlas / Midnight Atlas, blue interaction, gold knowledge, green success, red error plus text/icons. Locally licensed Geist UI and Newsreader editorial/display; protected Atlas label metrics retain Manrope. Desktop has a 56px product bar; mobile has a 52px top bar and 56px Atlas/News bottom switcher, plus safe areas. No permanent shell sidebar. Desktop News uses a 180px collection rail and the remaining width for editorial rows. Search expands on demand; filters/Sources and secondary map controls are contextual. Preserve Phase 1; contrast corrections retain semantic roles. Atlas uses a 400–432px contextual inspector and mobile detents. Shared single-question review retains the existing focus/Back lifecycle. No looping decorative map motion. Motion tokens and reduced-motion support remain. See `CODEX_HANDOFF.md` and `docs/TARS-PRODUCTION-READINESS.md`; earlier layout rules are historical.
 - **User-facing text** follows the house style in `CODEX_HANDOFF.md` §4.0 (sentence case, no exclamation marks, curly apostrophes, spaced en dash, `formatDuration` for durations).
 - **Atlas renderer:** no React state or SVG attribute writes per frame; point names are HTML; see `CODEX_HANDOFF.md` §7 for the specific regressions to avoid.
 - **Commits:** subject `<Area>: <what changed>`, sentence case, no trailing period (e.g. `Atlas data: PYQ ledger, alias matching and study-priority score`). Branches `claude/<name>` (or your own agent prefix); add commits on top.

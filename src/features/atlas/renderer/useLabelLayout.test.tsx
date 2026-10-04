@@ -51,6 +51,26 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 describe('worker placement lifecycle', () => {
+  it('closes a shared sprite atlas once per stale snapshot and retains committed atlas pixels until replacement', () => {
+    const { worker, rerender, unmount } = setup()
+    worker.reply({ type: 'ready' })
+    const first = { close: vi.fn() } as unknown as ImageBitmap
+    const stale = { close: vi.fn() } as unknown as ImageBitmap
+    const next = { close: vi.fn() } as unknown as ImageBitmap
+    const words = (atlasBitmap: ImageBitmap) => [label, { ...label, key: 'place:delhi', text: 'Delhi' }].map(word => ({ ...word, atlasBitmap }))
+    worker.reply({ type: 'labels', id: worker.request, labels: words(first) })
+    const prior = worker.request
+    rerender({ input: { ...input, width: 400 }, layout: snapshot, source: sheet })
+    worker.reply({ type: 'labels', id: prior, labels: words(stale) })
+    expect(stale.close).toHaveBeenCalledTimes(1)
+    expect(first.close).not.toHaveBeenCalled()
+    worker.reply({ type: 'labels', id: worker.request, labels: words(next) })
+    expect(first.close).toHaveBeenCalledTimes(1)
+    expect(next.close).not.toHaveBeenCalled()
+    unmount()
+    expect(next.close).toHaveBeenCalledTimes(1)
+    expect(first.close).toHaveBeenCalledTimes(1)
+  })
   it('commits symbol identities with the matching name snapshot while retaining both during a request', () => {
     const symbol = { place: { id: 'leh', name: 'Leh', kind: 'capital' as const, level: 1 as const }, x: 100, y: 100, mastery: 'discovered' as const, isNew: false, selected: false }
     const { result, worker, rerender } = setup({ ...input, places: [symbol] })

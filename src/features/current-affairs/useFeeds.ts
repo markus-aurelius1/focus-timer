@@ -31,7 +31,7 @@ export function useFeeds() {
   }, [])
   useEffect(() => {
     const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 18000)
-    let cancelled = false
+    let cancelled = false, pending = true
     setLoading(true); setError('')
     const getData = async () => {
       try {
@@ -55,10 +55,11 @@ export function useFeeds() {
           }
         } catch { /* No last successful response yet. */ }
         if (!cancelled) { setError(restored ? 'Refresh unavailable – showing the last successful feed.' : 'Couldn’t refresh Current Affairs. Try again when you’re online.'); setCached(true) }
-      } finally { clearTimeout(timeout); if (!cancelled) { setLoading(false); setNow(Date.now()) } }
+      } finally { pending = false; clearTimeout(timeout); if (!cancelled) { setLoading(false); setNow(Date.now()) } }
     }
     void getData()
-    return () => { cancelled = true; controller.abort(); clearTimeout(timeout) }
+    // Aborting an already-read response can cancel the SW's outstanding cloned-body cache write.
+    return () => { cancelled = true; if (pending) controller.abort(); clearTimeout(timeout) }
   }, [online, revision])
   return { data, index, loading, error, cached, now, online, reload }
 }

@@ -15,6 +15,7 @@ import { AppError, ErrorBoundary, ScreenError } from '@/ui/ErrorBoundary'
 import { ConfirmHost, Toaster } from '@/ui/feedback'
 import { LogoMark } from '@/ui/Logo'
 import { toast } from '@/ui/toast'
+import { closeTopSurface } from '@/ui/surface/core'
 import { currentRoute, navigate, RouteContext, useRoute, type RouteName } from './router'
 import { useOnline } from '@/lib/useOnline'
 import { screenEnter } from '@/ui/motion'
@@ -24,7 +25,7 @@ import { onRouteReset, rememberScroll, scrollFor } from './routeState'
 import { ScreenActive } from './screenActive'
 import { shiftStage } from './shellShift'
 import { preloadRoute, preloadRoutesWhenIdle, SCREENS } from './screens'
-import { Rail, TabBar } from './Shell'
+import { TopBar } from './Shell'
 import { useGlobalShortcuts } from './shortcuts'
 import { useApplyTheme } from './theme'
 import { useUi } from './ui-store'
@@ -235,7 +236,7 @@ function Main({ ready }: { ready: boolean }) {
         </>
       )}
       <ShellSync route={route.name} />
-      <Rail route={route.name} />
+      <TopBar route={route.name} />
       <div className="app-frame">
         <main className="stage" aria-busy={!ready || undefined}>
           {atlasKept && (
@@ -278,7 +279,7 @@ function Main({ ready }: { ready: boolean }) {
           </div>
         </main>
       </div>
-      <TabBar route={route.name} />
+
       {ready && (
         <OverlayBoundary>
           <Overlays />
@@ -300,17 +301,7 @@ function GlobalShortcuts() {
  * the full-screen Atlas, while the Atlas fills the screen.
  */
 function ShellSync({ route }: { route: RouteName }) {
-  const collapsed = useUi((s) => s.sidebarCollapsed)
   const atlasFullscreen = useUi((s) => s.atlasFullscreen)
-  // Both of these move the stage: one layout, and the movement as a transform (shellShift.ts).
-  useEffect(() => {
-    const root = document.documentElement.dataset
-    if ((root.sidebar === 'collapsed') === collapsed) return
-    shiftStage(() => {
-      if (collapsed) root.sidebar = 'collapsed'
-      else delete root.sidebar
-    })
-  }, [collapsed])
   useEffect(() => {
     const root = document.documentElement.dataset
     const hide = atlasFullscreen && route === 'atlas'
@@ -390,6 +381,8 @@ function RuntimeSync() {
   useEffect(() => {
     if (!isNative) return
     const back = CapApp.addListener('backButton', () => {
+      if (useUi.getState().paletteOpen) { useUi.getState().set({ paletteOpen: false }); return }
+      if (closeTopSurface()) return
       if (currentRoute().name !== 'atlas') navigate('#/atlas')
       else void CapApp.minimizeApp()
     })
@@ -430,4 +423,3 @@ function useSwUpdates() {
     }
   }, [])
 }
-

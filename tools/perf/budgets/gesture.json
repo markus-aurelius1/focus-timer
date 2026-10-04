@@ -6,8 +6,8 @@
     "counts-pan-long": { "basePaints": { "max": 3 }, "labelCommits": { "max": 6 } },
     "counts-held-drag-zoomed": { "namesHeldShare": { "min": 0.8 }, "symbolsHeldShare": { "min": 0.8 }, "namesKeptShare": { "min": 0.9 } },
     "counts-select-place": { "basePaints": { "max": 0 } },
-    "counts-rail-collapse": { "basePaints": { "max": 1 } },
-    "counts-rail-expand": { "basePaints": { "max": 1 } },
+    "counts-news-return": { "basePaints": { "max": 1 } },
+    "counts-settings-return": { "basePaints": { "max": 1 } },
     "counts-fullscreen-enter": { "basePaints": { "max": 1 } },
     "counts-fullscreen-exit": { "basePaints": { "max": 1 } }
   },

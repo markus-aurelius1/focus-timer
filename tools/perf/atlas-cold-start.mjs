@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { chromium } from 'playwright-core'
+import { inspectLabelSurface } from './label-surface.mjs'
 
 const base = process.argv[2] ?? 'http://127.0.0.1:4182/'
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
@@ -22,13 +23,11 @@ try {
     })
     const ready = async name => {
       // React catches layout-effect exceptions: pageerror alone misses this regression.
-      await page.waitForFunction(() => document.querySelectorAll('.atlas-name').length > 5 || document.querySelector('main [role="alert"]'))
+      await page.waitForFunction(() => document.querySelector('.atlas-names')?.atlasEntries?.length > 5 || document.querySelector('main [role="alert"]'))
       assert.equal(await page.getByText('This screen ran into a problem', { exact: true }).count(), 0, `${width}: ${name} error boundary`)
-      await page.waitForFunction(() => [...document.querySelectorAll('.atlas-river-name canvas')].some(canvas => {
-        if (!canvas.width || !canvas.height) return false
-        const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data
-        return pixels?.some((value, index) => index % 4 === 3 && value > 0)
-      }))
+      const painted = await page.evaluate(inspectLabelSurface)
+      assert(painted.entries.some(e => e.path && e.sourcePainted && e.painted), `${width}: ${name} missing painted river lettering`)
+      assert(painted.entries.filter(e => e.tested).every(e => e.matched / e.tested >= 0.9), `${width}: ${name} lost viewport lettering`)
       await page.waitForTimeout(500)
       await Promise.all(consoleReads)
       assert.deepEqual(errors, [], `${width}: ${name} console errors`)

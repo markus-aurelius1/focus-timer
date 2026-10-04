@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { resolve, sep } from 'node:path'
 import { chromium } from 'playwright-core'
 import { prepare } from './lib.mjs'
-const dist = resolve(fileURLToPath(new URL('../../dist/', import.meta.url))), out = new URL('./out/current-affairs-direct/', import.meta.url)
+const dist = resolve(process.env.CA_DIST ?? fileURLToPath(new URL('../../dist/', import.meta.url))), out = new URL('./out/current-affairs-direct/', import.meta.url)
 mkdirSync(out, { recursive: true })
 const fetchedAt = new Date().toISOString()
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
@@ -64,7 +64,7 @@ try {
     const rows = page.locator('[data-news-event]'), reading = page.getByRole('group', { name: 'Reading filter' })
     const queue = async name => reading.getByRole('button', { name, exact: true }).click()
     const showFilters = async () => { const b = page.getByRole('button', { name: 'Filters', exact: true }); if (await b.getAttribute('aria-expanded') === 'false') await b.click() }
-    const hideFilters = async () => { const b = page.getByRole('button', { name: 'Filters', exact: true }); if (await b.getAttribute('aria-expanded') === 'true') await b.click() }
+    const hideFilters = async () => { const dialog = page.getByRole('dialog', { name: 'News filters', exact: true }); if (await dialog.count()) { await dialog.getByRole('button', { name: 'Close', exact: true }).click(); await dialog.waitFor({ state: 'detached' }) } }
     const rbi = () => rows.filter({ hasText: 'RBI revises' })
     const read = row => row.getByRole('button', { name: /^Mark (?:as read|unread):/ })
     const save = row => row.getByRole('button', { name: /^(?:Save|Unsave) / })
@@ -72,15 +72,15 @@ try {
     mode = 'fail'
     await prepare(page, base, { sample: false, route: '#/current-affairs' }); await page.getByRole('alert').waitFor()
     check(tag, 'first-load failure is visible')
-    if (width === 375) check(tag, 'bottom navigation remains usable', await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('button').evaluateAll(buttons => buttons.length === 3 && buttons.every(el => { const r = el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.x >= 0 && r.right <= innerWidth })))
+    if (width === 375) check(tag, 'compact top navigation remains usable', await page.getByRole('navigation', { name: 'Workspaces', exact: true }).getByRole('button').evaluateAll(buttons => buttons.length === 2 && buttons.every(el => { const r = el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.x >= 0 && r.right <= innerWidth })))
     mode = 'slow'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText('Loading trusted feeds…').waitFor(); check(tag, 'loading status')
     await rows.first().waitFor(); mode = 'ok'
-    check(tag, 'only three views and To be Read is default', await reading.getByRole('button').count() === 3 && await reading.getByRole('button', { name: 'To be Read', exact: true }).getAttribute('aria-pressed') === 'true')
+    check(tag, 'retained state filters and Today default', await reading.locator('button[aria-pressed]').count() === 4 && await reading.getByRole('button', { name: 'Today', exact: true }).getAttribute('aria-pressed') === 'true')
     check(tag, 'nine rolling-24-hour articles including previous calendar day', await rows.count() === 9 && await rows.filter({ hasText: 'vaccination' }).count() === 1 && await rows.filter({ hasText: 'repo rate' }).count() === 0)
     check(tag, 'removed official feed is absent', await page.locator('a[href*="rbi.org.in"]').count() === 0)
     check(tag, 'single list without article popup or Study mode', await page.getByRole('dialog').count() === 0 && await page.getByRole('button', { name: 'Study mode' }).count() === 0)
-    check(tag, 'archive is a top-corner header action', await page.locator('.ca-workspace header').getByRole('button', { name: 'Archive', exact: true }).count() === 1)
-    check(tag, 'filters and analytics start collapsed', !await page.locator('#ca-filters').isVisible() && await page.locator('[data-reading-analytics]').count() === 0)
+    check(tag, 'archive remains a secondary contextual action', await page.locator(width >= 1024 ? '.ca-mobile-tabs' : '.ca-workspace header').getByRole('button', { name: 'Archive', exact: true }).isVisible())
+    check(tag, 'filters start collapsed and News has no Notes UI', !await page.locator('#ca-filters').isVisible() && await page.getByRole('button', { name: /note/i }).count() === 0 && await page.locator('textarea').count() === 0)
     await rbi().locator('[data-related-coverage] summary').click(); check(tag, 'grouped alternate original link', await rbi().locator('[data-related-coverage] a').getAttribute('href') === 'https://www.thehindu.com/fixture-rbi'); await rbi().locator('[data-related-coverage] summary').click()
     await page.waitForFunction(() => { const img = document.querySelector('[data-news-event] img'); return img && img.complete && img.naturalWidth > 0 })
     check(tag, 'RSS thumbnail loads lazily', await rbi().locator('img').getAttribute('loading') === 'lazy')
@@ -92,6 +92,7 @@ try {
     await showFilters(); await page.getByLabel('Publisher filter').selectOption('The Hindu'); check(tag, 'publisher filter includes grouped alternate coverage', await rbi().count() === 1); await page.getByLabel('Publisher filter').selectOption('All sources')
     for (const budget of [15, 30, 60]) { const b = page.getByRole('button', { name: budget + ' min', exact: true }); await b.click(); check(tag, budget + ' minute unread plan', await rows.count() > 0 && (await page.locator('[data-news-list]').innerText()).includes('min plan')); await b.click() }
     await hideFilters()
+    await page.getByRole('button', { name: 'Search news', exact: true }).click()
     const search = page.getByLabel('Search articles, topics or sources'); await search.fill('GDP'); check(tag, 'metadata search', await rows.count() === 1); await search.fill(''); await search.focus(); await page.keyboard.type('jrsko'); check(tag, 'typing is uninterrupted', await search.inputValue() === 'jrsko'); await search.fill('')
     const original = rbi().locator('[data-news-original]'); check(tag, 'direct safe original publisher link', await original.getAttribute('target') === '_blank' && (await original.getAttribute('rel')).includes('noopener'))
     await original.scrollIntoViewIfNeeded(); const position = await page.evaluate(() => scrollY), wait = page.waitForEvent('popup'); await original.click(); const publisher = await wait; await publisher.waitForLoadState(); await publisher.close(); check(tag, 'return preserves list position', Math.abs(await page.evaluate(() => scrollY) - position) <= 2)
@@ -107,11 +108,7 @@ try {
     await save(rbi()).click(); await queue('Read'); await read(rbi()).click(); await queue('To be Read'); check(tag, 'unsave and unread restore pending', await rows.count() === 9)
     check(tag, 'legacy notes survive new actions', await page.evaluate(key => JSON.parse(localStorage.getItem(key)).entries['https://indianexpress.com/article/fixture-rbi'].note, stateKey) === 'Legacy note preserved')
     await save(rbi()).click(); await queue('Saved'); await read(rbi()).click(); check(tag, 'marking saved article read keeps it in Saved', await rows.count() === 1)
-    await page.getByRole('button', { name: 'Analytics', exact: true }).click()
-    check(tag, 'analytics deduplicates related links and includes saved read items', await page.locator('[data-metric="Articles read"]').innerText() === '1' && await page.locator('[data-metric="Articles saved"]').innerText() === '1')
-    check(tag, 'new reading actions count immediately in day week month and streak', (await page.locator('[data-reading-analytics]').innerText()).includes('Read today: 1') && await page.locator('[data-metric="Read this week"]').innerText() === '1' && await page.locator('[data-metric="Read this month"]').innerText() === '1' && await page.locator('[data-metric="Reading streak"]').innerText() === '1 day')
-    check(tag, 'analytics has activity subject and time evidence', await page.getByRole('img', { name: /read/ }).count() === 1 && await page.getByText('Read by subject', { exact: true }).count() === 1 && (await page.locator('[data-reading-analytics]').innerText()).includes('not measured time'))
-    await page.screenshot({ path: fileURLToPath(new URL(tag + '-analytics.png', out)), fullPage: true }); await page.getByRole('button', { name: 'Analytics', exact: true }).click()
+    check(tag, 'Read and Saved use existing durable timestamps', await page.evaluate(key => { const p = JSON.parse(localStorage.getItem(key)).entries['https://indianexpress.com/article/fixture-rbi']; return p.readAt > 0 && p.savedAt > 0 && p.note === 'Legacy note preserved' }, stateKey))
     await rbi().getByRole('button', { name: /^Remove article:/ }).click(); check(tag, 'removing saved article hides it immediately', await rows.count() === 0)
     await page.getByRole('button', { name: 'Undo', exact: true }).click(); check(tag, 'Undo restores saved article and progress', await rows.count() === 1 && await read(rbi()).getAttribute('aria-pressed') === 'true')
     await queue('To be Read'); const gdp = rows.filter({ hasText: 'GDP' }); await gdp.getByRole('button', { name: /^Remove article:/ }).click(); check(tag, 'remove pending persists ignoredAt', await rows.count() === 7 && await page.evaluate(key => JSON.parse(localStorage.getItem(key)).entries['https://indianexpress.com/article/fixture-gdp'].ignoredAt > 0, stateKey))
@@ -127,23 +124,15 @@ try {
     await page.screenshot({ path: fileURLToPath(new URL(tag + '-archive.png', out)), fullPage: true })
     mode = 'trimmed'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText('Loading trusted feeds…').waitFor({ state: 'hidden' }); await page.reload(); await page.getByRole('button', { name: 'Archive', exact: true }).click(); await queue('Saved'); await rows.first().waitFor(); check(tag, 'old saved metadata survives feed omission and reload', (await rows.innerText()).includes('Down To Earth'))
     await page.getByRole('button', { name: 'Back to Today', exact: true }).click(); check(tag, 'Back restores Today pending queue', await rows.count() === 7)
-    await page.getByRole('button', { name: 'Short notes', exact: true }).click(); const dialog = page.getByRole('dialog', { name: 'Short notes' }), note = dialog.getByLabel('Short note')
-    check(tag, 'small notes Sheet has short limit and disabled blank save', await note.getAttribute('maxlength') === '300' && !await dialog.getByRole('button', { name: 'Save note', exact: true }).isEnabled())
-    await note.fill('x'.repeat(350)); check(tag, 'notes enforce 300 characters', (await note.inputValue()).length === 300)
-    const text = 'A short connection: <script>window.bad=1</script> & constitutional rights.'
-    await note.fill(text); await dialog.getByRole('button', { name: 'Save note', exact: true }).click(); await dialog.locator('[data-sticky-note]').waitFor()
-    const notesState = await page.evaluate(() => JSON.parse(localStorage.getItem('tars.current-affairs.notes.v1'))), savedNote = Object.values(notesState.entries)[0]
-    check(tag, 'saved note has immutable system date and user text only', savedNote.text === text && savedNote.createdDate === today && savedNote.createdAt > 0 && Object.keys(savedNote).length === 4)
-    check(tag, 'note content is escaped', await page.evaluate(() => !window.bad) && await dialog.locator('script').count() === 0)
-    await page.screenshot({ path: fileURLToPath(new URL(tag + '-notes.png', out)), fullPage: true })
-    await page.evaluate(() => { window.print = () => { window.__notesPrintCalled = true } }); await dialog.getByRole('button', { name: 'Print notes', exact: true }).click(); await page.emulateMedia({ media: 'print' })
-    check(tag, 'print action contains only dated notes', await page.evaluate(() => window.__notesPrintCalled && getComputedStyle(document.body).backgroundColor === 'rgb(255, 255, 255)' && getComputedStyle(document.querySelector('#root')).display === 'none' && getComputedStyle(document.querySelector('.ca-print-root')).display === 'block' && document.querySelector('.ca-print-root').textContent.includes('<script>')))
-    if (width === 1366 && theme === 'light') await page.pdf({ path: fileURLToPath(new URL('notes-print.pdf', out)), format: 'A4', printBackground: true })
-    await page.evaluate(() => dispatchEvent(new Event('afterprint'))); await page.emulateMedia({ media: 'screen' }); check(tag, 'print cleanup restores the app', await page.evaluate(() => !document.body.classList.contains('ca-printing-notes')))
-    await dialog.getByRole('button', { name: /^Remove note from/ }).click(); check(tag, 'note removal hides it', await dialog.locator('[data-sticky-note]').count() === 0)
-    // Undo toast is behind the modal. Close it before restoring through the standard toast action.
-    await dialog.getByRole('button', { name: 'Close', exact: true }).click(); await page.getByRole('button', { name: 'Undo', exact: true }).last().click(); await page.getByRole('button', { name: 'Short notes', exact: true }).click(); check(tag, 'note Undo preserves creation date', await page.getByRole('dialog').locator('[data-sticky-note] time').getAttribute('datetime') === savedNote.createdDate)
-    await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click(); await page.reload(); await rows.first().waitFor(); await page.getByRole('button', { name: 'Short notes', exact: true }).click(); check(tag, 'dated notes survive reload', (await page.getByRole('dialog').locator('[data-sticky-note]').innerText()).includes('constitutional rights')); await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click()
+    const dormant = JSON.stringify({ version: 1, entries: { historical: { id: 'historical', text: 'Keep dated note verbatim', createdDate: today, createdAt: 1 } } })
+    await page.evaluate(value => localStorage.setItem('tars.current-affairs.notes.v1', value), dormant)
+    await page.reload(); await rows.first().waitFor()
+    check(tag, 'dormant dated note collection survives reload verbatim', await page.evaluate(() => localStorage.getItem('tars.current-affairs.notes.v1')) === dormant)
+    check(tag, 'dormant article note survives reload and active News exposes no editor', await page.evaluate(key => JSON.parse(localStorage.getItem(key)).entries['https://indianexpress.com/article/fixture-rbi'].note, stateKey) === 'Legacy note preserved' && await page.getByRole('button', { name: /note/i }).count() === 0 && await page.locator('textarea, iframe').count() === 0)
+    const openOriginal = rbi().locator('.ca-original')
+    await queue('Saved')
+    check(tag, 'Open Original uses the same safe canonical URL', await openOriginal.getAttribute('href') === 'https://indianexpress.com/article/fixture-rbi' && await openOriginal.getAttribute('target') === '_blank' && (await openOriginal.getAttribute('rel')).includes('noopener'))
+    const openWait = page.waitForEvent('popup'); await openOriginal.click(); const opened = await openWait; await opened.waitForLoadState(); check(tag, 'Open Original opens publisher without an internal screen', opened.url() === 'https://indianexpress.com/article/fixture-rbi' && await page.getByRole('dialog').count() === 0); await opened.close(); await queue('To be Read')
     mode = 'stale'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText(/Stale feed/).waitFor(); check(tag, 'stale metadata is explicit')
     await ctx.setOffline(true); await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByRole('alert').waitFor(); check(tag, 'offline preserves pending queue and state', await rows.count() === 7); await overflow()
     await ctx.setOffline(false); mode = 'ok'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText('Loading trusted feeds…').waitFor({ state: 'hidden' }); await hideFilters(); for (const b of await page.getByRole('button', { name: 'Dismiss', exact: true }).all()) await b.click(); await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(400); await page.screenshot({ path: fileURLToPath(new URL(tag + '.png', out)), fullPage: true })
@@ -153,6 +142,15 @@ try {
   mode = 'ok'
 
   const ctx = await browser.newContext(), page = await ctx.newPage()
+  if (process.env.CACHE_DIAGNOSTIC) ctx.on('serviceworker', worker => {
+    void worker.evaluate(() => {
+      globalThis.qaCacheDeletes = []
+      for (const prototype of [Cache.prototype, CacheStorage.prototype]) {
+        const original = prototype.delete
+        prototype.delete = function (...args) { globalThis.qaCacheDeletes.push({ url: String(args[0]?.url ?? args[0]), stack: new Error().stack }); return original.apply(this, args) }
+      }
+    }).catch(error => console.log('SW diagnostic setup:', error.message))
+  })
   page.on('pageerror', e => errors.push(e.message))
   page.on('console', msg => { if (msg.type() === 'error') console.log('Browser:', msg.text()) })
   await prepare(page, base, { sample: false, route: '#/current-affairs' })
@@ -162,7 +160,13 @@ try {
   check('Workbox', 'successful API response cached')
   // A 503 cannot replace the last success.
   mode = 'fail'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByRole('alert').waitFor()
-  check('Workbox', '503 preserves last successful response', await page.evaluate(async () => (await (await (await caches.open('current-affairs-v1')).match('/api/current-affairs')).json()).fetchedAt) === fixture.fetchedAt)
+  const cachedAfter503 = await page.evaluate(async () => {
+    const cache = await caches.open('current-affairs-v1'), response = await cache.match('/api/current-affairs')
+    return { keys: (await cache.keys()).map(key => key.url), fetchedAt: response && (await response.json()).fetchedAt }
+  })
+  console.log('Workbox 503 cache evidence', cachedAfter503)
+  if (process.env.CACHE_DIAGNOSTIC) for (const worker of ctx.serviceWorkers()) console.log('SW cache deletion', await worker.evaluate(() => globalThis.qaCacheDeletes))
+  check('Workbox', '503 preserves last successful response', cachedAfter503.fetchedAt === fixture.fetchedAt)
   const cdp = await ctx.newCDPSession(page); await cdp.send('Network.clearBrowserCache'); await cdp.send('Network.setCacheDisabled', { cacheDisabled: true })
   await ctx.setOffline(true); await page.reload(); await page.locator('[data-news-event]').first().waitFor()
   await page.getByText(/Offline – cached feed|Cached feed – offline/).waitFor()

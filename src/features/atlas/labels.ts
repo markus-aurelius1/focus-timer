@@ -31,6 +31,9 @@ export interface PlacedLabel {
   baseline?: number
   /** Transient worker raster; copied by curve canvases and closed when its layout is superseded/unmounted. Never stored. */
   curveBitmap?: ImageBitmap
+  /** Shared transient sprite atlas; all words in one worker snapshot borrow the same bitmap. Never persisted. */
+  atlasBitmap?: ImageBitmap
+  raster?: { x: number; y: number; width: number; height: number; left: number; top: number; font: string }
   muted?: boolean
   placeId?: string
   /** Laid out beyond the view (in the overscan); the label layer keeps every word at screen size. */

@@ -10,12 +10,12 @@ import type { AtlasStyle, ThemePreference } from '@/data/types'
 import { isNative, isStandalonePwa, platform } from '@/lib/platform'
 import { pickTextFile, saveTextFile, stamp } from '@/services/files'
 import { promptInstall, useInstall } from '@/services/install'
-import { Button, ListRow, Segmented, Select, SwitchRow } from '@/ui/controls'
+import { Button, ListRow, SegmentedControl, Select, SwitchRow } from '@/ui/controls'
 import { confirmDialog } from '@/ui/feedback'
 import { Wordmark } from '@/ui/Logo'
 import { Sheet, SheetActions } from '@/ui/Sheet'
 import { toast } from '@/ui/toast'
-import { useRoute } from '@/app/router'
+import { navigate, useRoute } from '@/app/router'
 import { motionChoice, setMotionChoice, type MotionChoice } from '@/lib/motion'
 
 const Gallery = lazy(() => import('@/ui/Gallery'))
@@ -57,19 +57,21 @@ export default function SettingsScreen() {
       <div className="pt-2" />
       <Group title="Appearance">
         <Line label="Theme">
-          <Segmented<ThemePreference>
+          <SegmentedControl<ThemePreference>
+            label="Theme"
             size="sm"
             value={settings.theme}
             onChange={(v) => void updateSettings({ theme: v })}
             options={[
-              { value: 'system', label: 'Auto' },
-              { value: 'light', label: 'Paper' },
-              { value: 'dark', label: 'Night' },
+              { value: 'light', label: 'Light' },
+              { value: 'dark', label: 'Dark' },
+              { value: 'system', label: 'System' },
             ]}
           />
         </Line>
         <Line label="Motion" hint="Reduced swaps movement for quick fades and stops looping animation. Auto follows your device.">
-          <Segmented<MotionChoice>
+          <SegmentedControl<MotionChoice>
+            label="Motion"
             size="sm"
             value={motion}
             onChange={(v) => {
@@ -83,22 +85,12 @@ export default function SettingsScreen() {
             ]}
           />
         </Line>
-        <Line label="Week starts on">
-          <Segmented<'1' | '0'>
-            size="sm"
-            value={String(settings.weekStartsOn) as '1' | '0'}
-            onChange={(v) => void updateSettings({ weekStartsOn: Number(v) as 0 | 1 })}
-            options={[
-              { value: '1', label: 'Monday' },
-              { value: '0', label: 'Sunday' },
-            ]}
-          />
-        </Line>
       </Group>
 
       <AtlasSettings />
 
-      <Group title="Feel">
+      <Group title="News"><p className="px-4 py-3 text-sm leading-relaxed text-ink-2">Publisher links open externally. Read and Saved stay on this device. Retained feed metadata remains available offline.</p><Button variant="ghost" className="mx-4 mb-3" onClick={() => navigate('#/current-affairs')}>Open News ↗</Button></Group>
+      <Group title="General">
         <SwitchRow className="px-4 py-3" title="Haptics" description="Gentle vibrations on supported devices." checked={settings.haptics} onChange={(v) => void updateSettings({ haptics: v })} />
       </Group>
 
@@ -118,17 +110,17 @@ export default function SettingsScreen() {
 
 function Group({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="mb-7">
+    <section className="settings-group mb-8">
       <h2 className="t-label mb-2 px-1">{title}</h2>
       {hint && <p className="t-meta -mt-1 mb-2 px-1">{hint}</p>}
-      <div className="divide-y divide-line overflow-hidden rounded-card bg-surface shadow-[0_0_0_1px_var(--line)]">{children}</div>
+      <div className="divide-y divide-line border-y border-line">{children}</div>
     </section>
   )
 }
 
 function Line({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 px-4 py-3">
+    <div className="settings-line flex flex-wrap items-center justify-between gap-4 px-4 py-4">
       <span className="min-w-0">
         <span className="block text-[15px] font-semibold">{label}</span>
         {hint && <span className="block text-[13px] leading-snug text-ink-2">{hint}</span>}

@@ -94,7 +94,8 @@ async function audit(url, label, upgrade) {
     ok(label + ': shared settings open offline', await page.getByRole('heading', { name: 'Settings', level: 1 }).isVisible())
     await page.goto(url + '#/atlas')
     await page.getByRole('application').waitFor()
-    await page.getByRole('button', { name: 'More', exact: true }).click()
+    await page.getByRole('button', { name: 'Map options', exact: true }).click()
+    await page.getByRole('button', { name: 'Atlas tools', exact: true }).click()
     try { await page.getByText('111/111 assets saved offline', { exact: false }).waitFor() }
     catch (error) {
       console.log('OFFLINE STATUS', await page.getByRole('dialog').innerText())

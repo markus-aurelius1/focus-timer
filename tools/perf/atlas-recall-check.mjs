@@ -27,7 +27,7 @@ try {
   const dialog = page.getByRole('dialog', { name: 'Test me', exact: true })
   await dialog.getByRole('heading', { name: answer.prompt, exact: true }).waitFor()
   await page.evaluate(() => { Date.now = window.qaNow; delete window.qaNow })
-  for (const label of answer.labels) await dialog.getByRole('group', { name: 'Recall answer' }).getByRole('button', { name: label, exact: true }).click()
+  for (const label of answer.labels) await dialog.getByRole('group', { name: 'Recall answer' }).getByRole(answer.order ? 'button' : 'radio', { name: label, exact: answer.order }).click()
   if (answer.order) await dialog.getByRole('button', { name: 'Check order', exact: true }).click()
   await dialog.getByText('Correct', { exact: true }).waitFor()
   await dialog.getByRole('button', { name: 'See results', exact: true }).click()

@@ -2,7 +2,7 @@
 import { labelIndexFor, layoutLabels, setLabelMeasureContext, type LayoutInput } from '../labels'
 import type { MapLabel } from '@/atlas/types'
 import { workerFonts } from './workerFonts'
-import { curveGeometry, paintCurve } from './curvePainter'
+import { rasterLabels } from './labelBatch'
 import type { Tone } from './types'
 import { WordSprites } from './wordSprites'
 const sprites = new WordSprites(256, () => new OffscreenCanvas(1, 1))
@@ -26,19 +26,17 @@ scope.onmessage = (event: MessageEvent<{ type: string; labels?: MapLabel[]; widt
     const bitmaps: ImageBitmap[] = []
     try {
       const placed = layoutLabels({ ...message.input, labels, index })
-      if (message.dpr)
-        for (const label of placed) {
-          if (!label.path) continue
-          const geometry = curveGeometry(label)
-          if (!geometry) continue
-          const canvas = new OffscreenCanvas(Math.ceil(geometry.width * message.dpr), Math.ceil(geometry.height * message.dpr))
-          const ctx = canvas.getContext('2d', { willReadFrequently: true })
-          if (!ctx) throw new Error('No worker curve context')
-          paintCurve(ctx, label, message.tone ?? 'day', message.dpr, sprites)
-          label.curveBitmap = canvas.transferToImageBitmap()
-          bitmaps.push(label.curveBitmap)
-          canvas.width = canvas.height = 0
+      if (message.dpr && placed.length) {
+        const raster = rasterLabels(placed.map(label => ({ label, anchor: { worldX: 0, worldY: 0, offsetX: 0, offsetY: 0 } })), message.tone ?? 'day', message.dpr, () => new OffscreenCanvas(1, 1), sprites)
+        const bitmap = (raster.atlas as OffscreenCanvas).transferToImageBitmap()
+        bitmaps.push(bitmap)
+        for (const entry of raster.entries) {
+          const { x, y, width, height, left, top, font } = entry
+          entry.label.atlasBitmap = bitmap
+          entry.label.raster = { x, y, width, height, left, top, font }
         }
+        raster.atlas.width = raster.atlas.height = 0
+      }
       scope.postMessage({ type: 'labels', id: message.id, labels: placed }, bitmaps)
     } catch (error) {
       for (const bitmap of bitmaps) bitmap.close()

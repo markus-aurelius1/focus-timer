@@ -14,7 +14,7 @@ try {
   await ctx.route('**/api/current-affairs*', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ version: 1, fetchedAt: new Date().toISOString(), sources: [], items: [] }) }))
   const map = async label => {
     await page.getByRole('application').waitFor()
-    await page.waitForFunction(() => document.querySelectorAll('.atlas-name').length > 5)
+    await page.waitForFunction(() => document.querySelector('.atlas-names')?.atlasEntries?.length > 5)
     await page.waitForTimeout(5000)
     // Tiles use bitmaprenderer; read a copy so inspection does not request an incompatible context.
     const state = await page.evaluate(() => [...document.querySelectorAll('canvas')].map(c => {

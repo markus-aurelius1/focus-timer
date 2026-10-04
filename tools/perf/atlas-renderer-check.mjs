@@ -47,12 +47,13 @@ for (const mode of ['worker', 'low-power', 'fallback', 'delayed-worker', 'worker
         error: e.dataset.tileError,
         canvases: e.querySelectorAll('canvas').length,
         layers: e.children.length,
-        visibleInks: [...e.querySelectorAll('canvas')].filter((c) => c.parentElement.style.opacity === '1').map((c) => ({ kind: c.parentElement.dataset.tileKind, ink: c.atlasInkK })),
+        visibleInks: [...e.querySelectorAll('canvas')].filter((c) => c.parentElement.style.opacity === '1').map((c) => ({ kind: c.parentElement.dataset.tileKind, ink: c.atlasInkK, content: getComputedStyle(c.parentElement).contentVisibility })),
       }))
     const initial = await cache()
     assert.equal(initial.budget, mode === 'low-power' ? 24 : 48)
     assert(initial.size <= initial.budget)
     const checkInk = (snapshot) => {
+      assert(snapshot.visibleInks.every((r) => r.content !== 'hidden'), 'a requested raster plane is skipped by the browser')
       const overview = snapshot.visibleInks.filter((r) => r.kind === 'overview'),
         detail = snapshot.visibleInks.filter((r) => r.kind === 'detail')
       assert(overview.length > 0 && detail.length > 0)

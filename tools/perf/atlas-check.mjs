@@ -103,6 +103,7 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
   await settle(page, 300)
   ok('+ key zooms in', (await scaleOf(page)) > k4 * 1.3)
 
+  await page.getByRole('button', { name: 'Map options', exact: true }).click()
   await page.getByRole('button', { name: 'Fit the map' }).click()
   await settle(page)
   await page.mouse.move(cx, cy)
@@ -128,7 +129,7 @@ const settle = (page, ms = 700) => page.waitForTimeout(ms)
   } else ok('found a symbol to hover', false)
 
   // Access is independent of travel; the obsolete hiding control must be absent.
-  await page.getByRole('button', { name: 'Map layers' }).click()
+  await page.getByRole('button', { name: 'Map options' }).click()
   ok('all places accessible: no discovery visibility gate', await page.getByRole('switch', { name: 'Places not yet discovered' }).count() === 0)
   await page.keyboard.press('Escape')
   // Search → fly → card, on the other sheet.

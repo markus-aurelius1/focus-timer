@@ -9,7 +9,7 @@
     "build": "node tools/build-atlas-assets.mjs && tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "lint": "eslint src api vite.config.ts",
+    "lint": "eslint src api functions vite.config.ts",
     "lint:counts": "node tools/lint-counts.mjs",
     "format": "prettier --write",
     "atlas:pyq": "node tools/atlas-build/canonical-pyq.mjs",

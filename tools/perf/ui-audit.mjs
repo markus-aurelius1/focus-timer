@@ -20,6 +20,10 @@ const out = fileURLToPath(new URL('./out/audit/', import.meta.url))
 mkdirSync(out, { recursive: true })
 
 const VIEWPORTS = [
+  ['1440', { width: 1440, height: 900 }, false],
+  ['1280', { width: 1280, height: 800 }, false],
+  ['1024', { width: 1024, height: 768 }, true],
+  ['390', { width: 390, height: 844 }, true],
   ['375', { width: 375, height: 812 }, true],
   ['768', { width: 768, height: 1024 }, true],
   ['1366', { width: 1366, height: 768 }, false],
@@ -151,12 +155,13 @@ for (const [vp, viewport, touch] of VIEWPORTS) {
     await page.goto(base + '#/atlas')
     await page.waitForTimeout(2500)
     await check('atlas')
-    await page.getByRole('button', { name: /full-screen map/i }).first().click().catch(() => {})
+    await page.getByRole('button', { name: 'Map options', exact: true }).click()
+  await page.getByRole('button', { name: /full-screen map/i }).first().click().catch(() => {})
     await page.waitForTimeout(700)
     // Measure the settled shell: the rail intentionally travels off-screen
     // before its delayed visibility transition finishes (320 ms plus paint).
     await page.waitForFunction(() => {
-      const rail = document.querySelector('.rail')
+      const rail = document.querySelector('.product-bar')
       const stage = document.querySelector('.stage')
       return document.documentElement.dataset.chrome === 'hidden'
         && (!rail || getComputedStyle(rail).visibility === 'hidden')
@@ -167,17 +172,9 @@ for (const [vp, viewport, touch] of VIEWPORTS) {
     // Headless browser fullscreen may restore its native window size instead of the emulated viewport.
     await page.evaluate(async () => { if (document.fullscreenElement) await document.exitFullscreen() })
     await page.setViewportSize(viewport)
-    if (viewport.width >= 1024) {
-      // Collapsed sidebar: icons only, the content takes the space.
-      await page.goto(base + '#/atlas')
-      await page.waitForTimeout(800)
-      const expand = page.getByRole('button', { name: /expand sidebar/i })
-      if (await expand.isVisible()) await expand.click()
-      console.log('audit viewport', await page.evaluate(() => ({ width: innerWidth, hash: location.hash, chrome: document.documentElement.dataset.chrome, sidebar: document.querySelector('#sidebar') && getComputedStyle(document.querySelector('#sidebar')).display })))
-      await page.getByRole('button', { name: /collapse sidebar/i }).click()
-      await check('atlas-sidebar-collapsed')
-      await page.getByRole('button', { name: /expand sidebar/i }).click()
-    }
+    const shell = await page.evaluate(() => ({ width: document.querySelector('.stage').getBoundingClientRect().width, sidebar: !!document.querySelector('#sidebar'), destinations: [...document.querySelectorAll('.product-nav button')].map(b => b.textContent) }))
+    if (shell.sidebar || Math.abs(shell.width - viewport.width) > 1 || shell.destinations.join('|') !== 'Atlas|News') problems.push(tag + ': product shell does not expose exactly Atlas/News above a full-width map')
+    await check('atlas-product-shell')
     await ctx.close()
   }
 }

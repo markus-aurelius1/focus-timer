@@ -2,12 +2,13 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import type { Sheet } from '@/atlas/sheet'
 import type { Place } from '@/atlas/types'
-import { glyphAdvances, labelKeyOf, measureLabel, STYLE_SPEC, type PlacedLabel, type Transform } from '../labels'
+import { baselineFromTop, glyphAdvances, labelKeyOf, measureLabel, STYLE_SPEC, type PlacedLabel, type Transform } from '../labels'
 import { PlaceName, labelPaint } from './glyphs'
 import { curveGlyphs, type LabelAnchor } from './labelMotion'
 import type { Layout, Tone } from './types'
 import { WordSprites } from './wordSprites'
 export type LabelPort = (view: Transform) => void
+interface WordBounds { left: number; right: number; top: number; bottom: number }
 interface Props {
   labels: PlacedLabel[]
   layout: Layout | null
@@ -22,8 +23,9 @@ const fadeDelay = (key: string) => {
   for (const c of key) hash = (hash * 31 + c.charCodeAt(0)) | 0
   return Math.abs(hash) % 130
 }
-export function WorkerCurve({ label, width, height, font }: { label: PlacedLabel; width: number; height: number; font: string }) {
+export function WorkerCurve({ label, width, height, font, paintKey }: { label: PlacedLabel; width: number; height: number; font: string; paintKey?: string }) {
   const canvas = useRef<HTMLCanvasElement>(null)
+  const raster = paintKey ?? label.curveBitmap
   useLayoutEffect(() => {
     const node = canvas.current,
       bitmap = label.curveBitmap
@@ -33,11 +35,11 @@ export function WorkerCurve({ label, width, height, font }: { label: PlacedLabel
     Object.assign(node, { atlasFont: font })
     // React can replay this layout effect (StrictMode or Suspense reappearance).
     // Copy the raster; transferring it would detach the layout-owned bitmap.
-    node.getContext('2d', { willReadFrequently: true })?.drawImage(bitmap, 0, 0)
+    node.getContext('2d')?.drawImage(bitmap, 0, 0)
     return () => {
       node.width = node.height = 0
     }
-  }, [label.curveBitmap]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [raster]) // eslint-disable-line react-hooks/exhaustive-deps
   return <canvas ref={canvas} aria-label={label.text} style={{ width, height }} />
 }
 const RiverWord = memo(function RiverWord({ label, tone, sprites }: { label: PlacedLabel; tone: Tone; sprites: WordSprites }) {
@@ -59,6 +61,8 @@ const RiverWord = memo(function RiverWord({ label, tone, sprites }: { label: Pla
     tone,
     width,
     height,
+    label.curveBitmap?.width,
+    label.curveBitmap?.height,
     curve?.glyphs.map((g) => [Math.round(g.x * 100) / 100, Math.round(g.y * 100) / 100, Math.round(g.angle * 1000) / 1000]),
   ])
   useLayoutEffect(() => {
@@ -99,7 +103,7 @@ const RiverWord = memo(function RiverWord({ label, tone, sprites }: { label: Pla
     <span className="atlas-name atlas-river-name" data-label-key={label.key} style={{ animationDelay: fadeDelay(label.key) + 'ms' }}>
       <span className="atlas-name-text" style={{ width, height, fontSize: label.size, transform: 'translate(' + minX + 'px,' + minY + 'px)' }}>
         {label.curveBitmap ? (
-          <WorkerCurve label={label} width={width} height={height} font={(spec.italic ? 'italic ' : '') + spec.weight + ' ' + label.size + 'px ' + paint.fontFamily} />
+          <WorkerCurve label={label} width={width} height={height} paintKey={rasterKey} font={(spec.italic ? 'italic ' : '') + spec.weight + ' ' + label.size + 'px ' + paint.fontFamily} />
         ) : (
           <canvas ref={canvas} aria-label={label.text} style={{ width, height }} />
         )}
@@ -108,10 +112,11 @@ const RiverWord = memo(function RiverWord({ label, tone, sprites }: { label: Pla
     </span>
   )
 })
-export function LabelLayer({ labels, layout, tone, sheet, places, port, current }: Props) {
+export { BatchLabelLayer as LabelLayer } from './BatchLabelLayer'
+export function LegacyLabelLayer({ labels, layout, tone, sheet, places, port, current }: Props) {
   const host = useRef<HTMLDivElement>(null)
   const positionTimes = useRef<number[]>([])
-  const motions = useRef(new Map<HTMLElement, { animation: Animation; anchor: LabelAnchor; range: number; k: number; margin: number }>())
+  const motions = useRef(new Map<HTMLElement, { animation: Animation; anchor: LabelAnchor; range: number; k: number; bounds: WordBounds }>())
   const sprites = useMemo(() => new WordSprites(), [])
   useEffect(() => {
     let alive = true
@@ -138,7 +143,7 @@ export function LabelLayer({ labels, layout, tone, sheet, places, port, current 
     const element = host.current
     if (!element || !layout) return
     const nodes = new Map([...element.querySelectorAll<HTMLElement>('.atlas-name')].map((node) => [node.dataset.labelKey!, node]))
-    const anchors: Array<{ node: HTMLElement; anchor: LabelAnchor; margin: number }> = []
+    const anchors: Array<{ node: HTMLElement; anchor: LabelAnchor; bounds: WordBounds }> = []
     for (const label of labels) {
       const node = nodes.get(label.key)
       if (!node) continue
@@ -155,10 +160,13 @@ export function LabelLayer({ labels, layout, tone, sheet, places, port, current 
       const worldX = source?.x ?? (x - layout.fx) / layout.k,
         worldY = source?.y ?? (y - layout.fy) / layout.k
       const spec = STYLE_SPEC[label.style]
+      const width = label.measuredWidth ?? measureLabel(label.text, label.size, spec.weight, spec.italic, spec.spacing)
+      const left = label.anchor === 'middle' ? -width / 2 : label.anchor === 'end' ? -width : 0
+      const top = -(label.baseline ?? baselineFromTop(label.style, label.size))
       anchors.push({
         node,
         anchor: { worldX, worldY, offsetX: x - worldX * layout.k - layout.fx, offsetY: y - worldY * layout.k - layout.fy },
-        margin: label.path ? 256 : (label.measuredWidth ?? measureLabel(label.text, label.size, spec.weight, spec.italic, spec.spacing)) + label.size * 2,
+        bounds: label.path ? { left: -256, right: 256, top: -256, bottom: 256 } : { left: left - 2, right: left + width + 2, top: top - 2, bottom: top + label.size * 1.25 + 2 },
       })
     }
     const times = positionTimes.current
@@ -168,7 +176,7 @@ export function LabelLayer({ labels, layout, tone, sheet, places, port, current 
       motion.animation.cancel()
       motions.current.delete(node)
     }
-    const animations = anchors.map(({ node, anchor, margin }) => {
+    const animations = anchors.map(({ node, anchor, bounds }) => {
       const { worldX, worldY, offsetX, offsetY } = anchor
       const previous = motions.current.get(node)
       const range = Math.max(previous?.range ?? 8, layout.k * 2)
@@ -180,7 +188,7 @@ export function LabelLayer({ labels, layout, tone, sheet, places, port, current 
         Math.abs(previous.anchor.offsetX - offsetX) < 0.025 &&
         Math.abs(previous.anchor.offsetY - offsetY) < 0.025
       ) {
-        previous.margin = margin
+        previous.bounds = bounds
         return previous
       }
       const frames = [{ transform: 'translate3d(' + offsetX + 'px,' + offsetY + 'px,0)' }, { transform: 'translate3d(' + (worldX * range + offsetX) + 'px,' + (worldY * range + offsetY) + 'px,0)' }]
@@ -192,11 +200,12 @@ export function LabelLayer({ labels, layout, tone, sheet, places, port, current 
         effect.updateTiming({ duration: range * 1000 })
       }
       animation.pause()
-      const motion = { animation, anchor, range, k: NaN, margin }
+      const motion = { animation, anchor, range, k: NaN, bounds }
       motions.current.set(node, motion)
       return motion
     })
     let lastPan = ''
+    Object.assign(element, { atlasAnchors: new Map(anchors.map(({ node, anchor }) => [node, anchor])) })
     const position: LabelPort = (view) => {
       const start = performance.now()
       const pan = 'translate3d(' + Math.round(view.x * 100) / 100 + 'px,' + Math.round(view.y * 100) / 100 + 'px,0)'
@@ -208,10 +217,11 @@ export function LabelLayer({ labels, layout, tone, sheet, places, port, current 
       for (const motion of animations) {
         if (motion.k === view.k) continue
         const { worldX, worldY, offsetX, offsetY } = motion.anchor
+        const { left, right, top, bottom } = motion.bounds
         const visible = (k: number) => {
           const x = view.x + worldX * k + offsetX,
             y = view.y + worldY * k + offsetY
-          return x >= -motion.margin && y >= -motion.margin && x <= layout.w + motion.margin && y <= layout.h + motion.margin
+          return x + right >= 0 && y + bottom >= 0 && x + left <= layout.w && y + top <= layout.h
         }
         // An offscreen word can retain its previous compositor position until either position reaches the view.
         // Check both positions so a word never leaves a stale ghost behind while zooming or enters at an old scale.

@@ -15,7 +15,8 @@ import { RECALL_XP_DAILY_CAP } from '@/game/progression'
 import { cn } from '@/lib/cn'
 import { haptics } from '@/services/haptics'
 import { Button } from '@/ui/controls'
-import { Sheet } from '@/ui/Sheet'
+import { QuestionSurface } from '@/ui/patterns/question/QuestionSurface'
+import { AnswerTile } from '@/ui/patterns/question/AnswerTile'
 import { AtlasMap, type MapPin } from './AtlasMap'
 import { MASTERY_TEXT_COLOUR } from './style'
 import { labelKeyOf } from './labels'
@@ -30,9 +31,9 @@ export interface ReviewRequest {
 export function FieldReviewSheet({ request, onClose }: { request: ReviewRequest | null; onClose: () => void }) {
   const ex = useExploration()
   return (
-    <Sheet open={!!request && !!ex} onClose={onClose} size="lg" bare label={request?.title ?? 'Field review'}>
+    <QuestionSurface open={!!request && !!ex} onClose={onClose} bare label={request?.title ?? 'Field review'}>
       {request && ex && <Review key={request.placeIds.join()} ex={ex} request={request} onClose={onClose} />}
-    </Sheet>
+    </QuestionSurface>
   )
 }
 
@@ -99,7 +100,11 @@ export function Review({ ex, request, onClose, compact }: { ex: Exploration; req
   if (done) return <Summary ex={ex} results={results} before={start.levels} onClose={onClose} />
 
   return (
-    <div className={cn('flex flex-col', compact ? '' : 'px-5 pt-3 pb-5 sm:pt-5')}>
+    <div className={cn('flex flex-col', compact ? '' : 'px-5 pt-3 pb-5 sm:pt-5')} onKeyDown={e => {
+      if (e.ctrlKey || e.metaKey || e.altKey || saving || (e.target as HTMLElement).closest('input, textarea, select, button:not([role="radio"]), a')) return
+      if (e.key === 'Enter' && answered) { e.preventDefault(); setIndex(i => i + 1) }
+      if (!answered && !q.order) { const i = /^[1-4]$/.test(e.key) ? Number(e.key) - 1 : ['a', 'b', 'c', 'd'].indexOf(e.key.toLowerCase()); if (i >= 0 && q.options[i]) { e.preventDefault(); void answer(q.options[i].id) } }
+    }}>
       <div className="flex items-center gap-3">
         <div className="flex flex-1 gap-1" aria-label={`Question ${index + 1} of ${questions.length}`}>
           {questions.map((_, i) => (
@@ -107,7 +112,7 @@ export function Review({ ex, request, onClose, compact }: { ex: Exploration; req
           ))}
         </div>
         {!compact && (
-          <button type="button" onClick={onClose} className="rounded-full p-1.5 text-ink-2 hover:bg-surface-2" aria-label="Close review">
+          <button type="button" onClick={onClose} className="flex size-11 items-center justify-center rounded-lg text-ink-2 hover:bg-surface-2" aria-label="Close review">
             <X className="size-4.5" />
           </button>
         )}
@@ -146,32 +151,7 @@ export function Review({ ex, request, onClose, compact }: { ex: Exploration; req
 }
 
 function Choices({ q, result, onPick }: { q: Question; result?: Result; onPick: (id: string) => void }) {
-  return (
-    <div className={cn('mt-4 grid gap-2', q.type === 'locate' ? 'grid-cols-4' : 'sm:grid-cols-2')}>
-      {q.options.map((o) => {
-        const isAnswer = o.id === q.answer
-        const picked = result?.given === o.id
-        return (
-          <button
-            key={o.id}
-            type="button"
-            disabled={!!result}
-            onClick={() => onPick(o.id)}
-            className={cn(
-              'min-h-12 rounded-2xl border px-4 py-3 text-left text-[15px] font-semibold transition-colors',
-              q.type === 'locate' && 'text-center text-lg font-bold',
-              !result && 'border-line bg-surface hover:border-line-strong hover:bg-surface-2 active:scale-[0.99]',
-              result && isAnswer && 'border-success bg-success/10 text-success',
-              result && picked && !isAnswer && 'border-danger bg-danger/10 text-danger',
-              result && !isAnswer && !picked && 'border-line opacity-60',
-            )}
-          >
-            {o.label}
-          </button>
-        )
-      })}
-    </div>
-  )
+  return <div className="mt-4 grid gap-2" role="radiogroup" aria-label="Recall choices">{q.options.map((o, i) => <AnswerTile key={o.id} letter={String.fromCharCode(65 + i)} selected={result?.given === o.id} disabled={!!result} state={result ? o.id === q.answer ? 'correct' : result.given === o.id ? 'incorrect' : 'idle' : 'idle'} onSelect={() => onPick(o.id)}>{o.label}</AnswerTile>)}</div>
 }
 
 function OrderInput({ q, result, onSubmit }: { q: Question; result?: Result; onSubmit: (answer: string) => void }) {

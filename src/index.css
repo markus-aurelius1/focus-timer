@@ -3,6 +3,22 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Official OFL fonts, bundled for offline UI. Cartographic metrics keep Manrope. */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('/fonts/geist-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 600;
+  src: url('/fonts/newsreader-latin.woff2') format('woff2');
+}
+
 /* Self-hosted fonts (latin + latin-ext only) so the app looks right offline. */
 @font-face {
   font-family: 'Manrope';
@@ -30,8 +46,10 @@
 }
 
 @theme inline {
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+  --font-sans: 'Geist', 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Newsreader', 'Fraunces', ui-serif, Georgia, serif;
+  --color-knowledge: var(--knowledge);
+  --color-knowledge-soft: var(--knowledge-soft);
 
   /* Surface layers, back to front: canvas (the app frame) → bg (the stage a
      workspace sits on) → surface (raised: sheets, menus, fields) → surface-2/3 (wells, fills). */
@@ -68,9 +86,9 @@
      and are still used by code that has not moved over. cell 4 · key 8 · field 12 · card 16 · panel 24 · full. */
   --radius-cell: 0.25rem;
   --radius-key: 0.5rem;
-  --radius-field: 0.75rem;
+  --radius-field: 0.5rem;
   --radius-card: 1rem;
-  --radius-panel: 1.5rem;
+  --radius-panel: 1.125rem;
   --radius-stage: 1rem;
   --shadow-soft: var(--shadow-soft-value);
   --shadow-lift: var(--shadow-lift-value);
@@ -125,23 +143,25 @@
 /* Paper – warm, unbleached stock: comfortable for hours of reading, never sterile white. */
 :root {
   color-scheme: light;
-  --canvas: #ebe6da;
-  --bg: #f6f2e9;
-  --surface: #fdfbf6;
-  --surface-2: #efeadf;
-  --surface-3: #e5dfd1;
-  --line: rgba(46, 40, 28, 0.09);
-  --line-strong: rgba(46, 40, 28, 0.18);
-  --ink: #1a1c27;
-  --ink-2: #4b4f5e;
-  --ink-3: #5d626f;
-  --accent: #895911;
-  --accent-soft: rgba(184, 120, 27, 0.12);
-  --accent-ink: #fff8ea;
-  --primary: #1c2033;
-  --primary-ink: #f7f3ea;
-  --danger: #a63c2c;
-  --success: #246b40;
+  --canvas: #F4F1E9;
+  --bg: #F9F7F2;
+  --surface: #FFFEFB;
+  --surface-2: #F0EEE8;
+  --surface-3: #E8E5DE;
+  --line: #D9D5CC;
+  --line-strong: #BFB9AE;
+  --ink: #171A1F;
+  --ink-2: #555E69;
+  --ink-3: #5D6671;
+  --accent: #245DCA;
+  --accent-soft: #E4ECFA;
+  --accent-ink: #ffffff;
+  --primary: var(--accent);
+  --primary-ink: #ffffff;
+  --knowledge: #805719;
+  --knowledge-soft: #F1E8D5;
+  --danger: #B53B48;
+  --success: #126F4F;
   /* Feedback colours: each is an ink that keeps ≥4.5:1 on bg, surface, surface-2 and surface-3 (job4-visual asserts it), with a soft fill. */
   --warning: #7d4407;
   --info: #1f4f96;
@@ -165,23 +185,25 @@
 /* Night – deep ink, never pure black, with starlight gold. */
 .dark {
   color-scheme: dark;
-  --canvas: #07090f;
-  --bg: #0c0e16;
-  --surface: #131622;
-  --surface-2: #191d2a;
-  --surface-3: #232838;
-  --line: rgba(255, 255, 255, 0.065);
-  --line-strong: rgba(255, 255, 255, 0.13);
-  --ink: #ece9f1;
-  --ink-2: #a3a8ba;
-  --ink-3: #8b92a7;
-  --accent: #f2c46d;
-  --accent-soft: rgba(242, 196, 109, 0.12);
-  --accent-ink: #1b1405;
-  --primary: #f2c46d;
-  --primary-ink: #1b1405;
-  --danger: #f07a68;
-  --success: #73d19a;
+  --canvas: #090E15;
+  --bg: #0D141E;
+  --surface: #111A26;
+  --surface-2: #162231;
+  --surface-3: #1C2A3B;
+  --line: #243247;
+  --line-strong: #35465F;
+  --ink: #F2F4F7;
+  --ink-2: #AAB4C2;
+  --ink-3: #91A0B5;
+  --accent: #4D8DFF;
+  --accent-soft: #182E50;
+  --accent-ink: #090E15;
+  --primary: var(--accent);
+  --primary-ink: #090E15;
+  --knowledge: #D5A84D;
+  --knowledge-soft: #332A1A;
+  --danger: #E86B73;
+  --success: #45B887;
   --warning: #f0a955;
   --info: #80b2ff;
   --correct: #73d19a;
@@ -393,9 +415,11 @@
   }
   /* Workspace and sheet titles: sans, tight, modern – the serif is kept for display moments. */
   .t-title {
-    font-size: 1.1875rem;
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-size: 1.625rem;
     line-height: 1.25;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: -0.022em;
   }
   /* Section headings inside a workspace. */
@@ -820,12 +844,13 @@ html.theme-fade :not(.atlas, .atlas *) {
   font-synthesis: none;
 
 }
+.atlas-name.atlas-point-name { width: max-content; height: auto; contain: layout style; }
 @keyframes atlas-word-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 :root[data-motion="reduced"] .atlas-name { animation: none; }
-.atlas-names { pointer-events: none; contain: layout style; }
+.atlas-names { pointer-events: none; contain: layout style; will-change: transform; }
 .atlas:focus-visible {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
@@ -885,7 +910,7 @@ html.theme-fade :not(.atlas, .atlas *) {
   margin: -13px 0 0 -13px;
   border: 2px solid currentColor;
   border-radius: 9999px;
-  animation: atlas-pulse 2.2s ease-out infinite;
+  opacity: 0.8;
 }
 @keyframes atlas-pulse {
   0% {
@@ -907,7 +932,7 @@ html.theme-fade :not(.atlas, .atlas *) {
   position: absolute;
   left: -10px;
   top: -10px;
-  animation: atlas-ship 9s ease-in-out infinite alternate;
+  /* Recall symbols remain static so knowledge never competes with map motion. */
 }
 .atlas-ship svg {
   display: block;
@@ -950,3 +975,61 @@ html.theme-fade :not(.atlas, .atlas *) {
 }
 
 .type-numeric { font-family: var(--font-sans); font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+/* Editorial product shell. The kept map retains its existing mounted lifecycle. */
+:root { --shell-top: calc(56px + env(safe-area-inset-top)); --nav-bottom: env(safe-area-inset-bottom); --rail-w: 0px; --stage-gap: 0px; --page-bg: var(--bg); }
+.app-frame { height: 100dvh; min-height: 0; padding: var(--shell-top) 0 var(--nav-bottom); }
+.stage { height: 100%; overflow: hidden; border-radius: 0; box-shadow: none; }
+.stage .pt-safe { padding-top: 0; }
+.stage-scroll { height: 100%; overflow-y: auto; overflow-x: clip; padding-bottom: 16px; overscroll-behavior: contain; scrollbar-gutter: stable; background: var(--bg); }
+.stage-scroll[data-scroll='none'] { overflow: hidden; padding-bottom: 0; scrollbar-gutter: auto; }
+.stage-scroll[data-scroll='fit'] { padding-bottom: 0; }
+.kept-screen:not([data-active]) { isolation: isolate; }
+.stage-scroll { position: relative; z-index: 1; }
+.product-bar { position: fixed; inset: 0 0 auto; height: var(--shell-top); padding: env(safe-area-inset-top) 24px 0; z-index: 30; display: flex; align-items: center; gap: 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.product-brand { display: flex; align-items: center; gap: 8px; height: 44px; font-weight: 600; font-size: 15px; letter-spacing: .12em; }
+.product-nav { display: flex; align-items: center; gap: 8px; align-self: stretch; }
+.product-nav-icon { display: none; }
+.product-link { position: relative; min-width: 64px; min-height: 44px; align-self: stretch; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.product-link[aria-current] { color: var(--accent); }
+.product-link[aria-current]::after { content: ''; position: absolute; bottom: 0; left: 12px; right: 12px; height: 2px; background: var(--accent); }
+.product-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.product-search { display: flex; align-items: center; gap: 8px; height: 40px; min-width: 180px; padding: 0 12px; border-radius: 8px; font-size: 13px; color: var(--ink-2); background: var(--surface-2); }
+.product-search kbd { margin-left: auto; }
+.product-offline { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--ink-2); }
+.tabbar { display: none; }
+:root[data-chrome='hidden'] { --shell-top: 0px; --nav-bottom: 0px; }
+:root[data-chrome='hidden'] .product-bar { visibility: hidden; transform: translateY(-100%); }
+:root[data-panel='open'] .stage-scroll { padding-right: 0; }
+@media (max-width: 599px) {
+  :root { --shell-top: calc(52px + env(safe-area-inset-top)); --nav-bottom: calc(56px + env(safe-area-inset-bottom)); }
+  .product-bar { padding-inline: 8px; gap: 4px; }
+  .product-brand { justify-content: center; min-width: 44px; flex-shrink: 0; }
+  .product-nav { position: fixed; inset: auto 0 0; height: var(--nav-bottom); padding-bottom: env(safe-area-inset-bottom); gap: 0; background: var(--bg); border-top: 1px solid var(--line); }
+  .product-link { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 44px; padding-inline: 8px; font-size: 13px; }
+  .product-link[aria-current]::after { top: 0; bottom: auto; left: 25%; right: 25%; }
+  .product-nav-icon { display: block; }
+  .product-theme, .product-search span, .product-search kbd, .product-offline span { display: none; }
+  .product-search { width: 44px; height: 44px; min-width: 44px; padding: 0; justify-content: center; background: transparent; }
+  .product-tools { gap: 0; }
+
+}
+@media (prefers-reduced-motion: reduce) { .product-bar { transition: none; } }
+@media (pointer: coarse) { .settings-group select { min-height: 44px; } }
+.stage-scroll[data-scroll='none'] > div { height: 100%; }
+/* All map text retains the exact renderer font; interaction chrome uses Geist. */
+.atlas { font-family: 'Manrope', sans-serif; }
+/* One focused question surface shared by canonical questions and recall. */
+.question-surface { position: fixed; z-index: 50; right: 24px; top: calc(var(--shell-top) + 16px); bottom: 24px; width: 560px; max-width: calc(100vw - 48px); display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-dialog-value); outline: none; }
+.question-mobile { max-width: none; border-radius: 20px 20px 0 0; }
+.quiz-option { min-height: 48px; border-radius: 10px; padding: 12px 14px; align-items: start; }
+.quiz-option:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.quiz-option-key { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; border: 1px solid var(--line-strong); border-radius: 6px; font-size: 12px; font-weight: 600; }
+.quiz-option:has(input:checked) .quiz-option-key { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.quiz-option[data-answer-state='correct'] .quiz-option-key { background: var(--success); color: var(--surface); border-color: var(--success); }
+.quiz-option[data-answer-state='incorrect'] .quiz-option-key { background: var(--danger); color: var(--surface); border-color: var(--danger); }
+.quiz-verdict { display: block; margin-top: 8px; font-size: 12px; font-weight: 500; }
+.answer { border-radius: 10px; min-height: 48px; }
+@media (prefers-reduced-motion: reduce) { .question-surface, .quiz-option { transition: none; } }
+.quiz-option { position: relative; }
+.quiz-radio { position: absolute; top: 12px; left: 14px; width: 28px; height: 28px; opacity: 0; cursor: pointer; }
+.quiz-option-key { pointer-events: none; }

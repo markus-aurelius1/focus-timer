@@ -72,25 +72,29 @@ export const RiverName = memo(function RiverName({ label: l, tone: toneId, idPre
 /** A point name, positioned so its baseline sits where an SVG `<text y>` would put it. */
 export const PlaceName = memo(function PlaceName({ label: l, tone: toneId }: { label: PlacedLabel; tone: Tone }) {
   const { color, fontFamily, fontStyle, fontWeight, fontSize, letterSpacing, halo, haloWidth } = labelPaint(l, toneId)
+  const x = l.anchor === 'middle' ? '-50%' : l.anchor === 'end' ? '-100%' : '0'
+  const y = -(l.baseline ?? baselineFromTop(l.style, l.size))
+  const textStyle = { color, fontFamily, fontStyle, fontWeight, fontSize, letterSpacing, WebkitTextStroke: `${haloWidth}px ${halo}` }
+  const delay = String([...l.key].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0) >>> 0).slice(-2) + 'ms'
+  // A fixed alignment translate and the camera's animation compose on one HTML word.
+  // Older engines retain the two-span path; both use the same font, baseline and world anchor.
+  if (typeof CSS !== 'undefined' && CSS.supports('translate', '0px')) return (
+    <span className="atlas-name atlas-name-text atlas-point-name" data-beyond={l.beyond || undefined} data-label-key={l.key}
+      style={{ ...textStyle, translate: `${x} ${y}px`, animationDelay: delay }}>{l.text}</span>
+  )
   return (
     // LabelLayer owns the unscaled world anchor; this span only holds the screen-size text and halo.
     <span
       className="atlas-name"
       data-beyond={l.beyond || undefined}
       data-label-key={l.key}
-      style={{ animationDelay: String([...l.key].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0) >>> 0).slice(-2) + 'ms' }}
+      style={{ animationDelay: delay }}
     >
       <span
         className="atlas-name-text"
         style={{
-          color,
-          fontFamily,
-          fontStyle,
-          fontWeight,
-          fontSize,
-          letterSpacing,
-          WebkitTextStroke: `${haloWidth}px ${halo}`,
-          transform: `translate(${l.anchor === 'middle' ? '-50%' : l.anchor === 'end' ? '-100%' : '0'},${-(l.baseline ?? baselineFromTop(l.style, l.size))}px)`,
+          ...textStyle,
+          transform: `translate(${x},${y}px)`,
         }}
       >
         {l.text}

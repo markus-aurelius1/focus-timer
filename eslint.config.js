@@ -40,7 +40,7 @@ const arbitraryToken = [
 export default [
   { ignores: ['dist/**', 'node_modules/**', 'android/**', 'ios/**', 'public/**', 'tools/**', 'coverage/**'] },
   {
-    files: ['src/**/*.{ts,tsx}', 'api/**/*.ts', 'vite.config.ts'],
+    files: ['src/**/*.{ts,tsx}', 'api/**/*.ts', 'functions/**/*.ts', 'vite.config.ts'],
     languageOptions: {
       parser: babelParser,
       parserOptions: {

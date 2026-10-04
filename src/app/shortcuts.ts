@@ -22,7 +22,6 @@ export const SHORTCUTS: ShortcutGroup[] = [
     title: 'Anywhere',
     items: [
       { keys: [`${modKey}K`], label: 'Search and commands' },
-      { keys: [`${modKey}\\`], label: 'Collapse or expand the sidebar' },
       { keys: ['?'], label: 'Show keyboard shortcuts' },
       { keys: ['Esc'], label: 'Close a dialog' },
     ],
@@ -66,11 +65,6 @@ export function useGlobalShortcuts() {
       if (mod && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         ui.set({ paletteOpen: !ui.paletteOpen })
-        return
-      }
-      if (mod && !e.altKey && e.key === '\\') {
-        e.preventDefault()
-        ui.toggleSidebar()
         return
       }
       if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target) || e.defaultPrevented) return

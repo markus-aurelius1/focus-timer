@@ -11,9 +11,9 @@ import { holdToast, releaseToast, useToasts, type Toast } from './toast'
 import { useMediaQuery } from './useMedia'
 
 /**
- * Where the thumb is on a phone (above the tab bar), top centre on wider
- * screens. A toast waits while the pointer or focus is on it, and can be swept
- * away sideways.
+ * Above mobile navigation with the zoom controls left clear, below the product
+ * bar on wider screens. A toast waits while the pointer or focus is on it,
+ * and can be swept away sideways.
  */
 export function Toaster() {
   const toasts = useToasts((s) => s.toasts)
@@ -23,7 +23,7 @@ export function Toaster() {
     <div
       className={cn(
         'layer-toast pointer-events-none fixed inset-x-0 flex items-center gap-2 px-4',
-        compact ? 'bottom-[calc(var(--nav-bottom)+12px)] flex-col-reverse' : 'top-0 flex-col pt-[max(12px,env(safe-area-inset-top))]',
+        compact ? 'bottom-[calc(var(--nav-bottom)+12px)] flex-col-reverse pl-16' : 'top-[calc(var(--shell-top)+12px)] flex-col',
       )}
       aria-live="polite"
     >

@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { chromium } from 'playwright-core'
+import { inspectLabelSurface } from './label-surface.mjs'
 
 const base = process.argv[2] ?? 'http://127.0.0.1:4180/'
 const names = new Map(JSON.parse(readFileSync(new URL('../../public/atlas/v1/places.json', import.meta.url), 'utf8')).places.map(place => [place.id, place.name]))
@@ -17,15 +18,16 @@ try {
     page.on('pageerror', error => errors.push(error.stack))
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
     const inspect = async phase => {
-      const state = await page.evaluate(() => {
+      const painted = await page.evaluate(inspectLabelSurface)
+      const state = await page.evaluate(painted => {
         const map = document.querySelector('.atlas'), box = map.getBoundingClientRect()
         const visible = node => {
           const r = node.getBoundingClientRect(), style = getComputedStyle(node)
           const x = r.x + r.width / 2, y = r.y + r.height / 2
           return r.width > 0 && r.height > 0 && x > box.left + 12 && x < box.right - 12 && y > box.top + 65 && y < box.bottom - 110 && style.visibility === 'visible' && style.display !== 'none' && Number(style.opacity) > 0.5
         }
-        const probe = node => {
-          const r = node.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2
+        const probe = (node, px, py) => {
+          const r = node.getBoundingClientRect(), x = px ?? r.x + r.width / 2, y = py ?? r.y + r.height / 2
           const previous = node.style.pointerEvents
           // Labels intentionally ignore pointer events. Temporarily include them in
           // the browser's hit-test stack to inspect paint order, then restore it.
@@ -34,20 +36,22 @@ try {
           node.style.pointerEvents = previous
           const index = stack.findIndex(element => element === node || node.contains(element))
           const tile = stack.findIndex(element => {
-            if (!element.closest('.atlas-base') || element.tagName !== 'CANVAS') return false
+            if (!element.closest('.atlas-base') || element.tagName !== 'CANVAS' || getComputedStyle(element).visibility === 'hidden' || getComputedStyle(element).display === 'none') return false
             for (let parent = element; parent && parent !== map; parent = parent.parentElement) if (Number(getComputedStyle(parent).opacity) < 0.5) return false
             return true
           })
           const ui = stack.slice(0, index < 0 ? undefined : index).some(element => element.closest('[data-map-ui], [data-inspector], [role="dialog"]'))
           return { above: index >= 0 && (tile < 0 || index < tile), ui, x, y, stack: stack.slice(0, 4).map(element => element.tagName + '.' + (element.className?.baseVal ?? element.className)) }
         }
-        const labels = [...map.querySelectorAll('.atlas-name-text')].filter(node => visible(node) && Number(getComputedStyle(node.parentElement).opacity) > 0.5).map(node => ({ key: node.parentElement.dataset.labelKey, ...probe(node) })).filter(item => !item.ui)
+        const canvas = map.querySelector('.atlas-names canvas')
+        const labels = painted.entries.filter(e => e.tested && e.painted).map(e => ({ key: e.key, inkMatch: e.matched / e.tested,
+          ...probe(canvas, box.left + e.x + e.spriteWidth / 2, box.top + e.y + e.spriteHeight / 2) })).filter(item => !item.ui && item.x > box.left + 12 && item.x < box.right - 12 && item.y > box.top + 65 && item.y < box.bottom - 110)
         const markers = [...map.querySelectorAll('[data-place]')].filter(visible).map(node => ({ id: node.dataset.place, ...probe(node) })).filter(item => !item.ui)
         return { moving: map.classList.contains('atlas-moving'), view: map.querySelector('.atlas-base').atlasView, isolation: getComputedStyle(map.querySelector('.atlas-base')).isolation, tiles: [...map.querySelectorAll('[data-tile-level]')].map(node => ({ kind: node.dataset.tileKind, z: getComputedStyle(node).zIndex, opacity: getComputedStyle(node).opacity })), labels, markers }
-      })
+      }, painted)
       snapshots.push({ tag, phase, state })
       assert(state.labels.length >= 3, `${tag} ${phase}: no visible in-view names`)
-      assert(state.labels.every(label => label.above), `${tag} ${phase}: names covered by base tiles: ${JSON.stringify(state.labels.filter(label => !label.above).slice(0, 2))}`)
+      assert(state.labels.every(label => label.above && label.inkMatch >= 0.9), `${tag} ${phase}: names covered by base tiles: ${JSON.stringify(state.labels.filter(label => !label.above).slice(0, 2))}`)
       assert(state.markers.length > 0, `${tag} ${phase}: no visible markers`)
       assert(state.markers.every(marker => marker.above), `${tag} ${phase}: markers covered by base tiles`)
       assert.deepEqual(errors, [], `${tag} ${phase}: console/runtime errors`)
@@ -62,7 +66,7 @@ try {
         const maps = document.querySelectorAll('.atlas')
         if (maps.length !== 1) return false
         const map = maps[0]
-        return map.querySelectorAll('.atlas-name').length > 5 && !map.classList.contains('atlas-moving') && map.querySelector('.atlas-base')?.dataset.tilesReady === 'true' && map.querySelector('.atlas-base canvas')
+        return map.querySelector('.atlas-names')?.atlasEntries?.length > 5 && !map.classList.contains('atlas-moving') && map.querySelector('.atlas-base')?.dataset.tilesReady === 'true' && map.querySelector('.atlas-base canvas')
       })
       await page.waitForTimeout(500)
     }
@@ -89,7 +93,7 @@ try {
       await page.getByRole('heading', { name: names.get(marker.id), exact: true }).waitFor()
       checks.push(`${tag}: ${sheet} marker selects its place`)
       console.log('PASS', checks.at(-1))
-      if (width >= 768) await page.getByRole('button', { name: 'Collapse Atlas inspector' }).click()
+      if (width >= 1024) await page.getByRole('button', { name: 'Collapse Atlas inspector' }).click()
       else await page.keyboard.press('Escape')
       await settle()
     }

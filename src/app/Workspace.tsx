@@ -105,7 +105,6 @@ export function Workspace({ title, titleId, meta, actions, toolbar, back, width 
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {actions}
-            <CommandButton className="-mr-2" />
           </div>
         </div>
       </header>

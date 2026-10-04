@@ -4,7 +4,7 @@ import type { Sheet } from '@/atlas/sheet'
 import { layoutLabels, type LayoutInput, type PlacedLabel } from '../labels'
 import type { Tone, Layout } from './types'
 const closeLabels = (labels: PlacedLabel[]) => {
-  for (const label of labels) label.curveBitmap?.close()
+  for (const bitmap of new Set(labels.flatMap(label => [label.curveBitmap, label.atlasBitmap]).filter((bitmap): bitmap is ImageBitmap => !!bitmap))) bitmap.close()
 }
 export function useLabelLayout(sheet: Sheet, input: LayoutInput | null, layout: Layout | null, prefer: MutableRefObject<Map<string, number>>, tone: Tone = 'day') {
   const resources = useRef(new Map<ImageBitmap, number>())
@@ -47,7 +47,7 @@ export function useLabelLayout(sheet: Sheet, input: LayoutInput | null, layout: 
         dy = snapshot.fy - snapshot.y
       const beyond = (label: PlacedLabel) => label.x < -40 || label.y < -20 || label.x > snapshot.w + 40 || label.y > snapshot.h + 20
       const version = ++sequence.current
-      for (const label of labels) if (label.curveBitmap) resources.current.set(label.curveBitmap, version)
+      for (const label of labels) for (const bitmap of [label.curveBitmap, label.atlasBitmap]) if (bitmap) resources.current.set(bitmap, version)
       startTransition(() =>
         setResult({
           sequence: version,

@@ -77,9 +77,9 @@ for (const config of CONFIGS) {
       baseSegments: segs.reduce((a, b) => a + b, 0),
       largestPathSegments: Math.max(0, ...segs),
       pathDataChars: paths.reduce((a, p) => a + p.getAttribute('d').length, 0),
-      names: atlas.querySelectorAll('.atlas-name:not(.atlas-river-name)').length,
+      names: atlas.querySelector('.atlas-names')?.atlasEntries?.filter(e => !e.label.path).length ?? atlas.querySelectorAll('.atlas-name:not(.atlas-river-name)').length,
       symbols: atlas.querySelectorAll('.atlas-sym').length,
-      riverNames: atlas.querySelectorAll('.atlas-river-name').length || atlas.querySelectorAll('textPath').length,
+      riverNames: atlas.querySelector('.atlas-names')?.atlasEntries?.filter(e => e.label.path).length ?? (atlas.querySelectorAll('.atlas-river-name').length || atlas.querySelectorAll('textPath').length),
       labelLayerNodes: [...atlas.querySelectorAll('.atlas-labels, .atlas-names')].reduce((total, layer) => total + layer.querySelectorAll('*').length, 0),
       documentNodes: document.querySelectorAll('*').length,
     }
@@ -254,12 +254,26 @@ for (const config of CONFIGS) {
     page.evaluate(() => {
       const atlas = document.querySelector('.atlas')
       const r = atlas.getBoundingClientRect()
+      const surface = atlas.querySelector('.atlas-names')
+      if (surface?.atlasEntries) {
+        const view = surface.atlasLabelView()
+        const at = surface.atlasEntries.filter(e => !e.label.path).map(e => {
+          const x = view.x + e.anchor.worldX * view.k + e.anchor.offsetX + e.left
+          const y = view.y + e.anchor.worldY * view.k + e.anchor.offsetY + e.top
+          return { e, x, y }
+        }).filter(({ e, x, y }) => x + e.width > 0 && y + e.height > 0 && x < r.width && y < r.height)
+        const symbols = [...atlas.querySelectorAll('.atlas-sym')].filter(el => {
+          const b = el.getBoundingClientRect()
+          return b.right > r.left && b.left < r.right && b.bottom > r.top && b.top < r.bottom
+        }).length
+        return { names: at.length, symbols, at: at.map(({ e, x, y }) => [e.label.text, Math.round((r.left + x) * 10) / 10, Math.round((r.top + y) * 10) / 10]) }
+      }
       const inside = (el) => {
         const b = el.getBoundingClientRect()
         return b.right > r.left && b.left < r.right && b.bottom > r.top && b.top < r.bottom
       }
       // Keep the legacy retention metric scoped to point names; curved rivers were SVG textPaths at the checkpoint.
-      const names = [...atlas.querySelectorAll('.atlas-name:not(.atlas-river-name) > .atlas-name-text')].filter(inside)
+      const names = [...atlas.querySelectorAll('.atlas-point-name, .atlas-name:not(.atlas-river-name) > .atlas-name-text')].filter(inside)
       // Where each name is, to see whether it stays put across the layout that follows a release.
       const at = names.map((el) => {
         const b = el.getBoundingClientRect()
@@ -442,17 +456,19 @@ for (const config of CONFIGS) {
   // The shell resizing the map: collapsing the rail, entering and leaving the full-screen map.
   if (!config.touch) {
     await run(
-      'counts-rail-collapse',
+      'counts-news-return',
       async () => {
-        await page.getByRole('button', { name: 'Collapse sidebar' }).click()
+        await page.getByRole('navigation', { name: 'Workspaces' }).getByRole('button', { name: 'News', exact: true }).click()
+        await page.getByRole('navigation', { name: 'Workspaces' }).getByRole('button', { name: 'Atlas', exact: true }).click()
         await page.waitForTimeout(1200)
       },
       { counts: true },
     )
     await run(
-      'counts-rail-expand',
+      'counts-settings-return',
       async () => {
-        await page.getByRole('button', { name: 'Expand sidebar' }).click()
+        await page.getByRole('button', { name: 'Settings', exact: true }).click()
+        await page.getByRole('navigation', { name: 'Workspaces' }).getByRole('button', { name: 'Atlas', exact: true }).click()
         await page.waitForTimeout(1200)
       },
       { counts: true },

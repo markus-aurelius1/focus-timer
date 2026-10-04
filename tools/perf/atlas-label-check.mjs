@@ -3,6 +3,7 @@ import { chromium } from 'playwright-core'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { prepare } from './lib.mjs'
+import { inspectLabelSurface } from './label-surface.mjs'
 const base = process.argv[2] ?? 'http://localhost:4173/'
 const out = fileURLToPath(new URL('./out/codex-j25/', import.meta.url))
 mkdirSync(out, { recursive: true })
@@ -26,23 +27,12 @@ for (const config of [
         errors = []
       page.on('pageerror', (e) => errors.push(e.message))
       await prepare(page, base, { route: '#/atlas' })
+      await page.waitForFunction(() => document.querySelector('.atlas-names')?.atlasEntries?.filter(e => !e.label.path).length > 10)
       await page.waitForFunction(() => !document.querySelector('.atlas-moving'))
       await page.evaluate(() => document.fonts.ready)
-      const metrics = await page.evaluate(() => {
-        const ctx = document.createElement('canvas').getContext('2d')
-        const rows = []
-        for (const n of document.querySelectorAll('.atlas-name:not(.atlas-river-name) .atlas-name-text')) {
-          const s = getComputedStyle(n),
-            size = parseFloat(s.fontSize)
-          ctx.letterSpacing = '0px'
-          ctx.font = s.fontStyle + ' ' + s.fontWeight + ' ' + size + 'px ' + s.fontFamily
-          const actual = ctx.measureText(n.textContent).width
-          ctx.font = s.fontStyle + ' ' + s.fontWeight + ' 100px ' + s.fontFamily
-          const normal = (ctx.measureText(n.textContent).width * size) / 100
-          rows.push({ key: n.parentElement.dataset.labelKey, text: n.textContent, actual, normal, error: Math.abs(actual - normal) })
-        }
-        return { loaded: document.fonts.check('600 12px Manrope'), maxError: Math.max(...rows.map((r) => r.error)), rows }
-      })
+      const initial = await page.evaluate(inspectLabelSurface)
+      const metrics = { loaded: initial.loaded, maxError: Math.max(...initial.entries.filter(e => !e.path).map(e => e.fontError)), rows: initial.entries }
+      if (!initial.entries.every(e => e.sourcePainted && (!e.tested || e.matched / e.tested >= 0.9))) throw new Error('Label sprite/viewport ink mismatch')
       const cdp = await context.newCDPSession(page)
       await cdp.send('Emulation.setCPUThrottlingRate', { rate: config.rate })
       const box = await page.locator('.atlas').boundingBox(),
@@ -69,34 +59,9 @@ for (const config of [
         const d = 55 + i * 16
         await touch('touchMove', d)
         await page.waitForTimeout(100)
-        samples.push(
-          await page.locator('.atlas-names').evaluate((e) =>
-            [...e.querySelectorAll('.atlas-name')].map((n) => {
-              const text = n.querySelector('.atlas-name-text'),
-                r = text.getBoundingClientRect(),
-                canvas = text.querySelector('canvas')
-              if (canvas) {
-                // The course can change angle/window at layout. Measure its actual painter font and bitmap display scale,
-                // rather than treating that changing curve bounding box as a change in glyph size.
-                const ctx = document.createElement('canvas').getContext('2d')
-                ctx.font = canvas.atlasFont ?? canvas.getContext('2d').font
-                const m = ctx.measureText(text.textContent),
-                  rect = canvas.getBoundingClientRect(),
-                  dpr = window.devicePixelRatio
-                return {
-                  key: n.dataset.labelKey,
-                  text: text.textContent,
-                  width: (m.width * dpr * rect.width) / canvas.width,
-                  height: ((m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) * dpr * rect.height) / canvas.height,
-                  font: ctx.font,
-                  courseWidth: r.width,
-                  courseHeight: r.height,
-                }
-              }
-              return { key: n.dataset.labelKey, text: text.textContent, width: r.width, height: r.height, font: parseFloat(getComputedStyle(text).fontSize) }
-            }),
-          ),
-        )
+        const painted = await page.evaluate(inspectLabelSurface)
+        if (!painted.entries.every(e => e.sourcePainted && (!e.tested || e.matched / e.tested >= 0.9))) throw new Error('Held label sprite/viewport ink mismatch')
+        samples.push(painted.entries)
         await page.screenshot({ path: out + '/' + config.id + '-' + theme + '-pinch-' + i + '.png' })
       }
       const position = await page.locator('.atlas-names').evaluate((e) => Math.max(0, ...e.atlasPositionTimes))

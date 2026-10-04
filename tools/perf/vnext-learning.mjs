@@ -13,6 +13,7 @@ await prepare(page, base, { sample: false, route: '#/atlas?place=in.pass.nathu-l
 await page.goto(`${base}#/atlas?place=in.pass.nathu-la`)
 await page.getByRole('heading', { name: 'Nathu La', exact: true }).waitFor()
 ok('accessible place exposes facts and Test me', await page.getByRole('button', { name: 'Test me', exact: true }).isVisible() && !await page.getByText('Its notes and questions unlock').count())
+await page.getByRole('application').waitFor()
 const dims = await page.evaluate(() => ({ map: document.querySelector('[role=application]').getBoundingClientRect().width, surface: document.querySelector('[data-atlas-surface]').getBoundingClientRect().width }))
 ok('desktop inspector overlays the full canvas', Math.abs(dims.map - dims.surface) < 2)
 await page.getByRole('button', { name: 'Collapse Atlas inspector' }).click()

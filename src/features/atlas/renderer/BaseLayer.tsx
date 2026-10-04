@@ -8,6 +8,7 @@ import { TILE_SIZE, levelFor, tileBounds, tileKey, tilesFor, type Tile } from '.
 import { TileCache } from './tileCache'
 import { TilePainter, type TileRequest, type TileSheet, type TileStyle } from './tilePainter'
 import { TONES } from './palette'
+import { tileSurface } from './tileSurface'
 export interface BaseView {
   view: Transform
   width: number
@@ -39,7 +40,20 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
     const dpr = window.devicePixelRatio || 1
     const cache = new TileCache<Resource>(lowPowerDevice() ? 24 : 48)
     const coarse = Math.floor(Math.log2(TILE_SIZE / Math.max(sheet.width, sheet.height)))
-    const layers = new Map<string, { node: HTMLDivElement; level: number }>()
+    const layers = new Map<string, { node: HTMLDivElement; level: number; surface?: HTMLCanvasElement; signature?: string; gpuReady?: boolean }>()
+    const presentation = document.createElement('canvas')
+    presentation.style.cssText = 'position:absolute;left:0;top:0;pointer-events:none;display:none;'
+    presentation.dataset.tilePresentation = 'true'
+    element.appendChild(presentation)
+    let gpu: ReturnType<typeof tileSurface> = null
+    try { gpu = tileSurface(presentation) } catch { /* Native cached planes remain the fallback. */ }
+    const contextLost = (event: Event) => {
+      event.preventDefault()
+      gpu?.close(); gpu = null
+      presentation.style.display = 'none'
+      for (const layer of layers.values()) layer.node.style.visibility = ''
+    }
+    presentation.addEventListener('webglcontextlost', contextLost)
     let alive = true
     let active = true
     let releaseTimer = 0
@@ -50,6 +64,7 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
     let latest = initial()
     let timer = 0
     let idle = 0
+    let uploadFrame = 0
     let pendingBitmap: ImageBitmap | null = null
     let serial = 0
     let busy: { request: TileRequest; key: string; layer: string } | null = null
@@ -99,14 +114,33 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
       shadeUrl: new URL(sheet.shadeUrl, location.href).href,
     }
     const position = () => {
+      const visible = [...layers].filter(([, layer]) => layer.node.style.opacity !== '0').sort((a, b) => Number(a[1].node.style.zIndex) - Number(b[1].node.style.zIndex))
+      const batched = !!gpu && visible.length > 0 && visible.every(([, layer]) => layer.gpuReady)
+      presentation.style.display = batched ? '' : 'none'
+      if (batched) {
+        if (!presentation.isConnected) element.prepend(presentation)
+        const width = Math.ceil(latest.width * dpr), height = Math.ceil(latest.height * dpr)
+        if (presentation.width !== width) presentation.width = width
+        if (presentation.height !== height) presentation.height = height
+        presentation.style.width = latest.width + 'px'; presentation.style.height = latest.height + 'px'
+        gpu!.draw(latest.view, latest.width, latest.height, visible.map(([key]) => key))
+      }
       for (const { node, level } of layers.values()) {
+        node.style.visibility = batched ? 'hidden' : ''
         if (node.style.opacity === '0') continue
+        if (batched) continue
         const scale = latest.view.k / 2 ** level
         node.style.transform = 'translate3d(' + latest.view.x + 'px,' + latest.view.y + 'px,0) scale(' + scale + ')'
       }
       // Read-only harness instrumentation avoids a diagnostic SVG or per-frame attribute writes.
       Object.assign(element, { atlasView: { ...latest.view }, atlasSheet: { width: sheet.width, height: sheet.height } })
     }
+    Object.assign(element, { atlasReadPixels: () => {
+      position()
+      return gpu && presentation.style.display !== 'none'
+        ? { pixels: gpu.read(), width: presentation.width, height: presentation.height, bottomUp: true }
+        : null
+    } })
     const layerFor = (key: string, level: number) => {
       let layer = layers.get(key)
       if (!layer) {
@@ -140,18 +174,75 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
       const units = sheet.states.length ? sheet.states : sheet.countries
       return units.some((f) => renderedStyle.explored?.includes(f.id) && f.bbox[0] <= bounds[2] + pad && f.bbox[2] >= bounds[0] - pad && f.bbox[1] <= bounds[3] + pad && f.bbox[3] >= bounds[1] - pad)
     }
+    const pack = (key: string) => {
+      const layer = layers.get(key)
+      if (!layer) return
+      const allTiles = [...layer.node.querySelectorAll<HTMLCanvasElement>('canvas:not([data-tile-surface])')]
+      const nearby = new Set(tilesFor(latest.view, latest.width, latest.height, sheet.width, sheet.height, layer.level, 1).map((tile) => tile.x * TILE_SIZE + ':' + tile.y * TILE_SIZE))
+      const tiles = allTiles.filter((tile) => tile.style.visibility !== 'hidden' && (key.includes(':overview:') || nearby.has(parseFloat(tile.style.left) + ':' + parseFloat(tile.style.top))))
+      if (!tiles.length) return
+      const signature = tiles.map((tile) => tile.dataset.tileRaster).join(':')
+      if (signature === layer.signature) return
+      const x = Math.min(...tiles.map((tile) => parseFloat(tile.style.left))), y = Math.min(...tiles.map((tile) => parseFloat(tile.style.top)))
+      const right = Math.max(...tiles.map((tile) => parseFloat(tile.style.left) + TILE_SIZE)), bottom = Math.max(...tiles.map((tile) => parseFloat(tile.style.top) + TILE_SIZE))
+      // Sparse old addresses must never allocate a world-sized backing store.
+      // Retain the native tile path if packing would exceed the existing pixel budget.
+      if ((right - x) * (bottom - y) > cache.budget * TILE_SIZE * TILE_SIZE) {
+        for (const tile of allTiles) tile.style.display = ''
+        layer.surface?.remove()
+        if (layer.surface) layer.surface.width = layer.surface.height = 0
+        layer.surface = undefined
+        layer.signature = undefined
+        layer.gpuReady = false
+        gpu?.remove(key)
+        return
+      }
+      const surface = layer.surface ?? document.createElement('canvas')
+      if (surface.width !== right - x) surface.width = right - x
+      if (surface.height !== bottom - y) surface.height = bottom - y
+      const context = surface.getContext('2d')
+      if (!context) return
+      // Pack existing tile pixels only at rest. The LRU still owns every native tile;
+      // one surface per plane avoids a separate compositor layer for each bitmap.
+      context.clearRect(0, 0, surface.width, surface.height)
+      for (const tile of tiles) context.drawImage(tile, parseFloat(tile.style.left) - x, parseFloat(tile.style.top) - y)
+      surface.dataset.tileSurface = 'true'
+      surface.dataset.tileSources = signature
+      surface.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${surface.width}px;height:${surface.height}px;`
+      Object.assign(surface, { atlasInkK: (tiles[0] as HTMLCanvasElement & { atlasInkK: number }).atlasInkK })
+      layer.node.appendChild(surface)
+      for (const tile of layer.node.querySelectorAll<HTMLCanvasElement>('canvas:not([data-tile-surface])')) tile.style.display = 'none'
+      layer.surface = surface
+      layer.signature = signature
+      layer.gpuReady = gpu?.update(key, surface, layer.level, x, y) ?? false
+    }
+    const removeLayer = (key: string) => {
+      const layer = layers.get(key)
+      if (!layer) return
+      if (layer.surface) layer.surface.width = layer.surface.height = 0
+      gpu?.remove(key)
+      layer.node.remove()
+      layers.delete(key)
+    }
     const refresh = () => {
+      // Keep one coherent raster plane while the camera moves; cached levels become visible at rest.
+      if (!latest.rest) {
+        element.dataset.tilesReady = 'false'
+        element.dataset.tileCacheSize = String(cache.size)
+        return
+      }
       const overviewTile = tileKey({ level: coarse, x: 0, y: 0 })
-      if (overviewKeys.size && [...overviewKeys].every((key) => cache.get(key + ':' + overviewTile))) {
+      const overviewReady = overviewKeys.size > 0 && [...overviewKeys].every((key) => cache.get(key + ':' + overviewTile))
+      const visible = tilesFor(latest.view, latest.width, latest.height, sheet.width, sheet.height, wantedLevel)
+      const complete = [...wanted].every((key) => visible.filter((t) => !key.includes(':travel:') || travelIntersects(t, wantedInkK)).every((tile) => cache.get(key + ':' + tileKey(tile))))
+      if (overviewReady && complete) {
         // Keep the preceding whole-sheet fallback until both replacement planes exist.
         // Its strokes use the requested view's ink scale, independently of its coarse raster density.
         retainedOverview = new Set(overviewKeys)
         for (const [key, layer] of layers) if (key.includes(':overview:')) layer.node.style.opacity = overviewKeys.has(key) ? '1' : '0'
       }
-      const visible = tilesFor(latest.view, latest.width, latest.height, sheet.width, sheet.height, wantedLevel)
-      const complete = [...wanted].every((key) => visible.filter((t) => !key.includes(':travel:') || travelIntersects(t, wantedInkK)).every((tile) => cache.get(key + ':' + tileKey(tile))))
-      element.dataset.tilesReady = String(!!visible.length && complete && !!wanted.size)
-      if (visible.length && complete && wanted.size) {
+      element.dataset.tilesReady = String(!!visible.length && complete && overviewReady && !!wanted.size)
+      if (visible.length && complete && overviewReady && wanted.size) {
         const base = [...wanted].find((key) => key.includes(':base:'))!
         const travel = [...wanted].find((key) => key.includes(':travel:'))
         // Progress tiles contain the complete painter result. Hide the matching base tile once ready,
@@ -167,12 +258,14 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
             layer.node.style.opacity = '1'
           }
         }
+        for (const key of [...wanted, ...overviewKeys]) pack(key)
         previous = new Set(wanted)
         element.dataset.tilesReady = 'true'
         for (const [key, layer] of layers) if (!wanted.has(key) && !overviewKeys.has(key) && !retainedOverview.has(key)) layer.node.style.opacity = '0'
       }
       element.dataset.tileCacheSize = String(cache.size)
       element.dataset.tileCacheBudget = String(cache.budget)
+      position()
     }
     const install = (bitmap: ImageBitmap, requestId: number) => {
       if (busy?.request.id !== requestId) {
@@ -197,6 +290,7 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
         const context = canvas.getContext('2d', { willReadFrequently: true })
         if (!context) {
           bitmap.close()
+          pump()
           return
         }
         context.drawImage(bitmap, 0, 0)
@@ -210,12 +304,30 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
         },
       }
       Object.assign(canvas, { atlasInkK: job.request.inkK })
+      canvas.dataset.tileRaster = String(job.request.id)
       if (cache.put(job.key, resource, cache.generation, protectedKeys)) {
         // Adjacent-level prefetches stay detached until requested; their backing stores still count in the LRU.
         if (wanted.has(job.layer) || previous.has(job.layer) || overviewKeys.has(job.layer)) layerFor(job.layer, job.request.tile.level).appendChild(canvas)
       }
       refresh()
       pump()
+    }
+    const uploadPending = () => {
+      idle = 0
+      if (!latest.rest || !pendingBitmap || !busy) return
+      const bitmap = pendingBitmap
+      pendingBitmap = null
+      install(bitmap, busy.request.id)
+    }
+    const scheduleUpload = () => {
+      if (idle || uploadFrame || !latest.rest || !pendingBitmap) return
+      // At most one native raster transfer per frame, even when worker results arrive in an idle burst.
+      uploadFrame = requestAnimationFrame(() => {
+        uploadFrame = 0
+        if (!alive || !latest.rest || !pendingBitmap) return
+        if (typeof window.requestIdleCallback === 'function') idle = window.requestIdleCallback(uploadPending, { timeout: 100 })
+        else idle = Number(globalThis.setTimeout(uploadPending, 16))
+      })
     }
     const receive = (bitmap: ImageBitmap, requestId: number) => {
       if (!alive || busy?.request.id !== requestId || busy.request.generation !== revision) {
@@ -225,17 +337,13 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
         return
       }
       pendingBitmap = bitmap
-      const upload = () => {
-        idle = 0
-        pendingBitmap = null
-        install(bitmap, requestId)
-      }
-      // Keep uploads out of the camera callback. One outstanding bitmap also bounds GPU transfer pressure.
-      if (typeof window.requestIdleCallback === 'function') idle = window.requestIdleCallback(upload, { timeout: latest.rest ? 100 : 500 })
-      else idle = Number(globalThis.setTimeout(upload, 16))
+      // A completed tile can wait offscreen while the existing overview/detail plane moves.
+      // Uploading and attaching new canvas layers during zoom forces expensive GPU raster work.
+      // One outstanding bitmap also bounds GPU transfer pressure.
+      scheduleUpload()
     }
     const pump = () => {
-      if (!alive || !active || !ready || busy || !queue.length) return
+      if (!alive || !active || !latest.rest || !ready || busy || !queue.length) return
       busy = queue.shift()!
       if (worker) worker.postMessage({ type: 'draw', generation: 1, request: busy.request })
       else {
@@ -258,6 +366,8 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
     const plan = () => {
       timer = 0
       if (!alive || !active || document.hidden) return
+      // The retained overview covers motion. Planning levels that cannot be uploaded yet wastes camera time.
+      if (!latest.rest) return
       let level = levelFor(latest.view.k, dpr)
       const hasTravel = !!renderedStyle.explored?.length
       const needed = (level: number) => {
@@ -306,16 +416,15 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
       requests.splice(cache.budget)
       for (const r of requests) {
         const hit = cache.get(r.layer + ':' + tileKey(r.tile))
-        if (hit && (wanted.has(r.layer) || previous.has(r.layer) || overviewKeys.has(r.layer)) && hit.canvas.parentElement !== layers.get(r.layer)?.node)
+        if (latest.rest && hit && (wanted.has(r.layer) || previous.has(r.layer) || overviewKeys.has(r.layer)) && hit.canvas.parentElement !== layers.get(r.layer)?.node)
           layerFor(r.layer, r.tile.level).appendChild(hit.canvas)
       }
       queue = requests
         .filter((r) => !cache.get(r.layer + ':' + tileKey(r.tile)) && busy?.key !== r.layer + ':' + tileKey(r.tile))
         .map((r) => ({ key: r.layer + ':' + tileKey(r.tile), layer: r.layer, request: { id: ++serial, generation: revision, tile: r.tile, style: r.style, inkK: r.inkK, dpr } }))
-      for (const [key, l] of layers)
+      for (const key of layers.keys())
         if (!previous.has(key) && !wanted.has(key) && !overviewKeys.has(key) && !retainedOverview.has(key)) {
-          l.node.remove()
-          layers.delete(key)
+          removeLayer(key)
         }
       refresh()
       pump()
@@ -327,6 +436,8 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
       plannedCoverage = ''
       window.clearTimeout(timer)
       timer = 0
+      cancelAnimationFrame(uploadFrame)
+      uploadFrame = 0
       if ('cancelIdleCallback' in window) window.cancelIdleCallback(idle)
       window.clearTimeout(idle)
       idle = 0
@@ -337,6 +448,7 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
     }
     port.current = (view) => {
       const nearChanged = latest.near !== view.near
+      if (latest.rest && !view.rest) element.dataset.tilesReady = 'false'
       latest = view
       if (nearChanged) reset.current()
       if (view.active !== undefined) {
@@ -349,8 +461,9 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
         if (!ready && !worker && !painter) initialize()
       }
       position()
+      scheduleUpload()
       // Planning is scheduled outside the camera callback. Panning itself only changes level transforms.
-      if (!timer) timer = window.setTimeout(plan, latest.rest ? 0 : 120)
+      if (latest.rest && !timer) timer = window.setTimeout(plan, 0)
     }
     reset.current = () => {
       renderedStyle = effectiveStyle()
@@ -370,6 +483,8 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
       const token = ++boot
       revision++
       plannedCoverage = ''
+      cancelAnimationFrame(uploadFrame)
+      uploadFrame = 0
       if ('cancelIdleCallback' in window) window.cancelIdleCallback(idle)
       window.clearTimeout(idle)
       idle = 0
@@ -421,11 +536,13 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
     }
     initialize()
     position()
-    const release = () => {
+      const release = () => {
       if (active && !document.hidden) return
       boot++
       revision++
       plannedCoverage = ''
+      cancelAnimationFrame(uploadFrame)
+      uploadFrame = 0
       worker?.terminate()
       worker = null
       painter?.close()
@@ -445,8 +562,10 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
       overviewKeys.clear()
       retainedOverview.clear()
       element.dataset.tilesReady = 'false'
-      for (const l of layers.values()) l.node.remove()
+      for (const key of layers.keys()) removeLayer(key)
       layers.clear()
+      presentation.width = presentation.height = 0
+      presentation.remove()
     }
     const visibility = () => {
       if (document.hidden) {
@@ -473,16 +592,21 @@ export function BaseLayer({ sheet, style, port, initial }: Props) {
       painter?.close()
       cache.clear()
       window.clearTimeout(timer)
+      cancelAnimationFrame(uploadFrame)
       if ('cancelIdleCallback' in window) window.cancelIdleCallback(idle)
       window.clearTimeout(idle)
       pendingBitmap?.close()
       pendingBitmap = null
       document.removeEventListener('visibilitychange', visibility)
       theme.disconnect()
-      for (const l of layers.values()) l.node.remove()
+      for (const key of layers.keys()) removeLayer(key)
       layers.clear()
+      presentation.removeEventListener('webglcontextlost', contextLost)
+      gpu?.close()
+      presentation.width = presentation.height = 0
+      presentation.remove()
     }
   }, [sheet, port]) // eslint-disable-line react-hooks/exhaustive-deps
   // Tile z-indices order base rasters only; they must never cover sibling names/symbols.
-  return <div ref={host} className="atlas-base isolate absolute inset-0 overflow-hidden" aria-hidden="true" />
+  return <div ref={host} className="atlas-base isolate pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true" />
 }
