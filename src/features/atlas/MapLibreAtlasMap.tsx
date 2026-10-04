@@ -176,7 +176,7 @@ export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, MapLibreAtlasProps>(f
       if (!map || !place) return
       const point = map.project([place.lon, place.lat]), canvas = map.getCanvas()
       const left = insets?.left ?? 0, right = canvas.clientWidth - (insets?.right ?? 0), top = insets?.top ?? 0, bottom = canvas.clientHeight - (insets?.bottom ?? 0)
-      if (point.x < left || point.x > right || point.y < top || point.y > bottom) map.easeTo({ center: [place.lon, place.lat], padding: paddingFor(insets), retainPadding: false })
+      if (point.x < left || point.x > right || point.y < top || point.y > bottom) map.easeTo({ center: [place.lon, place.lat], padding: paddingFor(insets) })
     },
     fitFocus: () => mapRef.current?.flyTo({ center: centerFor(propsRef.current.sheet.id), zoom: zoomFor(propsRef.current.sheet.id), padding: paddingFor(propsRef.current.insets) }),
     zoomBy: factor => mapRef.current?.zoomTo((mapRef.current?.getZoom() ?? 1) + Math.log2(factor)),
@@ -192,7 +192,7 @@ export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, MapLibreAtlasProps>(f
       center: centerFor(props.sheet.id),
       zoom: zoomFor(props.sheet.id),
       renderWorldCopies: false,
-      attributionControl: true,
+      attributionControl: { compact: true },
       cooperativeGestures: false,
     })
     mapRef.current = map
