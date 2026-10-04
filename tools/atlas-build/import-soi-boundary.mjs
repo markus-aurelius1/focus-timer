@@ -64,6 +64,7 @@ writeFileSync(metaOut, JSON.stringify({
   sourceUrl: SOI_OUTLINE_URL,
   sourceSha256: source.sourceSha256,
   convertedSha256: source.convertedSha256 ?? source.sourceSha256,
+  displayGeneralization: args.generalization ? String(args.generalization) : null,
   importedFiles: source.files.map(file => file.split(/[\\/]/).pop()),
   geometry: stats,
 }, null, 2) + '\n')
