@@ -1,6 +1,6 @@
 {
   "schema": "tars-atlas-assets/v1",
-  "version": "0847a558391b6d3b9634e6d16ea1df146a04999b91b0591b42aabecec7a5c6ba",
+  "version": "977fbe9207ce29c29695d46e6aca74d2e839881d74031e8c04b5c23d40b4dfc9",
   "renderer": "tars-svg/v1",
   "indiaBoundaryPolicy": "MapLibre boundary is a locally bundled, validated Survey of India Outline of India vector asset.",
   "tiers": {
@@ -23,8 +23,8 @@
     {
       "id": "atlas-assets/v1/india-boundary-source.json",
       "path": "atlas-assets/v1/india-boundary-source.json",
-      "version": "9fdb6d986933fd5c0dce847e81a449e55929676e1d2feeadb1be198d7b690b4c",
-      "bytes": 778,
+      "version": "bac5c079aa969f732a3c14180271a4c58f1abb7af03533d6fbbe8113822a6c72",
+      "bytes": 906,
       "tier": "CORE",
       "bundled": true,
       "compatibility": "atlas-data/v2 + atlas-pyq/v1",
@@ -33,8 +33,8 @@
     {
       "id": "atlas-assets/v1/india-controlled-border.geojson",
       "path": "atlas-assets/v1/india-controlled-border.geojson",
-      "version": "f3223ca776f82666ee93ac618408f87cecb11d7a453acae99ed992359a61b56a",
-      "bytes": 24683849,
+      "version": "df9ad460bd81947daa271dbd6d4fc1d4ee218cb0528366ada6c3afb2232e3921",
+      "bytes": 1331203,
       "tier": "CORE",
       "bundled": true,
       "compatibility": "atlas-data/v2 + atlas-pyq/v1",
@@ -1151,5 +1151,5 @@
       "removable": false
     }
   ],
-  "totalBytes": 30447524
+  "totalBytes": 7095006
 }
