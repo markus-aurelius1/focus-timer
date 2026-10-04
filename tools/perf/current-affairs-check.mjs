@@ -32,11 +32,12 @@ const fixture = { version: 1, fetchedAt, sources: [{ sourceId: 'ie-explained', s
   { ...row('Ramsar wetland conservation framework expands', 'dte-news', 'Down To Earth', 'https://www.downtoearth.org.in/fixture-past-year'), publishedAt: pastYear + 'T06:00:00Z' },
   { ...row('ISRO launches important lunar space mission', 'ie-explained', 'Indian Express', 'https://indianexpress.com/article/fixture-past-month'), publishedAt: pastMonth + 'T06:00:00Z' },
 ] }
-let mode = 'ok'
+let mode = 'ok', apiRequests = 0
 const mime = { '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.html': 'text/html', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2' }
 const server = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname
   if (path === '/api/current-affairs') {
+    apiRequests++
     const state = mode
     if (state === 'slow') await new Promise(r => setTimeout(r, 1000))
     res.setHeader('Content-Type', 'application/json')
@@ -75,6 +76,12 @@ try {
     if (width === 375) check(tag, 'compact top navigation remains usable', await page.getByRole('navigation', { name: 'Workspaces', exact: true }).getByRole('button').evaluateAll(buttons => buttons.length === 2 && buttons.every(el => { const r = el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.x >= 0 && r.right <= innerWidth })))
     mode = 'slow'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText('Loading trusted feeds…').waitFor(); check(tag, 'loading status')
     await rows.first().waitFor(); mode = 'ok'
+    const requestsBeforeRouteSwitch = apiRequests
+    await page.evaluate(() => { location.hash = '#/atlas' })
+    await page.locator('[data-atlas-surface]').waitFor()
+    await page.evaluate(() => { location.hash = '#/current-affairs' })
+    await rows.first().waitFor()
+    check(tag, 'fresh feed survives Atlas round-trip without refetch', apiRequests === requestsBeforeRouteSwitch)
     check(tag, 'retained state filters and Today default', await reading.locator('button[aria-pressed]').count() === 4 && await reading.getByRole('button', { name: 'Today', exact: true }).getAttribute('aria-pressed') === 'true')
     check(tag, 'nine rolling-24-hour articles including previous calendar day', await rows.count() === 9 && await rows.filter({ hasText: 'vaccination' }).count() === 1 && await rows.filter({ hasText: 'repo rate' }).count() === 0)
     check(tag, 'removed official feed is absent', await page.locator('a[href*="rbi.org.in"]').count() === 0)
@@ -133,7 +140,7 @@ try {
     await queue('Saved')
     check(tag, 'Open Original uses the same safe canonical URL', await openOriginal.getAttribute('href') === 'https://indianexpress.com/article/fixture-rbi' && await openOriginal.getAttribute('target') === '_blank' && (await openOriginal.getAttribute('rel')).includes('noopener'))
     const openWait = page.waitForEvent('popup'); await openOriginal.click(); const opened = await openWait; await opened.waitForLoadState(); check(tag, 'Open Original opens publisher without an internal screen', opened.url() === 'https://indianexpress.com/article/fixture-rbi' && await page.getByRole('dialog').count() === 0); await opened.close(); await queue('To be Read')
-    mode = 'stale'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText(/Stale feed/).waitFor(); check(tag, 'stale metadata is explicit')
+    mode = 'stale'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText(/Refresh due – showing cached feed/).waitFor(); check(tag, 'stale metadata is explicit')
     await ctx.setOffline(true); await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByRole('alert').waitFor(); check(tag, 'offline preserves pending queue and state', await rows.count() === 7); await overflow()
     await ctx.setOffline(false); mode = 'ok'; await page.getByRole('button', { name: 'Refresh news' }).click(); await page.getByText('Loading trusted feeds…').waitFor({ state: 'hidden' }); await hideFilters(); for (const b of await page.getByRole('button', { name: 'Dismiss', exact: true }).all()) await b.click(); await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(400); await page.screenshot({ path: fileURLToPath(new URL(tag + '.png', out)), fullPage: true })
     await page.goto(base + '#/current-affairs?debug=1'); await rows.first().waitFor(); await rows.first().getByText('Evidence', { exact: true }).click(); check(tag, 'debug preserves classifier evidence', (await page.locator('pre').first().innerText()).includes('mustReadScore'))
