@@ -53,7 +53,7 @@ try {
     check('MapLibre search selection opens existing place inspector', await page.getByRole('heading', { name: 'Nathu La', exact: true }).isVisible())
     check('MapLibre remains active after selection', await renderer.isVisible())
 
-    await page.getByRole('button', { name: 'World', exact: true }).click()
+    await page.getByRole('tab', { name: 'World', exact: true }).click()
     await page.waitForFunction(() => {
       const el = document.querySelector('[data-renderer="maplibre"]')
       return el && Number(el.dataset.studyCount ?? 0) > 0
