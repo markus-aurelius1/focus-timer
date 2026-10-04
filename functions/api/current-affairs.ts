@@ -18,7 +18,7 @@ export async function onRequest({ request, waitUntil }: { request: Request; wait
 
   const url = new URL(request.url)
   const force = url.searchParams.get('refresh') === '1'
-  const cache = (caches as CacheStorage & { default?: Cache }).default
+  const cache = (globalThis as unknown as { caches?: { default?: { match: (request: Request) => Promise<Response | undefined>; put: (request: Request, response: Response) => Promise<void> } } }).caches?.default
   const cacheKey = new Request(`${url.origin}${url.pathname}`, { method: 'GET' })
 
   if (!force && cache) {
