@@ -33,7 +33,7 @@ describe('Atlas semantic zoom', () => {
   })
 
   it('caps low-zoom source size deterministically', () => {
-    const places = Array.from({ length: 120 }, (_, i) => ({ ...place, id: 'p-' + String(i).padStart(3, '0'), kind: 'capital', level: 1 as const }))
+    const places: Place[] = Array.from({ length: 120 }, (_, i) => ({ ...place, id: 'p-' + String(i).padStart(3, '0'), kind: 'capital' as const, level: 1 as const }))
     const result = studyPlacesForView(places, { zoom: 1 })
     expect(result).toHaveLength(studySourceLimit(1))
     expect(result.map(p => p.id)).toEqual([...result].map(p => p.id).sort())
