@@ -57,8 +57,14 @@ jobs:
             printf 'Ambiguous shapefiles:\n%s\n' "${candidates[*]}" >&2
             exit 1
           fi
-          echo "Importing $shp"
-          node tools/atlas-build/import-soi-boundary.mjs --shp="$shp"
+          echo "Reprojecting official source from its declared .prj to WGS84"
+          archive_sha="$(sha256sum /tmp/Outline_of_India.zip | awk '{print $1}')"
+          tools/atlas-build/node_modules/.bin/mapshaper "$shp" \
+            -proj wgs84 \
+            -o format=geojson /tmp/soi/Outline_of_India_wgs84.geojson
+          node tools/atlas-build/import-soi-boundary.mjs \
+            --geojson=/tmp/soi/Outline_of_India_wgs84.geojson \
+            --source-sha256="$archive_sha"
           node --test tools/atlas-build/test/soi-boundary.test.mjs
           node tools/build-atlas-assets.mjs
           node - <<'NODE'
