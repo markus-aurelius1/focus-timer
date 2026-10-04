@@ -157,8 +157,13 @@ export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, MapLibreAtlasProps>(f
   const refreshSource = () => {
     const map = mapRef.current
     if (!map) return
+    const collection = collectionFor(propsRef.current, map)
+    if (node.current) {
+      node.current.dataset.studyCount = String(collection.features.length)
+      node.current.dataset.studyZoom = semanticZoomForMap(propsRef.current.sheet.id, map.getZoom()).toFixed(2)
+    }
     const source = map.getSource(SOURCE) as GeoJSONSource | undefined
-    if (source) void source.setData(collectionFor(propsRef.current, map))
+    if (source) void source.setData(collection)
   }
 
   useImperativeHandle(ref, () => ({
@@ -243,7 +248,7 @@ export const MapLibreAtlasMap = forwardRef<AtlasMapHandle, MapLibreAtlasProps>(f
     refreshSource()
   }, [props.places, props.kinds, props.showPlaces, props.showUndiscovered, props.discovered, props.pyqWeights, props.selectedId])
 
-  return <div ref={node} className="absolute inset-0 size-full" role="application" aria-label="Interactive Tars vector Atlas" />
+  return <div ref={node} data-renderer="maplibre" className="absolute inset-0 size-full" role="application" aria-label="Interactive Tars vector Atlas" />
 })
 
 export default MapLibreAtlasMap
