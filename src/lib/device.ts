@@ -1,8 +1,6 @@
 /** Device capability hints, used to keep effects light where they would cost frames or battery. */
 
-export function prefersReducedMotion(): boolean {
-  return typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
-}
+import { prefersReducedMotion } from './motion'
 
 let lowPower: boolean | undefined
 

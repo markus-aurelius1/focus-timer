@@ -49,6 +49,25 @@ function parseXml(xml: string): XmlNode {
   return root.children[0]
 }
 const textOf = (node: XmlNode | undefined): string => node ? node.text + node.children.map(textOf).join(' ') : ''
+export function thumbnailUrl(value: string, base?: string): string | null {
+  try {
+    if (value.length > 2048) return null
+    const u = new URL(decodeEntities(value.trim()), base)
+    if (u.protocol !== 'https:' || u.username || u.password || u.hostname === 'localhost' || u.hostname.endsWith('.local') || /^[\d.]+$/.test(u.hostname) || u.hostname.includes(':')) return null
+    return u.href
+  } catch { return null }
+}
+function feedThumbnail(node: XmlNode, description: string, source: NewsSource): string | undefined {
+  const media = node.children.flatMap(n => n.name === 'media:group' ? n.children : [n])
+  const candidates = [
+    ...media.filter(n => n.name === 'media:thumbnail').map(n => n.attrs.url),
+    ...media.filter(n => n.name === 'media:content' && (n.attrs.medium === 'image' || n.attrs.type?.startsWith('image/') || /\.(?:jpe?g|png|webp|gif)(?:\?|$)/i.test(n.attrs.url ?? ''))).map(n => n.attrs.url),
+    ...node.children.filter(n => (local(n.name) === 'enclosure' || local(n.name) === 'link' && n.attrs.rel === 'enclosure') && n.attrs.type?.startsWith('image/')).map(n => n.attrs.url ?? n.attrs.href),
+    ...node.children.filter(n => local(n.name) === 'image').map(n => textOf(n.children.find(c => local(c.name) === 'url'))),
+    ...[...description.matchAll(/<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)].map(m => m[1]),
+  ]
+  for (const candidate of candidates) { const url = candidate && thumbnailUrl(candidate, source.siteUrl); if (url) return url }
+}
 export function parseFeed(xml: string, source: NewsSource): NewsItem[] {
   const root = parseXml(xml), atom = local(root.name) === 'feed'
   if (!atom && local(root.name) !== 'rss') throw new Error('Expected RSS 2.0 or Atom')
@@ -61,7 +80,8 @@ export function parseFeed(xml: string, source: NewsSource): NewsItem[] {
     const url = canonicalUrl(link ?? '', source.siteUrl), title = cleanText(textOf(get('title'))).slice(0, 400)
     if (!url || !link || !title) continue
     const date = Date.parse(textOf(get(atom ? 'published' : 'pubdate')) || textOf(get('updated')) || textOf(get('date')))
-    items.push({ title, url, publisher: source.publisher, sourceId: source.id, section: source.section, publishedAt: Number.isFinite(date) ? new Date(date).toISOString() : null, description: cleanText(textOf(get(atom ? 'summary' : 'description'))).slice(0, 600) })
+    const description = textOf(get(atom ? 'summary' : 'description')), thumbnail = feedThumbnail(node, description, source)
+    items.push({ title, url, publisher: source.publisher, sourceId: source.id, section: source.section, publishedAt: Number.isFinite(date) ? new Date(date).toISOString() : null, description: cleanText(description).slice(0, 600), ...(thumbnail ? { thumbnailUrl: thumbnail } : {}) })
   }
   return items
 }

@@ -1,19 +1,26 @@
 /** Targeted boundaries: real parser shapes, CSE evidence/noise, and conservative event identity. */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
-import { canonicalUrl, cleanText, dedupeUrls, parseFeed } from './feed'
+import { canonicalUrl, cleanText, dedupeUrls, parseFeed, thumbnailUrl } from './feed'
 import { collectFeeds } from './gateway'
-import { NEWS_SOURCES } from './sources'
+import { NEWS_SOURCES, activeFeedItems } from './sources'
 import { classify } from './relevance'
 import { clusterItems } from './cluster'
 import { referenceLinks } from './static-links'
 import type { ClassifiedItem, NewsItem, RelevanceIndex } from './types'
-const source = NEWS_SOURCES[1]
+const source = NEWS_SOURCES.find(s => s.id === 'ie-explained')!
 const index: RelevanceIndex = JSON.parse(readFileSync(new URL('../../public/current-affairs/v1/relevance-index.json', import.meta.url), 'utf8'))
 const rss = '<rss version="2.0"><channel><item><title>RBI &amp; regulation</title><link>https://example.org/a?utm_source=x&amp;id=7</link><pubDate>Thu, 01 Oct 2026 10:00:00 GMT</pubDate><description><![CDATA[<p>Banking &amp; credit &#8211; rules</p>]]></description><content:encoded>FULL BODY MUST NOT SHIP</content:encoded></item></channel></rss>'
 const item = (title: string, overrides: Partial<NewsItem> = {}): NewsItem => ({ title, description: '', publisher: 'Indian Express', section: 'Explained', sourceId: 'ie-explained', url: 'https://example.org/' + encodeURIComponent(title), publishedAt: '2026-10-01T10:00:00Z', ...overrides })
 const classified = (title: string, overrides: Partial<NewsItem> = {}): ClassifiedItem => { const row = item(title, overrides); return { ...row, relevance: classify(row, index) } }
 describe('RSS and Atom gateway', () => {
+  it('fetches newspapers only and excludes removed official items from older caches', () => {
+    expect(NEWS_SOURCES).toHaveLength(39)
+    expect(new Set(NEWS_SOURCES.map(s => s.publisher)).size).toBe(9)
+    expect(NEWS_SOURCES.every(s => s.kind === 'newspaper' || s.kind === 'international')).toBe(true)
+    expect(NEWS_SOURCES.some(s => /rbi|sebi|pib/.test(s.id))).toBe(false)
+    expect(activeFeedItems([item('News'), item('Old circular', { sourceId: 'rbi-notifications' }), item('Old SEBI notice', { sourceId: 'sebi' }), item('Unknown feed', { sourceId: 'unknown' })]).map(i => i.title)).toEqual(['News'])
+  })
   it('normalizes RSS metadata without full article content', () => {
     const rows = parseFeed(rss, source)
     expect(rows).toHaveLength(1)
@@ -38,6 +45,23 @@ describe('RSS and Atom gateway', () => {
     const rows = dedupeUrls([item('A', { url: 'https://example.org/a?utm_source=x&id=7#tracking' }), item('B', { url: 'https://example.org/a?id=7' }), item('C', { url: 'https://example.org/a?id=8' })])
     expect(rows.map(r => r.url)).toEqual(['https://example.org/a?id=7', 'https://example.org/a?id=8'])
   })
+  it('reads RSS media thumbnails, groups, enclosures and description images without article fetches', () => {
+    const image = 'https://images.example.org/photo.jpg?width=140&signature=abc'
+    for (const tag of ['<media:thumbnail url="https://images.example.org/photo.jpg?width=140&amp;signature=abc"/>', '<media:group><media:content medium="image" url="https://images.example.org/photo.jpg?width=140&amp;signature=abc"/></media:group>', '<enclosure type="image/jpeg" url="https://images.example.org/photo.jpg?width=140&amp;signature=abc"/>', '<description><![CDATA[<img src="https://images.example.org/photo.jpg?width=140&amp;signature=abc">Feed teaser]]></description>']) {
+      const rows = parseFeed(`<rss><channel><item><title>News</title><link>https://example.org/a</link>${tag}<content:encoded>FULL ARTICLE BODY</content:encoded></item></channel></rss>`, source)
+      expect(rows[0].thumbnailUrl).toBe(image)
+      expect(JSON.stringify(rows)).not.toContain('FULL ARTICLE BODY')
+    }
+  })
+  it('ignores channel logos, full-content images, audio and unsafe thumbnails', () => {
+    const rows = parseFeed('<rss><channel><image><url>https://example.org/logo.jpg</url></image><item><title>News</title><link>https://example.org/a</link><media:thumbnail url="javascript:alert(1)"/><enclosure type="audio/mpeg" url="https://example.org/audio.mp3"/><content:encoded><![CDATA[<img src="https://example.org/body.jpg">FULL BODY]]></content:encoded></item></channel></rss>', source)
+    expect(rows[0].thumbnailUrl).toBeUndefined()
+    for (const value of ['data:image/png;base64,xxx', 'http://example.org/a.jpg', 'https://127.0.0.1/a.jpg', 'https://localhost/a.jpg', 'https://user:pass@example.org/a.jpg']) expect(thumbnailUrl(value)).toBeNull()
+  })
+  it('supports an Atom image enclosure without using Atom content', () => {
+    const rows = parseFeed('<feed><entry><title>News</title><link href="https://example.org/a"/><link rel="enclosure" type="image/jpeg" href="https://images.example.org/a.jpg"/><content>FULL BODY</content></entry></feed>', source)
+    expect(rows[0]).toMatchObject({ thumbnailUrl: 'https://images.example.org/a.jpg', description: '' })
+  })
   it('isolates malformed/failed publishers and never fetches disabled feeds', async () => {
     const sources = [source, { ...source, id: 'bad', feedUrl: 'https://example.org/bad' }, { ...source, id: 'disabled', enabled: false }]
     const fetcher = vi.fn<typeof fetch>().mockImplementation(async url => new Response(url === source.feedUrl ? rss : '<rss><channel></rss>'))
@@ -61,6 +85,30 @@ describe('RSS and Atom gateway', () => {
   })
 })
 describe('CSE relevance', () => {
+  it.each(['About 20 per cent CBG blending could make CNG carbon neutral on life-cycle basis: Study', 'How India must plug its leachate problem', 'Why Himalayas are caught off guard during floods', 'India’s next big public health tool could fit on a food packet'])('keeps supported specialist environment and health coverage: %s', title => {
+    const result = classify(item(title, { sourceId: 'dte-news', publisher: 'Down To Earth', section: 'Environment & development' }), index)
+    expect(result.accepted).toBe(true)
+    expect(result.staticAnchors.length).toBeGreaterThan(0)
+  })
+  it.each(['New GDP series uses double deflation', 'JPC examines FCRA Amendment Bill', 'UPI payments fee study published', 'El Niño-driven wildfires threaten orangutan habitat', 'Swiss glaciers lost 20% of their volume', 'Green Energy Corridor boosts renewable energy', 'RBI amends guidelines for payments banks'])('includes broader syllabus vocabulary: %s', title => {
+    const result = classify(item(title), index)
+    expect(result.accepted).toBe(true)
+    expect(result.staticAnchors.length).toBeGreaterThan(0)
+  })
+  it('uses publisher-curated UPSC coverage without inventing PYQ concepts or exam demand', () => {
+    const title = 'UPSC Key: Poompuhar, NCERT Textbooks and Article 370'
+    const result = classify(item(title, { sourceId: 'ie-upsc', section: 'UPSC Current Affairs' }), index)
+    expect(result).toMatchObject({ accepted: true, exam: 'general', subjects: ['General studies'], staticAnchors: [] })
+    expect(result.signals).toEqual(['Publisher-curated UPSC coverage; no matched PYQ concept'])
+    expect(classify(item(title, { sourceId: 'hindu-national' }), index).accepted).toBe(false)
+    expect(classify(item('UPSC MCQs on science', { sourceId: 'ie-upsc' }), index).accepted).toBe(false)
+    expect(classify(item('Cricket match score', { sourceId: 'ie-upsc' }), index).accepted).toBe(false)
+  })
+  it('admits supported explainers without requiring policy verbs, but keeps unrelated explainers out', () => {
+    expect(classify(item('What is renewable energy?'), index).accepted).toBe(true)
+    expect(classify(item('How did a pilot save the passengers?'), index).accepted).toBe(false)
+    expect(classify(item('Supreme Court dismisses plea over frozen bank accounts'), index).accepted).toBe(false)
+  })
   it.each(['RBI revises banking regulation', 'Supreme Court ruling on constitutional fundamental rights', 'Ramsar protected area conservation expands', 'Government scheme expands Ayushman Bharat coverage', 'New international treaty on nuclear security', 'ISRO launches important lunar space mission'])('accepts %s with subject and exam demand', title => {
     const result = classify(item(title), index)
     expect(result.accepted).toBe(true)
@@ -84,12 +132,26 @@ describe('CSE relevance', () => {
   })
 })
 describe('event identity and exact references', () => {
-  it('merges matching coverage and prefers official sources, keeping every link', () => {
-    const rows = [classified('RBI revises banking liquidity regulation framework'), classified('RBI revises banking liquidity regulation framework today', { url: 'https://rbi.org.in/1', sourceId: 'rbi-notifications', publisher: 'RBI' })]
+  it('groups differently worded reports on the same development and prefers richer metadata', () => {
+    const a = classified('Ramsar wetland conservation expands with new protected sites', { section: 'Environment', description: '', url: 'https://example.org/short' })
+    const b = classified('New protected Ramsar sites expand wetland conservation framework', { section: 'Environment', description: 'The feed offers more context on wetland conservation with details of designated sites and their ecological significance.', url: 'https://example.org/rich' })
+    expect(clusterItems([a, b])).toHaveLength(1)
+    expect(clusterItems([a, b])[0].primary.url).toBe(b.url)
+  })
+  it('prefers an explainer over a longer teaser, retains links, and does not bridge distinct events', () => {
+    const a = classified('RBI banking liquidity regulation framework revised', { section: 'Economy', description: 'Banking regulation '.repeat(30) })
+    const b = classified('Explained RBI banking liquidity regulation framework changes', { section: 'Explained', url: 'https://example.org/explainer' })
+    expect(clusterItems([a, b])[0].primary.url).toBe(b.url)
+    expect(clusterItems([a, b])[0].members).toHaveLength(2)
+    const nextDay = { ...b, publishedAt: '2026-10-02T10:00:00Z' }
+    expect(clusterItems([a, nextDay])).toHaveLength(2)
+  })
+  it('merges matching newspaper coverage and prefers explainers, keeping every link', () => {
+    const rows = [classified('RBI revises banking liquidity regulation framework'), classified('RBI revises banking liquidity regulation framework today', { url: 'https://thehindu.com/1', sourceId: 'hindu-national', publisher: 'The Hindu' })]
     const events = clusterItems(rows)
     expect(events).toHaveLength(1)
     expect(events[0].members).toHaveLength(2)
-    expect(events[0].primary.publisher).toBe('RBI')
+    expect(events[0].primary.publisher).toBe('Indian Express')
   })
   it('keeps distinct RBI and Supreme Court developments apart', () => {
     expect(clusterItems([classified('RBI revises banking liquidity regulation framework'), classified('RBI monetary policy holds repo rate'), classified('Supreme Court constitutional ruling on federalism'), classified('Supreme Court ruling protects fundamental rights')])).toHaveLength(4)

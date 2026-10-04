@@ -28,16 +28,14 @@ const wrap = (pad = 0, round = 0, bg = true) => `<svg xmlns="http://www.w3.org/2
     <g transform="translate(${pad} ${pad}) scale(${(1024 - 2 * pad) / 1024})">${inner}</g>
   </g></svg>`
 
-/** The four slabs alone, as a path group in a 96×96 box (monochrome uses: badge, notification icon, splash). */
+/** The four slabs alone, as a path group in a 96×96 box (monochrome uses: splash). */
 const slabs = (fill = '#ffffff') => `<g fill="${fill}">
   <rect x="12" y="20" width="16" height="22" rx="4"/>
   <rect x="31" y="20" width="16" height="58" rx="4"/>
   <rect x="50" y="20" width="16" height="58" rx="4"/>
   <rect x="69" y="20" width="16" height="22" rx="4"/>
 </g>`
-const mono = (color = '#ffffff') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">${slabs(color)}</svg>`
 
-const glyph = (path) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="#0e1223"/><g fill="none" stroke="#f2c46d" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" transform="translate(24 24) scale(2)">${path}</g></svg>`
 
 /** Splash: night background, a soft glow and the gold mark in the middle. */
 const splash = (w, h) => {
@@ -58,22 +56,17 @@ const ogImage = () => `<html><head><style>
   h1 { font-family: Fraunces, serif; font-weight: 500; font-size: 168px; line-height: .9; letter-spacing: -0.03em; margin: 0; }
   p { margin: 26px 0 0; font-size: 34px; font-weight: 600; color: #9a9fb2; letter-spacing: -0.01em; }
   p b { color: #f2c46d; font-weight: 700; }
-</style></head><body><div class="mark">${icon}</div><div><h1>Tars</h1><p>Plan · <b>Focus</b> · Track</p><p style="margin-top:14px;font-size:26px;font-weight:500;line-height:1.35">A calm study planner and focus timer<br>that works offline.</p></div></body></html>`
+</style></head><body><div class="mark">${icon}</div><div><h1>Tars</h1><p>Atlas · <b>News</b></p><p style="margin-top:14px;font-size:26px;font-weight:500;line-height:1.35">Offline geography.<br>Source-linked Current Affairs.</p></div></body></html>`
 
 const jobs = [
   ['public/icons/icon-192.png', 192, wrap()],
   ['public/icons/icon-512.png', 512, wrap()],
   ['public/icons/icon-maskable-512.png', 512, wrap(110)],
   ['public/apple-touch-icon.png', 180, wrap()],
-  ['public/icons/badge-96.png', 96, mono()],
-  ['public/icons/shortcut-focus.png', 96, glyph('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 2h4"/>')],
-  ['public/icons/shortcut-today.png', 96, glyph('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/>')],
-  ['public/icons/shortcut-add.png', 96, glyph('<path d="M12 5v14M5 12h14"/>')],
-  ['public/icons/shortcut-insights.png', 96, glyph('<path d="M4 20V10M12 20V4M20 20v-6"/>')],
   ['public/og-image.png', [1200, 630], ogImage(), 'html'],
 ]
 
-// Android launcher + adaptive foreground + notification icons (only if the platform exists).
+// Android launcher + adaptive foreground (only if the platform exists).
 const res = join(root, 'android/app/src/main/res')
 if (existsSync(res)) {
   const dens = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 }
@@ -82,13 +75,8 @@ if (existsSync(res)) {
     jobs.push([`android/app/src/main/res/mipmap-${d}/ic_launcher_round.png`, 48 * k, wrap(0, 512)])
     // Adaptive icon foreground: 108dp canvas; the mark sits well inside the central 72dp safe zone.
     jobs.push([`android/app/src/main/res/mipmap-${d}/ic_launcher_foreground.png`, 108 * k, wrap()])
-    jobs.push([`android/app/src/main/res/drawable-${d}/ic_stat_tars.png`, 24 * k, mono()])
   }
 
-  // Launcher shortcut icons (48dp at xxhdpi).
-  jobs.push(['android/app/src/main/res/drawable-xxhdpi/ic_shortcut_focus.png', 144, glyph('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 2h4"/>')])
-  jobs.push(['android/app/src/main/res/drawable-xxhdpi/ic_shortcut_today.png', 144, glyph('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/>')])
-  jobs.push(['android/app/src/main/res/drawable-xxhdpi/ic_shortcut_add.png', 144, glyph('<path d="M12 5v14M5 12h14"/>')])
   // Splash screens, every orientation and density Capacitor ships.
   const splashSizes = {
     'drawable/splash.png': [480, 320],

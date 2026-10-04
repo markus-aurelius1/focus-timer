@@ -2,7 +2,7 @@
 import type { NewsEvent } from './types'
 export const CA_STATE_KEY = 'tars.current-affairs.state.v1'
 export const NOTE_LIMIT = 8000
-export interface PersonalEntry { readAt?: number; savedAt?: number; note?: string }
+export interface PersonalEntry { readAt?: number; savedAt?: number; ignoredAt?: number; note?: string }
 export interface PersonalState { version: 1; entries: Record<string, PersonalEntry> }
 export interface StateStorage { getItem(key: string): string | null; setItem(key: string, value: string): void }
 const empty = (): PersonalState => ({ version: 1, entries: {} })
@@ -16,20 +16,21 @@ export function parsePersonalState(raw: string | null): PersonalState {
     if (!/^https?:\/\//.test(key) || !entry || typeof entry !== 'object') continue
     const row = entry as PersonalEntry
     // Allowlist fields on read and write. Article metadata/body can never leak into this storage.
-    entries[key] = { ...(timestamp(row.readAt) && { readAt: row.readAt }), ...(timestamp(row.savedAt) && { savedAt: row.savedAt }), ...(typeof row.note === 'string' && { note: row.note.slice(0, NOTE_LIMIT) }) }
+    entries[key] = { ...(timestamp(row.readAt) && { readAt: row.readAt }), ...(timestamp(row.savedAt) && { savedAt: row.savedAt }), ...(timestamp(row.ignoredAt) && { ignoredAt: row.ignoredAt }), ...(typeof row.note === 'string' && { note: row.note.slice(0, NOTE_LIMIT) }) }
   }
   return { version: 1, entries }
 }
 export function readPersonalState(storage: StateStorage): PersonalState { return parsePersonalState(storage.getItem(CA_STATE_KEY)) }
 export function eventPersonalState(event: NewsEvent, state: PersonalState): PersonalEntry {
   const rows = event.members.map(m => state.entries[m.url]).filter((row): row is PersonalEntry => !!row)
-  return { readAt: rows.find(r => r.readAt)?.readAt, savedAt: rows.find(r => r.savedAt)?.savedAt, note: rows.find(r => r.note)?.note ?? '' }
+  const earliest = (field: 'readAt' | 'savedAt' | 'ignoredAt') => { const values = rows.map(r => r[field]).filter(timestamp); return values.length ? Math.min(...values) : undefined }
+  return { readAt: earliest('readAt'), savedAt: earliest('savedAt'), ignoredAt: earliest('ignoredAt'), note: rows.find(r => r.note)?.note ?? '' }
 }
 export function patchPersonalState(state: PersonalState, keys: string[], patch: PersonalEntry): PersonalState {
   const entries = { ...state.entries }
   for (const key of keys) {
     const row = { ...entries[key], ...patch }
-    entries[key] = { ...(timestamp(row.readAt) && { readAt: row.readAt }), ...(timestamp(row.savedAt) && { savedAt: row.savedAt }), ...(row.note && { note: row.note.slice(0, NOTE_LIMIT) }) }
+    entries[key] = { ...(timestamp(row.readAt) && { readAt: row.readAt }), ...(timestamp(row.savedAt) && { savedAt: row.savedAt }), ...(timestamp(row.ignoredAt) && { ignoredAt: row.ignoredAt }), ...(row.note && { note: row.note.slice(0, NOTE_LIMIT) }) }
     if (!Object.keys(entries[key]).length) delete entries[key]
   }
   return { version: 1, entries }

@@ -1,51 +1,37 @@
-import { executeAction } from '@/tars/runtime'
 import { App as CapApp } from '@capacitor/app'
-import { AnimatePresence, MotionConfig, motion } from 'motion/react'
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { installSoundFollow, setSoundFollowsTimer } from '@/audio/follow'
-import { installAudio } from '@/audio/store'
-import { useLookups, useProfiles, useSettings, useTask } from '@/data/hooks'
+import { MotionConfig, motion } from 'motion/react'
+import { Suspense, useDeferredValue, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useSettings } from '@/data/hooks'
 import { ensureSeed } from '@/data/seed'
 import { cn } from '@/lib/cn'
+import { loadAtlas } from '@/atlas/data'
+import { CrashTest } from '@/lib/crashTest'
+import { lowPowerDevice } from '@/lib/device'
+import { whenIdle } from '@/lib/lazy'
+import { useMotionPreference } from '@/lib/motion'
 import { isNative } from '@/lib/platform'
-import { formatClock } from '@/lib/time'
 import { setHapticsEnabled } from '@/services/haptics'
-import { onNotificationTap } from '@/services/notifications'
-import { configureReminders, startReminders } from '@/services/reminders'
-import { keepAwake } from '@/services/wakelock'
-import { enterFullscreen } from '@/services/fullscreen'
-import { elapsedMs, remainingMs } from '@/timer/engine'
-import { bootTimer, configureTimerRuntime, PHASE_LABEL, useTimer } from '@/timer/store'
-import { useNow } from '@/timer/useNow'
+import { AppError, ErrorBoundary, ScreenError } from '@/ui/ErrorBoundary'
 import { ConfirmHost, Toaster } from '@/ui/feedback'
 import { LogoMark } from '@/ui/Logo'
 import { toast } from '@/ui/toast'
-import { FocusScreen } from '@/features/focus/FocusScreen'
-import { ImmersiveFocus } from '@/features/focus/ImmersiveFocus'
-import { SessionCompleteSheet } from '@/features/focus/SessionCompleteSheet'
-import { ContextSheet } from '@/features/focus/ContextSheet'
-import { ProfileSheet } from '@/features/focus/ProfileSheet'
-import { TasksScreen } from '@/features/tasks/TasksScreen'
-import { TaskSheet } from '@/features/tasks/TaskSheet'
-import { SoundSheet } from '@/features/audio/SoundSheet'
-import { MusicDock } from '@/features/audio/MusicDock'
-import { Onboarding } from '@/features/onboarding/Onboarding'
-import { consumeParams, navigate, useRoute, type RouteName } from './router'
+import { closeTopSurface } from '@/ui/surface/core'
+import { currentRoute, navigate, RouteContext, useRoute, type RouteName } from './router'
 import { useOnline } from '@/lib/useOnline'
-import { T } from '@/ui/motion'
-import { TarsPresence } from '@/tars/TarsPresence'
-import { CommandPalette } from './CommandPalette'
-import { BottomNav, SideNav, TimerPill } from './Shell'
-import { ShortcutsSheet } from './ShortcutsSheet'
+import { screenEnter } from '@/ui/motion'
+import { TarsContextBridge } from '@/tars/useContext'
+import { Overlays } from './Overlays'
+import { onRouteReset, rememberScroll, scrollFor } from './routeState'
+import { ScreenActive } from './screenActive'
+import { shiftStage } from './shellShift'
+import { preloadRoute, preloadRoutesWhenIdle, SCREENS } from './screens'
+import { TopBar } from './Shell'
 import { useGlobalShortcuts } from './shortcuts'
 import { useApplyTheme } from './theme'
 import { useUi } from './ui-store'
 
-const CalendarScreen = lazy(() => import('@/features/calendar/CalendarScreen'))
-const InsightsScreen = lazy(() => import('@/features/insights/InsightsScreen'))
-const AtlasScreen = lazy(() => import('@/features/atlas/AtlasScreen'))
-const SettingsScreen = lazy(() => import('@/features/settings/SettingsScreen'))
-const CurrentAffairsScreen = lazy(() => import('@/features/current-affairs/CurrentAffairsScreen'))
+// The screen the app is opening on: ask for its code while the database is still being opened.
+preloadRoute(currentRoute().name)
 
 type BootState = 'loading' | 'ready' | 'error'
 
@@ -58,9 +44,6 @@ function useBoot(): BootState {
         await ensureSeed()
         // Ask the browser not to evict our local-first data under storage pressure.
         void navigator.storage?.persist?.().catch(() => {})
-        bootTimer()
-        installAudio()
-        installSoundFollow()
         if (!cancelled) setState('ready')
       } catch (err) {
         console.error('[boot]', err)
@@ -77,8 +60,8 @@ function useBoot(): BootState {
 export function App() {
   const boot = useBoot()
   const settings = useSettings()
-  const immersive = useUi((s) => s.immersive)
-  useApplyTheme(settings.theme, immersive ? 'dark' : null)
+  useApplyTheme(settings.theme)
+  const motion = useMotionPreference()
 
   if (boot === 'error') {
     return (
@@ -89,95 +72,246 @@ export function App() {
       </div>
     )
   }
-  if (boot === 'loading') {
-    return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <LogoMark className="size-9 animate-breathe text-accent" />
-      </div>
-    )
-  }
+  // The frame of the app (rail or tab bar, the stage) is in the very first paint; the screen fills in when the database is open.
   return (
-    <MotionConfig reducedMotion="user">
-      <Main />
-    </MotionConfig>
+    <ErrorBoundary fallback={() => <AppError />}>
+      {/* One source for reduced motion (lib/motion.ts): Motion turns movement into cross-fades, as the CSS does. */}
+      <MotionConfig reducedMotion={motion === 'reduced' ? 'always' : 'never'}>
+        <Main ready={boot === 'ready'} />
+      </MotionConfig>
+    </ErrorBoundary>
   )
 }
 
-function Main() {
+/** How a screen meets the stage: scrolling inside it, fitting it (and scrolling only if it must), or filling it. */
+const stageScroll = (route: RouteName) => (route === 'atlas' ? 'none' : 'page')
+
+function Main({ ready }: { ready: boolean }) {
   const route = useRoute()
-  const immersive = useUi((s) => s.immersive)
-  useGlobalShortcuts()
-  // A new screen starts at the top, not at the previous screen's scroll position.
+  /**
+   * The screen on the stage follows the route as a deferred value. If the next
+   * screen's code or data isn't here yet, React keeps the current screen up
+   * instead of swapping in a placeholder, and switches when the new one can
+   * draw. The rail and tab bar use the live route, so the press shows at once.
+   */
+  const keepAtlas = useRef(false)
+  const deferredRoute = useDeferredValue(route)
+  // Going back to the Atlas when it is being kept (below) needs no preparing: it is already drawn, so it is shown in the same render.
+  const shownRoute = route.name === 'atlas' && keepAtlas.current ? route : deferredRoute
+  const shown = shownRoute.name
+  // The Atlas, once kept behind the other screens, goes on seeing the last address that was its own.
+  const atlasRoute = useRef(shownRoute)
+  if (shown === 'atlas') atlasRoute.current = shownRoute
+  const stage = useRef<HTMLDivElement>(null)
   const firstScreen = useRef(true)
+  /**
+   * Each workspace keeps its own scroll position (app/routeState.ts): a screen
+   * you have not visited starts at the top, one you return to is where you left
+   * it. The position is read as you scroll and once more as you leave.
+   */
+  const shownRef = useRef(shown)
+  useEffect(() => {
+    // The stage scrolls inside itself from 768 px; below that the page does. Only one of the two is ever non-zero.
+    const read = () => rememberScroll(shownRef.current, Math.max(stage.current?.scrollTop ?? 0, window.scrollY))
+    const el = stage.current
+    el?.addEventListener('scroll', read, { passive: true })
+    window.addEventListener('scroll', read, { passive: true })
+    // Before the next screen replaces this one (the router has not re-rendered yet).
+    window.addEventListener('hashchange', read)
+    // Pressing the tab of the screen you are on: back to the top.
+    const off = onRouteReset((r) => {
+      if (r !== shownRef.current) return
+      window.scrollTo({ top: 0 })
+      el?.scrollTo({ top: 0 })
+    })
+    return () => {
+      el?.removeEventListener('scroll', read)
+      window.removeEventListener('scroll', read)
+      window.removeEventListener('hashchange', read)
+      off()
+    }
+  }, [])
   useLayoutEffect(() => {
+    if (!ready) return
+    shownRef.current = shown
     if (firstScreen.current) {
       firstScreen.current = false
       return
     }
-    window.scrollTo(0, 0)
-  }, [route.name])
-  // Focus and the Atlas size themselves to the viewport; other screens scroll the page.
-  const fitted = route.name === 'atlas'
+    const target = scrollFor(shown)
+    const apply = () => {
+      window.scrollTo(0, target)
+      stage.current?.scrollTo(0, target)
+      return Math.max(stage.current?.scrollTop ?? 0, window.scrollY) >= target - 1
+    }
+    if (apply() || target === 0) return
+    // The list may still be filling in (its data arrives a frame or two later): keep trying briefly, and stop at once if the learner scrolls.
+    let frames = 0
+    let raf = 0
+    const stop = () => {
+      cancelAnimationFrame(raf)
+      for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) window.removeEventListener(type, stop)
+    }
+    const again = () => {
+      if (apply() || ++frames > 45) return stop()
+      raf = requestAnimationFrame(again)
+    }
+    for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) window.addEventListener(type, stop, { passive: true, once: true })
+    raf = requestAnimationFrame(again)
+    return stop
+  }, [shown, ready])
+  /**
+   * The Atlas is the one workspace that is expensive to build and to paint (two
+   * sheets, 2,273 places, a large vector map). After its first visit, in the
+   * window layout, it stays mounted and laid out *behind* the stage's scroller
+   * (.kept-screen): the other workspaces cover it, it is inert, and it is told
+   * it is not in front (ScreenActive), so it listens to nothing and animates
+   * nothing. Returning uncovers a map that is already painted.
+   *
+   * It is covered rather than hidden with display: none (which is what React's
+   * <Activity> does): un-hiding rebuilt and re-rasterised the whole map, a
+   * stall of 0.4–1.8 s on the first frame back.
+   *
+   * Phones and low-power devices unmount it as before and give the memory back.
+   */
+  if (shown === 'atlas' && !lowPowerDevice() && typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) keepAtlas.current = true
+  const atlasKept = ready && keepAtlas.current
+  const atlasInFront = atlasKept && shown === 'atlas'
+  /**
+   * Behind another workspace the Atlas must be out of the tab order. `inert`
+   * on the whole of it restyles and repaints the vector map – measured at
+   * about 1.2 s each way – so the map's own subtree is left alone (it is
+   * covered, hidden from assistive technology by aria-hidden, and takes itself
+   * out of the tab order), and everything *around* the map is made inert.
+   */
+  const kept = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const root = kept.current
+    if (!root || atlasInFront) return
+    const made: Element[] = []
+    const map = root.querySelector('.atlas')
+    if (!map) {
+      // Not drawn yet (still loading): nothing heavy to protect.
+      root.inert = true
+      return () => {
+        root.inert = false
+      }
+    }
+    for (let el: Element | null = map; el && el !== root; el = el.parentElement) {
+      for (const sibling of el.parentElement?.children ?? []) {
+        if (sibling === el || (sibling as HTMLElement).inert) continue
+        ;(sibling as HTMLElement).inert = true
+        made.push(sibling)
+      }
+    }
+    return () => {
+      for (const el of made) (el as HTMLElement).inert = false
+    }
+  }, [atlasInFront, atlasKept])
+  useEffect(() => (ready ? preloadRoutesWhenIdle() : undefined), [ready])
+  // The review count and the action context use the gazetteer if it is there. It is fetched once the app has settled, not during start-up.
+  useEffect(() => {
+    if (!ready) return
+    let cancel = () => {}
+    const start = setTimeout(() => (cancel = whenIdle(() => void loadAtlas().catch(() => {}), 4000)), 2500)
+    return () => {
+      clearTimeout(start)
+      cancel()
+    }
+  }, [ready])
+  const scroll = stageScroll(shown)
+  // Scrolling workspaces reserve room for their scrollbar.
+  useLayoutEffect(() => {
+    const el = stage.current
+    if (!el || scroll !== 'page') return
+    document.documentElement.style.setProperty('--stage-gutter', `${el.offsetWidth - el.clientWidth}px`)
+  }, [scroll, ready])
   return (
     <>
-      <RuntimeSync />
+      {ready && (
+        <>
+          <GlobalShortcuts />
+          <RuntimeSync />
+          <TarsContextBridge />
+        </>
+      )}
       <ShellSync route={route.name} />
-      <DeepLinks />
-      <TitleSync />
-      <SideNav route={route.name} />
-      <div className="shell-offset">
-        <main className={cn('mx-auto w-full', fitted ? 'min-h-0' : 'min-h-dvh', !fitted && (route.name === 'focus' ? 'pb-[calc(84px+env(safe-area-inset-bottom))] lg:pb-0' : 'pb-[calc(148px+env(safe-area-inset-bottom))] lg:pb-10'))}>
-          {/* Enter-only transition: the old screen leaves at once (nothing can hold it on
-              screen), the new one rises in from the top of the page. */}
-          <motion.div key={route.name} initial={firstScreen.current ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: T.base }}>
-            <Suspense fallback={<ScreenSkeleton />}>
-              <Screen name={route.name} />
-            </Suspense>
-          </motion.div>
+      <TopBar route={route.name} />
+      <div className="app-frame">
+        <main className="stage" aria-busy={!ready || undefined}>
+          {atlasKept && (
+            <div ref={kept} className="kept-screen" data-kept="atlas" data-active={atlasInFront ? '' : undefined} aria-hidden={!atlasInFront || undefined}>
+              <ScreenActive.Provider value={atlasInFront}>
+                <RouteContext.Provider value={atlasRoute.current}>
+                  <ErrorBoundary resetKey={atlasInFront ? 'front' : 'behind'} fallback={(error, retry) => <ScreenError error={error} retry={retry} />}>
+                    <Suspense fallback={<ScreenSkeleton />}>
+                      <CrashTest where="route" />
+                      <Screen name="atlas" />
+                    </Suspense>
+                  </ErrorBoundary>
+                </RouteContext.Provider>
+              </ScreenActive.Provider>
+            </div>
+          )}
+          <div ref={stage} className="stage-scroll" data-scroll={scroll} hidden={atlasInFront}>
+            {ready ? (
+              <>
+                {!atlasInFront && (
+                  // Enter-only transition: the old screen leaves at once (nothing can hold it on screen), the new one rises into place.
+                  <motion.div key={shown} className={cn(scroll !== 'page' && 'md:h-full')} initial={firstScreen.current ? false : screenEnter.initial} animate={screenEnter.animate}>
+                    {/* A screen that fails takes only the stage with it: the rail and the tab bar stay. */}
+                    <ErrorBoundary resetKey={shown} fallback={(error, retry) => <ScreenError error={error} retry={retry} />}>
+                      <Suspense fallback={<ScreenSkeleton />}>
+                        <CrashTest where="route" />
+                        <RouteContext.Provider value={shownRoute}>
+                          <Screen name={shown} />
+                        </RouteContext.Provider>
+                      </Suspense>
+                    </ErrorBoundary>
+                  </motion.div>
+                )}
+              </>
+            ) : (
+              <div className="flex min-h-[60dvh] items-center justify-center md:h-full">
+                <LogoMark className="size-9 animate-breathe text-accent" />
+              </div>
+            )}
+          </div>
         </main>
       </div>
-      <BottomNav route={route.name} />
-      <TimerPill route={route.name} />
-      <MusicDock />
-      <TaskSheet />
-      <SoundSheet />
-      <SessionCompleteSheet />
-      <ContextSheet />
-      <ProfileSheet />
-      <Onboarding />
-      <AnimatePresence>{immersive && <ImmersiveFocus key="immersive" />}</AnimatePresence>
-      <TarsPresence />
-      <CommandPalette />
-      <ShortcutsSheet />
-      <ConfirmHost />
+
+      {ready && (
+        <OverlayBoundary>
+          <Overlays />
+          <ConfirmHost />
+        </OverlayBoundary>
+      )}
       <Toaster />
     </>
   )
 }
 
+function GlobalShortcuts() {
+  useGlobalShortcuts()
+  return null
+}
+
 /**
- * Mirrors shell state onto <html> for CSS: the sidebar width, hidden chrome for
- * the full-screen Atlas, and the calm "in session" look while focus runs.
+ * Mirrors shell state onto <html> for CSS: the rail width, hidden chrome for
+ * the full-screen Atlas, while the Atlas fills the screen.
  */
 function ShellSync({ route }: { route: RouteName }) {
-  const collapsed = useUi((s) => s.sidebarCollapsed)
   const atlasFullscreen = useUi((s) => s.atlasFullscreen)
-  const inSession = useTimer((s) => s.timer.status === 'running' && s.timer.phase === 'focus')
   useEffect(() => {
     const root = document.documentElement.dataset
-    if (collapsed) root.sidebar = 'collapsed'
-    else delete root.sidebar
-  }, [collapsed])
-  useEffect(() => {
-    const root = document.documentElement.dataset
-    if (atlasFullscreen && route === 'atlas') root.chrome = 'hidden'
-    else delete root.chrome
+    const hide = atlasFullscreen && route === 'atlas'
+    const set = () => {
+      if (hide) root.chrome = 'hidden'
+      else delete root.chrome
+    }
+    if ((root.chrome === 'hidden') === hide) set()
+    else shiftStage(set)
   }, [atlasFullscreen, route])
-  useEffect(() => {
-    const root = document.documentElement.dataset
-    if (inSession && route === 'focus') root.session = 'active'
-    else delete root.session
-  }, [inSession, route])
   // Say when the connection comes and goes – nothing is lost either way.
   const online = useOnline()
   const first = useRef(true)
@@ -191,125 +325,75 @@ function ShellSync({ route }: { route: RouteName }) {
   return null
 }
 
+/**
+ * Around the app-wide dialogs and floating surfaces. If one of them throws
+ * outside its own Sheet (which closes itself, see ui/Sheet.tsx), everything
+ * that was open is closed and the surfaces are mounted again, so the screen
+ * underneath is never lost. Repeated failures stop the retrying.
+ */
+function OverlayBoundary({ children }: { children: ReactNode }) {
+  const [attempt, setAttempt] = useState(0)
+  const failures = useRef<number[]>([])
+  return (
+    <ErrorBoundary
+      resetKey={attempt}
+      fallback={() => null}
+      onError={() => {
+        const ui = useUi.getState()
+        ui.set({ paletteOpen: false, shortcutsOpen: false })
+        toast({ title: 'That couldn’t open', body: 'Nothing was lost. Try it again.', tone: 'warning' })
+        const now = Date.now()
+        failures.current = [...failures.current.filter((t) => now - t < 10_000), now]
+        if (failures.current.length <= 3) setAttempt((n) => n + 1)
+      }}
+    >
+      {children}
+    </ErrorBoundary>
+  )
+}
+
 /** Placeholder while a screen's code loads (first visit only). */
 function ScreenSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pt-6 sm:px-6" aria-busy="true" aria-label="Loading">
-      <div className="skeleton h-3 w-32" />
-      <div className="skeleton mt-3 h-8 w-48" />
-      <div className="mt-8 space-y-3">
-        <div className="skeleton h-20" />
-        <div className="skeleton h-20" />
-        <div className="skeleton h-20 opacity-70" />
+    <div className="pt-safe mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8" aria-busy="true" aria-label="Loading">
+      <div className="flex h-14 items-center">
+        <div className="skeleton h-6 w-36" />
+      </div>
+      <div className="mt-6 space-y-5">
+        <div className="skeleton h-4 w-2/3" />
+        <div className="skeleton h-4 w-1/2 opacity-80" />
+        <div className="skeleton h-4 w-3/5 opacity-60" />
       </div>
     </div>
   )
 }
 
 function Screen({ name }: { name: RouteName }) {
-  switch (name) {
-    case 'focus':
-      return <FocusScreen />
-    case 'tasks':
-      return <TasksScreen />
-    case 'calendar':
-      return <CalendarScreen />
-    case 'insights':
-      return <InsightsScreen />
-    case 'atlas':
-      return <AtlasScreen />
-    case 'settings':
-      return <SettingsScreen />
-    case 'current-affairs':
-      return <CurrentAffairsScreen />
-  }
+  const Current = SCREENS[name]
+  return <Current />
 }
 
-/** Keeps the timer, reminders, audio and device services in step with settings and data. */
+/** Shared device services; no timer, audio, reminder or session subscriptions. */
 function RuntimeSync() {
   const settings = useSettings()
-  const profiles = useProfiles()
-  const timer = useTimer((s) => s.timer)
-  const { label } = useLookups()
-  const task = useTask(timer.context.taskId)
-
-  useEffect(() => {
-    configureTimerRuntime({
-      minSessionMs: settings.minSessionSeconds * 1000,
-      endSound: settings.endSound,
-      endVolume: settings.endVolume,
-      notifications: settings.notifications,
-    })
-    configureReminders({ notifications: settings.notifications, use24h: settings.use24h })
-    setHapticsEnabled(settings.haptics)
-    setSoundFollowsTimer(settings.ambientFollowsTimer)
-  }, [settings])
-
-  useEffect(() => {
-    if (!profiles.length) return
-    const p = profiles.find((x) => x.id === settings.activeProfileId) ?? profiles[0]
-    useTimer.getState().applyProfile(p)
-  }, [profiles, settings.activeProfileId])
-
-  const labelName = label(timer.context.labelId)?.name
-  useEffect(() => {
-    configureTimerRuntime({ contextTitle: [labelName, task?.title].filter(Boolean).join(' · ') })
-  }, [labelName, task?.title])
-
-  useEffect(() => {
-    void keepAwake(settings.keepAwake && timer.status === 'running')
-  }, [settings.keepAwake, timer.status])
-
-  // Sound follows the timer through a store subscription – see audio/follow.ts.
-
-  // Optional: go immersive the moment a focus session starts.
-  const prevStatus = useRef(timer.status)
-  useEffect(() => {
-    const was = prevStatus.current
-    prevStatus.current = timer.status
-    if (settings.immersiveOnStart && was === 'idle' && timer.status === 'running' && timer.phase === 'focus') {
-      useUi.getState().set({ immersive: true })
-      void enterFullscreen()
-    }
-  }, [timer.status, timer.phase, settings.immersiveOnStart])
-
-  // Reminders + notification taps + native back button.
-  useEffect(() => {
-    const stop = startReminders((r) => navigate(r))
-    onNotificationTap((r) => navigate(r))
-    const onMessage = (e: MessageEvent) => {
-      // 'lodestar:navigate' comes from a service worker installed before the rename to Tars.
-      if ((e.data?.type === 'tars:navigate' || e.data?.type === 'lodestar:navigate') && typeof e.data.route === 'string') navigate(e.data.route)
-    }
-    navigator.serviceWorker?.addEventListener('message', onMessage)
-    return () => {
-      stop()
-      navigator.serviceWorker?.removeEventListener('message', onMessage)
-    }
-  }, [])
-
+  useEffect(() => setHapticsEnabled(settings.haptics), [settings.haptics])
+  useEffect(() => { document.title = 'Tars — Atlas & News' }, [])
   useEffect(() => {
     if (!isNative) return
     const back = CapApp.addListener('backButton', () => {
-      const ui = useUi.getState()
-      if (ui.immersive) return ui.set({ immersive: false })
-      if (location.hash && !location.hash.startsWith('#/focus')) navigate('#/focus')
+      if (useUi.getState().paletteOpen) { useUi.getState().set({ paletteOpen: false }); return }
+      if (closeTopSurface()) return
+      if (currentRoute().name !== 'atlas') navigate('#/atlas')
       else void CapApp.minimizeApp()
     })
-    // tars://focus?start=1 → #/focus?start=1 (launcher shortcuts, links, widgets).
-    // The pre-rename lodestar:// scheme stays registered for shortcuts pinned before.
-    const openDeepLink = (link: string) => {
-      const m = link.match(/^(?:tars|lodestar):\/\/(.*)$/i)
-      if (m) navigate(`#/${m[1]}`)
+    const open = (link: string) => {
+      const match = link.match(/^(?:tars|lodestar):\/\/(.*)$/i)
+      if (match) navigate('#/' + match[1])
     }
-    const url = CapApp.addListener('appUrlOpen', ({ url }) => openDeepLink(url))
-    void CapApp.getLaunchUrl().then((r) => r?.url && openDeepLink(r.url))
-    return () => {
-      void back.then((h) => h.remove())
-      void url.then((h) => h.remove())
-    }
+    const url = CapApp.addListener('appUrlOpen', ({ url }) => open(url))
+    void CapApp.getLaunchUrl().then(r => r?.url && open(r.url))
+    return () => { void back.then(h => h.remove()); void url.then(h => h.remove()) }
   }, [])
-
   useSwUpdates()
   return null
 }
@@ -324,7 +408,7 @@ function useSwUpdates() {
         onNeedRefresh() {
           toast({
             title: 'A new version is ready',
-            body: 'Reload to update – your timer keeps running.',
+            body: 'Reload to update – your data is saved on this device.',
             duration: 0,
             action: { label: 'Reload', run: () => void update(true) },
           })
@@ -339,54 +423,3 @@ function useSwUpdates() {
     }
   }, [])
 }
-
-/** Handle one-shot deep links from shortcuts, notifications and reminders. */
-function DeepLinks() {
-  const route = useRoute()
-  const params = route.params.toString()
-  useEffect(() => {
-    const p = route.params
-    if (route.name === 'focus') {
-      const blockId = p.get('block')
-      if (blockId) {
-        void executeAction('calendar.startBlock', { eventId:blockId })
-        consumeParams('block', 'date')
-      }
-      if (p.get('start') === '1') {
-        const t = useTimer.getState()
-        if (t.timer.status !== 'running') void executeAction(t.timer.status === 'paused' ? 'timer.resume' : 'timer.start', {})
-        consumeParams('start')
-      }
-    }
-    if (route.name === 'tasks') {
-      if (p.get('add') === '1') {
-        useUi.getState().set({ quickAddOpen: true })
-        consumeParams('add')
-      }
-      const taskId = p.get('task')
-      if (taskId) {
-        void executeAction('task.open', { taskId })
-        consumeParams('task')
-      }
-    }
-  }, [route.name, params])
-  return null
-}
-
-/** Show the countdown in the tab title – handy on desktop. */
-function TitleSync() {
-  const timer = useTimer((s) => s.timer)
-  const active = timer.status !== 'idle'
-  const now = useNow(active)
-  useEffect(() => {
-    if (!active) {
-      document.title = 'Tars — Study & Focus'
-      return
-    }
-    const rem = remainingMs(timer, now)
-    const t = rem === null ? formatClock(elapsedMs(timer, now) / 1000) : formatClock(Math.ceil(rem / 1000))
-    document.title = `${timer.status === 'paused' ? '❚❚ ' : ''}${t} · ${PHASE_LABEL[timer.phase]} — Tars`
-  }, [timer, now, active])
-  return null
-}
-

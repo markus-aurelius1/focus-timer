@@ -1,10 +1,8 @@
 /**
- * App-wide keyboard shortcuts. Screen-specific keys (Space on the timer, arrows
- * on the map…) live with their screens; this handles the global ones and lists
+ * App-wide keyboard shortcuts. Screen-specific map keys live with their screens; this handles the global ones and lists
  * everything for the shortcuts reference (press ?).
  */
 import { useEffect } from 'react'
-import { useTimer } from '@/timer/store'
 import { executeAction } from '@/tars/runtime'
 import type { RouteName } from './router'
 import { useUi } from './ui-store'
@@ -24,8 +22,6 @@ export const SHORTCUTS: ShortcutGroup[] = [
     title: 'Anywhere',
     items: [
       { keys: [`${modKey}K`], label: 'Search and commands' },
-      { keys: ['N'], label: 'New task' },
-      { keys: [`${modKey}\\`], label: 'Collapse or expand the sidebar' },
       { keys: ['?'], label: 'Show keyboard shortcuts' },
       { keys: ['Esc'], label: 'Close a dialog' },
     ],
@@ -33,21 +29,9 @@ export const SHORTCUTS: ShortcutGroup[] = [
   {
     title: 'Go to',
     items: [
-      { keys: ['G', 'F'], label: 'Focus' },
-      { keys: ['G', 'T'], label: 'Tasks' },
-      { keys: ['G', 'A'], label: 'Atlas' },
-      { keys: ['G', 'C'], label: 'Calendar' },
-      { keys: ['G', 'I'], label: 'Insights' },
       { keys: ['G', 'W'], label: 'News' },
+      { keys: ['G', 'A'], label: 'Atlas' },
       { keys: ['G', 'S'], label: 'Settings' },
-    ],
-  },
-  {
-    title: 'Timer',
-    items: [
-      { keys: ['Space'], label: 'Start or pause (on the Focus screen)' },
-      { keys: ['F'], label: 'Immersive full-screen focus' },
-      { keys: ['S'], label: 'Sounds' },
     ],
   },
   {
@@ -60,7 +44,7 @@ export const SHORTCUTS: ShortcutGroup[] = [
   },
 ]
 
-const GO: Record<string, RouteName> = { f: 'focus', t: 'tasks', a: 'atlas', c: 'calendar', i: 'insights', s: 'settings', w: 'current-affairs' }
+const GO: Record<string, RouteName> = { a: 'atlas', s: 'settings', w: 'current-affairs' }
 
 /** True when a key press is meant for a text field, not for a shortcut. */
 export function isTyping(target: EventTarget | null): boolean {
@@ -83,14 +67,9 @@ export function useGlobalShortcuts() {
         ui.set({ paletteOpen: !ui.paletteOpen })
         return
       }
-      if (mod && !e.altKey && e.key === '\\') {
-        e.preventDefault()
-        ui.toggleSidebar()
-        return
-      }
       if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target) || e.defaultPrevented) return
       // Dialogs own the keyboard while open.
-      if (document.querySelector('[role="dialog"][aria-modal="true"]') || ui.immersive) return
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
 
       const key = e.key.toLowerCase()
       if (chord && Date.now() - chord < 1200 && GO[key]) {
@@ -105,18 +84,9 @@ export function useGlobalShortcuts() {
       } else if (e.key === '?') {
         e.preventDefault()
         ui.set({ shortcutsOpen: true })
-      } else if (key === 'n' && !e.shiftKey) {
-        e.preventDefault()
-        void executeAction('task.create', { plannedFor:null })
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-}
-
-/** Start or pause from anywhere (command palette, media keys). */
-export function toggleTimer() {
-  const status=useTimer.getState().timer.status
-  void executeAction(status==='running'?'timer.pause':status==='paused'?'timer.resume':'timer.start', {})
 }

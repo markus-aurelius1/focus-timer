@@ -1,0 +1,15 @@
+/* Printing notes: the browser prints only the dated personal collection, on plain white paper. */
+.ca-print-root { display: none; }
+@media print {
+  @page ca-notes { margin: 20mm 18mm; }
+  html:has(body.ca-printing-notes) { background: white !important; }
+  html[data-scroll-locked] { overflow: visible !important; }
+  body.ca-printing-notes { background: white !important; color: #111 !important; overflow: visible !important; height: auto !important; padding: 0 !important; margin: 0 !important; }
+  body.ca-printing-notes > :not(.ca-print-root) { display: none !important; }
+  body.ca-printing-notes .ca-print-root { page: ca-notes; display: block; color: #111; background: white; font-family: Manrope, sans-serif; }
+  .ca-print-root h1 { font-family: Fraunces, Georgia, serif; font-size: 22pt; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4pt; }
+  .ca-print-root > p { font-size: 9pt; color: #666; margin-bottom: 20pt; }
+  .ca-print-root article { break-inside: avoid; border-top: 0.5pt solid #ccc; padding: 11pt 0; }
+  .ca-print-root h2 { font-size: 8.5pt; font-weight: 600; color: #666; margin-bottom: 4pt; }
+  .ca-print-root article p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11.5pt; line-height: 1.55; }
+}

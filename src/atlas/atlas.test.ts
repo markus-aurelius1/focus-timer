@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { ExpeditionRun, RecallAttempt, Session } from '@/data/types'
-import { recallXp, xpForSession, levelInfo } from '@/game/progression'
+import type { RecallAttempt } from '@/data/types'
+import { recallXp, levelInfo } from '@/game/progression'
 import { indexAtlas } from './data'
-import { ATLAS_V2_AT, explore, surveyOrder, SURVEY_MINUTES } from './explore'
+import { explore } from './explore'
 import { computeMastery, dueForReview } from './mastery'
 import { isCorrect, makeQuestion } from './questions'
 import type { Place, PlacesFile } from './types'
@@ -62,39 +62,12 @@ const FILE: PlacesFile = {
 }
 const atlas = indexAtlas(FILE)
 
-const T0 = Date.parse('2026-09-01T09:00:00')
-const MIN = 60_000
-let n = 0
-const session = (endOffsetMin: number, minutes: number): Session => ({
-  id: `s${n++}`,
-  createdAt: 0,
-  updatedAt: 0,
-  mode: 'pomodoro',
-  startedAt: T0 + (endOffsetMin - minutes) * MIN,
-  endedAt: T0 + endOffsetMin * MIN,
-  duration: minutes * 60,
-  plannedDuration: minutes * 60,
-  completed: true,
-  date: '2026-09-01',
-  labelId: null,
-  taskId: null,
-  projectId: null,
-  profileId: null,
-  note: '',
-  rating: null,
-  pauseCount: 0,
-  source: 'timer',
-})
-const run = (startMin: number, endMin: number | null = null): ExpeditionRun => ({ id: `r${startMin}`, createdAt: 0, updatedAt: 0, expeditionId: 'x', startedAt: T0 + startMin * MIN, endedAt: endMin === null ? null : T0 + endMin * MIN })
 const recall = (placeId: string, day: number, correct: boolean, type: RecallAttempt['type'] = 'state'): RecallAttempt => {
   const at = Date.parse('2026-09-01T12:00:00') + day * 86_400_000
-  return { id: `${placeId}${day}${type}${Math.random()}`, createdAt: 0, updatedAt: 0, placeId, type, correct: correct ? 1 : 0, at, date: new Date(at).toISOString().slice(0, 10), source: 'review' }
+  return { id: placeId + day + type + Math.random(), createdAt: 0, updatedAt: 0, placeId, type, correct: correct ? 1 : 0, at, date: new Date(at).toISOString().slice(0, 10), source: 'review' }
 }
-
 describe('progression', () => {
-  it('pays 1 XP a minute plus a completion bonus, and caps recall XP per day', () => {
-    expect(xpForSession({ duration: 25 * 60, completed: true, plannedDuration: 1500 })).toBe(28)
-    expect(xpForSession({ duration: 10 * 60 + 30, completed: false, plannedDuration: 1500 })).toBe(10)
+  it('caps recall XP per day', () => {
     const many = Array.from({ length: 40 }, () => recall('in.pass.one', 0, true))
     expect(recallXp([...many, recall('in.pass.one', 1, true)])).toBe(31)
   })
@@ -139,78 +112,12 @@ describe('mastery', () => {
   })
 })
 
-describe('exploration', () => {
-  it('moves the active expedition stop by stop and holds it at a recall gate', () => {
-    const sessions = [session(30, 25), session(60, 25)]
-    const s = explore({ atlas, sessions, runs: [run(0)], baseCamp: 'a', familiarAt: new Map() })
-    const p = s.expeditions.get('x')!
-    expect(p.reached).toBe(2)
-    expect(p.blockedBy?.chapter).toBe(0)
-    expect(p.banked).toBe(10)
-    expect(s.discovered.get('in.pass.one')?.at).toBe(T0 + 30 * MIN)
-    expect(s.explored.has('a')).toBe(true)
-    // Recall opens the gate; the banked minutes are not lost.
-    const later = explore({ atlas, sessions: [...sessions, session(120, 25)], runs: [run(0)], baseCamp: 'a', familiarAt: new Map([['in.pass.one', T0 + 100 * MIN], ['in.pass.two', T0 + 101 * MIN]]) })
-    const q = later.expeditions.get('x')!
-    expect(q.reached).toBe(3)
-    expect(q.complete).toBe(false) // final chapter gate
-    expect(later.discovered.get('in.pass.three')?.at).toBe(T0 + 120 * MIN)
-  })
-  it('has no checkpoint before a chapter is actually finished', () => {
-    const s = explore({ atlas, sessions: [], runs: [run(0)], baseCamp: 'a', familiarAt: new Map() })
-    const p = s.expeditions.get('x')!
-    expect(p.blockedBy).toBeNull()
-    expect(p.next?.stop.place.id).toBe('in.pass.one')
-    expect(p.next?.remaining).toBe(20)
-    const half = explore({ atlas, sessions: [session(30, 25)], runs: [run(0)], baseCamp: 'a', familiarAt: new Map() }).expeditions.get('x')!
-    expect(half.blockedBy).toBeNull()
-    expect(half.next?.stop.place.id).toBe('in.pass.two')
-  })
-
-  it('sends minutes without an expedition, or beyond its end, to the free survey', () => {
-    const s = explore({ atlas, sessions: [session(30, SURVEY_MINUTES * 2)], runs: [], baseCamp: 'a', familiarAt: new Map() })
-    expect(s.survey.found).toBe(2)
-    expect(s.active).toBeNull()
-    const order = surveyOrder(atlas, 'a').map((p) => p.id)
-    expect(order.slice(0, 3)).toEqual(['in.pass.one', 'in.pass.three', 'in.pass.two'])
-    const done = explore({ atlas, sessions: [session(200, 70 + SURVEY_MINUTES)], runs: [run(0)], baseCamp: 'a', familiarAt: new Map(FILE.places.map((p) => [p.id, T0])) })
-    expect(done.expeditions.get('x')!.complete).toBe(true)
-    expect(done.survey.found).toBe(1)
-  })
-  it('only counts sessions that end inside a run', () => {
-    const s = explore({ atlas, sessions: [session(10, 20), session(100, 20)], runs: [run(50, 150)], baseCamp: 'a', familiarAt: new Map() })
-    expect(s.expeditions.get('x')!.minutes).toBe(20)
-    expect(s.survey.minutes).toBe(20)
-  })
-})
-
-describe('data versions', () => {
-  // Version 2 adds places (marked `added`), including a core one in base camp that sorts first.
-  const V2: PlacesFile = {
-    ...FILE,
-    places: [...FILE.places, place('in.lake.new-core', 'lake', 12, 12, { level: 1, added: 2 }), place('in.peak.new', 'peak', 14, 14, { added: 2 })],
-  }
-  const v2 = indexAtlas(V2)
-  const cutoff = (ATLAS_V2_AT - T0) / MIN
-  const minutesBefore = (n: number) => session(cutoff - 60, n * SURVEY_MINUTES)
-
-  it('keeps every survey find made before the release exactly as it was', () => {
-    const sessions = [minutesBefore(3)]
-    const before = explore({ atlas, sessions, runs: [], baseCamp: 'a', familiarAt: new Map() })
-    const after = explore({ atlas: v2, sessions, runs: [], baseCamp: 'a', familiarAt: new Map() })
-    expect([...after.discovered.keys()]).toEqual([...before.discovered.keys()])
-    expect(after.discovered.has('in.lake.new-core')).toBe(false)
-  })
-
-  it('lets later focus reach the new places, nearest base camp first', () => {
-    const s = explore({ atlas: v2, sessions: [minutesBefore(2), session(cutoff + 120, SURVEY_MINUTES)], runs: [], baseCamp: 'a', familiarAt: new Map() })
-    expect(s.discovered.size).toBe(3)
-    expect(s.discovered.has('in.lake.new-core')).toBe(true)
-    expect(s.survey.next).not.toBeNull()
-  })
-
-  it('keeps the version 1 survey order among version 1 places', () => {
-    expect(surveyOrder(v2, 'a').filter((p) => !p.added).map((p) => p.id)).toEqual(surveyOrder(atlas, 'a').map((p) => p.id))
+describe('recall coverage', () => {
+  it('starts with no earned progress and learns only known recalled places', () => {
+    expect(explore({ atlas, familiarAt: new Map() }).discovered.size).toBe(0)
+    const state = explore({ atlas, familiarAt: new Map([['in.pass.one', 10], ['missing', 20]]) })
+    expect([...state.discovered]).toEqual([['in.pass.one', { at: 10, via: 'recall' }]])
+    expect([...state.explored]).toEqual(['a'])
   })
 })
 

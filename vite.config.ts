@@ -31,26 +31,39 @@ export default defineConfig({
     tailwindcss(),
     { name: 'current-affairs-gateway', configureServer(server) { server.middlewares.use('/api/current-affairs', currentAffairs) }, configurePreviewServer(server) { server.middlewares.use('/api/current-affairs', currentAffairs) } },
     { name: 'site-url', transformIndexHtml: (html) => html.replaceAll('%SITE_URL%', siteUrl) },
+    {
+      // The UI font is needed for the very first text: preload it, so nothing reflows when it arrives and the Atlas measures its names once.
+      name: 'preload-ui-font',
+      transformIndexHtml: {
+        order: 'post',
+        handler(_html, ctx) {
+          const font = Object.keys(ctx.bundle ?? {}).find((name) => /manrope-latin-wght-normal[^/]*\.woff2$/.test(name))
+          return font ? [{ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: base + font, crossorigin: '' }, injectTo: 'head' }] : []
+        },
+      },
+    },
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'sw-notifications.js', 'og-image.png'],
+      // og-image.png is a social preview: crawlers fetch it, the installed app never does, so it is not precached.
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         // The manifest id is the installed app's identity. It predates the rename to
         // Tars and must stay, or browsers would treat Tars as a different app and
         // existing installs would never pick up the new name and icons.
         id: 'lodestar-study',
-        name: 'Tars — Study & Focus',
+        name: 'Tars — Atlas & News',
         short_name: 'Tars',
-        description: 'A calm study planner, focus timer and progress tracker that works offline.',
+        description: 'An offline Atlas and a source-linked Current Affairs reading workspace.',
         lang: 'en',
         start_url: '.',
         scope: '.',
         display: 'standalone',
         display_override: ['window-controls-overlay', 'standalone'],
         orientation: 'any',
-        background_color: '#0a0c14',
-        theme_color: '#0a0c14',
+        // Night's stage colour (--bg in index.css): the splash a launched app fades in from.
+        background_color: '#0c0e16',
+        theme_color: '#0c0e16',
         categories: ['education', 'productivity'],
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -58,35 +71,14 @@ export default defineConfig({
           { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
         shortcuts: [
-          {
-            name: 'Start focus',
-            short_name: 'Focus',
-            url: './#/focus?start=1',
-            icons: [{ src: 'icons/shortcut-focus.png', sizes: '96x96', type: 'image/png' }],
-          },
-          {
-            name: "Today's tasks",
-            short_name: 'Today',
-            url: './#/tasks?view=today',
-            icons: [{ src: 'icons/shortcut-today.png', sizes: '96x96', type: 'image/png' }],
-          },
-          {
-            name: 'Add a task',
-            short_name: 'Add task',
-            url: './#/tasks?add=1',
-            icons: [{ src: 'icons/shortcut-add.png', sizes: '96x96', type: 'image/png' }],
-          },
-          {
-            name: 'Insights',
-            short_name: 'Insights',
-            url: './#/insights',
-            icons: [{ src: 'icons/shortcut-insights.png', sizes: '96x96', type: 'image/png' }],
-          },
+          { name: 'Atlas', url: './#/atlas' },
+          { name: 'News', url: './#/current-affairs' },
         ],
       },
       workbox: {
         // The Atlas (sheets, relief plates, gazetteer) is precached so the map works offline from the first launch.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest,json,webp}', 'atlas/**/*.txt'],
+        globIgnores: ['**/og-image.png'],
         // The measured curated subset is <0.6 MiB: precache data for first-launch offline,
         // while application loading/validation stays paper-lazy. Hash queries select the same precached bytes.
         ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^hash$/],
@@ -107,7 +99,6 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
-        importScripts: ['sw-notifications.js'],
       },
       devOptions: { enabled: false },
     }),
@@ -122,7 +113,7 @@ export default defineConfig({
           groups: [
             { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
             { name: 'motion', test: /node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/ },
-            { name: 'data', test: /node_modules[\\/](dexie|dexie-react-hooks|zustand)[\\/]/ },
+            { name: 'data', test: /node_modules[\\/](dexie|zustand)[\\/]/ },
             { name: 'native', test: /node_modules[\\/]@capacitor/ },
           ],
         },
@@ -130,7 +121,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Logic tests run in node. Component tests (*.test.tsx) opt into a DOM with a `@vitest-environment happy-dom` docblock.
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
 })

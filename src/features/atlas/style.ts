@@ -11,10 +11,9 @@ export const WATER_LINE = '#3a7fc1'
 export const PHYSICAL = '#6e3a12'
 export const SEA_FLAT = '#c6e1f2'
 export const NEIGHBOUR_FILL = '#f5f2ea'
-export const FOG_FILL = '#d9dcdc'
-export const FOG_HATCH = '#8d9294'
+/** Where the learner has studied: a warm edge and ring. Nothing marks the places they haven't. */
+export const STUDIED = '#b8781b'
 export const HIGHLIGHT = '#d9480f'
-export const ROUTE = '#8f2d16'
 
 /** Political colours – soft enough for black lettering, distinct enough to separate neighbours. */
 export const POLITICAL = ['#f3cf8a', '#c2dd92', '#f3b7a6', '#afd0ef', '#ddc1e6', '#f5e38a', '#a9ddc8']

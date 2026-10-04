@@ -22,7 +22,7 @@ async function audit(url, label, upgrade) {
   page.on('pageerror', e => errors.push(e.message))
   page.on('response', r => { if (r.fromServiceWorker()) served.push(new URL(r.url()).pathname) })
   try {
-    await prepare(page, url, { sample: false, route: '#/focus' })
+    await prepare(page, url, { sample: false, route: '#/atlas' })
     await page.evaluate(async () => { await navigator.serviceWorker.ready })
     await page.reload()
     await page.waitForFunction(() => !!navigator.serviceWorker.controller)
@@ -70,7 +70,7 @@ async function audit(url, label, upgrade) {
     await gazetteer.waitFor()
     await gazetteer.getByRole('button').filter({ hasText: 'Nathu La' }).first().click()
     await page.getByRole('heading', { name: 'Nathu La', exact: true }).waitFor()
-    ok(label + ': offline search opens an untravelled place', await page.getByRole('button', { name: 'Test me', exact: true }).isVisible())
+    ok(label + ': offline search opens an accessible place', await page.getByRole('button', { name: 'Test me', exact: true }).isVisible())
     await page.keyboard.press('Escape')
     await page.goto(url + '#/atlas?pyq=' + q.id)
     const article = page.locator('[data-question-id]')
@@ -90,15 +90,12 @@ async function audit(url, label, upgrade) {
       await input.press('Enter')
       await page.waitForTimeout(400)
     }
-    await command('Offline notes today')
-    await command('Start 1 minutes')
-    ok(label + ': local timer action works offline', await page.evaluate(() => JSON.parse(localStorage.getItem('tars.timer.v1')).status === 'running'))
-    await command('Stop timer')
-    await command('Plan tomorrow')
-    ok(label + ': local calendar action works offline', page.url().includes('#/calendar?date='))
+    await command('Settings')
+    ok(label + ': shared settings open offline', await page.getByRole('heading', { name: 'Settings', level: 1 }).isVisible())
     await page.goto(url + '#/atlas')
     await page.getByRole('application').waitFor()
-    await page.getByRole('button', { name: 'More', exact: true }).click()
+    await page.getByRole('button', { name: 'Map options', exact: true }).click()
+    await page.getByRole('button', { name: 'Atlas tools', exact: true }).click()
     try { await page.getByText('111/111 assets saved offline', { exact: false }).waitFor() }
     catch (error) {
       console.log('OFFLINE STATUS', await page.getByRole('dialog').innerText())

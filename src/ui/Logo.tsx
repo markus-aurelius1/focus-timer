@@ -1,7 +1,7 @@
 import { cn } from '@/lib/cn'
 
 /**
- * The Tars mark: four slabs – four focus blocks to a cycle – standing together
+ * The Tars mark: four slabs – standing together
  * as a T. Drawn in currentColor so it takes the accent (or any) colour.
  */
 export function LogoMark({ className }: { className?: string }) {

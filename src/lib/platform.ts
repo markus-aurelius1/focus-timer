@@ -8,6 +8,3 @@ export const isStandalonePwa = (): boolean =>
   typeof window !== 'undefined' &&
   (window.matchMedia?.('(display-mode: standalone)').matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true)
-
-export const prefersReducedMotion = (): boolean =>
-  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches

@@ -1,54 +1,89 @@
 # TARS vNext Job 6 — Current Affairs daily reading workspace
 
-2026-10-01. Focused upgrade to Job 5 on the existing uncommitted Jobs 1–5 tree. Implementation/acceptance finished without a commit, push, PR or deployment. The user subsequently authorized committing/pushing completed Jobs 1–6 to `origin/main` on 2026-10-01; no separate deployment was requested.
+2026-10-01. Initial Job 6 was accepted and subsequently published with Jobs 1–6 at the user’s request. Later UI/feed changes described here remain local and uncommitted; no deployment.
 
-## Implemented
+## Current UI
 
-`#/current-affairs` defaults to today’s IST edition, grouped by the primary coverage item’s publication date. Previous/Today/Next, native date picker and recent-edition read/unread statuses are available. Undated items have a separate edition; they never inflate today’s count. Daily completion and minutes left derive from personal state across the entire edition, independently of list filters.
+One centered compact list at phone and desktop sizes. Headlines open the original newspaper in a safe new tab. Read/unread, save/unsave and remove controls sit in each row; returning from the publisher keeps the list position. Article-context popups, References/Notes tabs, Study mode and its shortcuts were removed at the user’s request. Existing notes and personal state are preserved. No generated summaries or article-body scraping/storage.
 
-Desktop ≥1024px uses 42/58 independently scrolling list/inspector panes. Compact rows retain tier, headline, publisher/time, syllabus/exam metadata, reading estimate, read status and bookmark. Mobile uses the list, compact subject selector and existing `Sheet` detail with pinned original/read/save actions; closing restores list scroll. Paper/Night, Fraunces major titles and Manrope UI reuse Tars tokens without new dependencies.
+Today defaults to **To be Read** and contains only publication timestamps in the rolling past 24 hours (including yesterday's calendar date). Exactly three exclusive queues: **To be Read / Read / Saved**. Saving takes precedence over read status; marking a saved article done keeps it in Saved, while unsaving restores Read or To be Read. Counts and completion/minutes-left status are derived. Unread headlines are bold/full ink; read headlines have normal weight/muted ink. Filters reveals subject, exam, publisher and 15/30/60-minute unread plans; hidden active filters stay resettable.
 
-All CA / Must Read / Unread / Saved, date, exam, subject, publisher, multi-term metadata search and 15/30/60-minute plans compose locally. Publisher/search filters include alternate coverage. Inspector offers classifier evidence, separately labelled **From the feed** excerpts, clustered alternate publisher links, exact References and personal Notes. Empty References and single-source related coverage tabs are hidden. `Open original` opens the preserved primary publisher URL in a safe new tab; selection stays put on return and on marking read. No generated summary, article scraping/body storage or image scraping.
+The top-corner Archive action opens older retained articles, newest first, with no overlap with Today. Daily/Weekly/Monthly/Yearly period controls stay inside Filters. Undated and future-dated metadata belong to Archive; undated sorts last. A grouped topic belongs to Today while any known member is within 24 hours, but only recent headlines/alternate links are displayed there; all member keys remain available for state. Removed items hide across all queues/scopes, retain prior read/save state and support Undo. Lists reveal 50 topics at a time with Show more. Paper/Night and Tars typography/tokens remain.
 
-Study mode snapshots today’s filtered queue in memory; marking read does not remove or reorder its articles. Previous/read/next, save and original-link actions lead to a completed reading set. Desktop J/↓, K/↑, R, S and O work in both the workspace and Study mode, yielding to text inputs, modifiers, navigation chords and other dialogs. Job 5 debug still exposes raw classifier/rejection/member evidence, plus the Must Read heuristic score.
+## Publisher sources
+
+`src/current-affairs/sources.ts` contains **39 verified RSS feeds from 9 publishers**, including the requested specialist publication Down To Earth. RBI, SEBI and PIB were removed, including the official-source ranking bonus. Active source IDs filter older offline responses and archived metadata, so removed circulars cannot remain visible. Newspaper reporting about RBI/policy still qualifies normally.
+
+| Newspaper / RSS directory | Feeds | Sections |
+| --- | ---: | --- |
+| [Indian Express](https://indianexpress.com/rss-2/) | 7 | UPSC, Explained, Economy, India, World, Governance, Editorials |
+| [The Hindu](https://www.thehindu.com/rssfeeds/) | 6 | National, World, Economy, Science, Environment, Editorials |
+| [Mint](https://www.livemint.com/rss) | 4 | Economy, Politics, Science, Opinion |
+| [Hindustan Times](https://www.hindustantimes.com/rss) | 6 | India, World, Explained, Science, Business, Editorials |
+| [Business Standard](https://www.business-standard.com/rss-feeds/listing) | 3 | Economy, India, World |
+| [BusinessLine](https://www.thehindubusinessline.com/rssfeeds/) | 5 | Economy, Agriculture, National, Science, Editorials |
+| [The Tribune](https://www.tribuneindia.com/rss-feeds) | 4 | India, World, Business, Editorials |
+| [Guardian](https://www.theguardian.com/help/feeds) | 3 | World, Environment, Science |
+| [Down To Earth](https://www.downtoearth.org.in/stories.rss) | 1 | Environment, health and development |
+
+Earlier 38-feed live verification on 2026-10-01 returned **2,600 unique links → 369 accepted items → 366 events; 43 today in IST**, with 346 primary thumbnails. Down To Earth’s canonical stories.rss was separately verified through the unchanged gateway: **10 metadata items / 10 thumbnails, 5 accepted** with current rules. Its /feed URL redirects and is not used by the redirect-denying gateway. Counts vary. Exact URLs are in the registry. Unusable probes (Financial Express, Deccan Herald, New Indian Express, Telegraph, ThePrint, Statesman, HT Environment) remain excluded. TOI/ET remain excluded because their RSS directories limit aggregation/redistribution ([TOI](https://timesofindia.indiatimes.com/rss.cms), [ET](https://economictimes.indiatimes.com/rss.cms)). Coverage remains incomplete.
+
+## Broader deterministic relevance
+
+Existing CSE/taxonomy signals remain authoritative; the corpus parser and generated index were not rebuilt. `coverage-aliases.ts` connects common newsroom terms such as GDP, UPI, JPC/FCRA, glaciers, El Niño, renewable energy and food safety to existing concepts. These are editorial concept connections, not exact PYQ mappings; inherited concept frequencies remain unchanged. Supported explainers no longer need a policy verb. The verified Indian Express UPSC feed can also admit publisher-curated reading after noise checks; unmatched items show General studies and have `exam: general`, with explicit debug provenance and no invented PYQ concept/count. General items are excluded from Prelims/Mains/Both filters.
+
+Specialist vocabulary now includes leachate/solid waste, carbon neutrality, floods and public health. Crime, sports/celebrity, consumer products/stock moves, routine court notices, quizzes/MCQs and answer-practice exclusions remain. Debug exposes score/signals/rejections/member URLs inline; normal UI shows a Must Read star, never numerical precision.
+
+Complete-link clustering requires the same IST publication day and a shared concept; ≥3 informative title tokens, shorter-title overlap ≥0.6 and Jaccard ≥0.35 identify differently worded coverage. Identical normalized titles also merge within the edition; undated items remain separate. Primary preference uses section depth (explainer/analysis, then opinion/UPSC), capped distinct excerpt vocabulary, then source priority/relevance/URL ties. This estimates information potential from metadata, not fetched article bodies. Alternate original links sit in a compact “more articles on this topic” disclosure. Progress tracks the topic through member URLs. Candidate comparisons are partitioned by day to avoid comparing old years against each other.
+
+## Must Read and time
+
+`MUST_READ_THRESHOLD = 7`, centralized/unit-tested. Points: classifier strength ≥12/≥7 (2/1); maximum matched CSE document frequency ≥20/≥5 (2/1); taxonomy specificity (1); institutional/convention connection (1); cross-publisher recurrence (1); explainer coverage (1); supported both-exam demand (1). No official-source bonus or LLM. Unmatched publisher-curated reading does not become Must Read merely from its source.
+
+Metadata estimates: standard report 3 min, UPSC feed 4 min, Explained 6 min, analysis/opinion/editorial 7 min. Unread edition estimates sum to minutes left. Budget plans include highest-value unread articles that fit the approximate remaining budget, skipping oversized articles. No article fetch is used for estimates.
+
+## RSS thumbnails
+
+`feed.ts` extracts optional `thumbnailUrl` from item media:thumbnail/media:content (including groups), image enclosures, item images or feed description/Atom summary images. Channel logos, audio and full-content fields are ignored. HTTPS image URLs preserve signed query parameters; unsafe schemes/credentials/local-IP URLs are rejected. The browser loads thumbnails lazily with fixed dimensions, empty decorative alt text and no-referrer; missing/broken images collapse to text-only rows. Images are not scraped from article pages, proxied or rehosted. Offline metadata still works; publisher images may be unavailable offline.
 
 ## Personal state
 
-`src/current-affairs/personal-state.ts`, key **`tars.current-affairs.state.v1`**:
+Key `tars.current-affairs.state.v1`, version 1 with additive optional removal state:
 
 ```json
-{"version":1,"entries":{"https://publisher.example/article":{"readAt":1790852400000,"savedAt":1790852400000,"note":"Personal study connection"}}}
+{"version":1,"entries":{"https://publisher.example/article":{"readAt":1790852400000,"savedAt":1790852400000,"ignoredAt":1790852400000,"note":"Existing personal note"}}}
 ```
 
-Only canonical publisher URL keys and optional millisecond `readAt`, `savedAt`, user-authored `note` (8,000 characters maximum) persist. Event actions apply to all known member URLs; any member’s existing state carries into a changed primary/cluster ID. Clearing read/save removes only that field. No metadata, bodies, stored counters, Dexie change, dwell tracking or ignored-state feature. Every write rereads storage; cross-tab storage events refresh the UI. Unknown versions/corrupt JSON are preserved, failed writes report failure, and a failed note save keeps the draft visible. This separate origin-local state is outside the existing Dexie backup/sync system; localStorage is not an atomic cross-tab transaction.
+Only canonical URL keys and optional millisecond readAt/savedAt/ignoredAt and legacy user-authored note (8,000 characters maximum) persist. Event actions apply to known member URLs and recognize old member state if primary/cluster identity changes. Inline writes preserve legacy article notes. Removal only sets ignoredAt; it does not delete retained metadata or reading history. No article metadata, bodies, images or stored counters enter personal state. Writes reread storage, cross-tab events refresh the UI, corrupt/future versions are preserved and write failures surface. No Dexie migration; state remains outside existing Dexie backups. localStorage is not an atomic cross-tab transaction.
 
-## Deterministic Must Read rule
+## Reading analytics and short notes
 
-`src/current-affairs/workspace.ts`: accepted events become **★ Must Read** at **`MUST_READ_THRESHOLD = 7`**, otherwise **Relevant**. Rank by tier, heuristic, publication time, then stable URL. No LLM or numerical ranking in normal UI.
+The top Analytics action reveals derived totals across Today and Archive: articles read/saved, pending, saved for later, removed, reads in the last 7/30 calendar days, current streak, 14-day activity and read-by-subject. Known grouped coverage counts once. Previously tracked URLs without retained metadata still contribute to totals but not estimated minutes; their missing metadata is disclosed. Totals reflect current flags, so unread/unsave changes them. Marking dates use IST; estimates are explicitly not measured dwell time. Read saved/removed items remain in historical totals. New actions count immediately, independently of the feed's minute clock.
 
-| Existing evidence | Points |
-| --- | --- |
-| Classifier score ≥12 / ≥7 | 2 / 1 |
-| Maximum matched concept’s CSE Prelims + Mains document count ≥20 / ≥5 | 2 / 1 |
-| Matched concept has taxonomy IDs and a specific subtopic | 1 |
-| Concept is in the existing institutional/convention official-URL allowlist | 1 |
-| Primary source is official in the registry | 2 |
-| More than one distinct publisher in cluster | 1 |
-| Explained/explainer coverage in cluster | 1 |
-| Supported Prelims + Mains demand | 1 |
+The top Notes action opens a small gold-accent sticky-note Sheet. New notes contain only user text (maximum **300 characters**), UUID, createdAt timestamp and the current **system-local createdDate** captured on save. Saved notes appear newest first and support removal/Undo without changing their creation date. No generated prose or transformation beyond trimming surrounding whitespace. Blank/oversized notes cannot be saved; failed writes preserve the draft and previous storage. HTML is displayed as literal text. Print notes opens browser printing for only the dated personal collection, with a white/black paginated layout (also suitable for browser Save as PDF).
 
-Document frequencies are lexical evidence, not exact topic mappings, distinct-year counts or exam predictions. Threshold and boundaries are unit-tested.
+Separate localStorage key **tars.current-affairs.notes.v1**:
 
-## Approximate reading time
+```json
+{"version":1,"entries":{"<uuid>":{"id":"<uuid>","text":"A short personal connection","createdAt":1790852400000,"createdDate":"2026-10-01"}}}
+```
 
-Metadata-only precedence: analysis/opinion/editorial **7 min**, official primary **4 min**, Explained/explainer **6 min**, UPSC feed **4 min**, other standard reports **3 min**. Tooltips/copy identify estimates. Unread edition estimates sum to minutes left. Budget plans walk the highest-value unread order and include items that fit remaining estimated minutes, skipping oversized items; selecting the active budget again clears it. Study mode freezes the resulting queue.
+Optional deletedAt is a removal tombstone. Writes reread current storage and storage events update other tabs. Corrupt/future formats are preserved and errors surface. Notes are independent of legacy article notes and outside Dexie backups; browser origin storage can be cleared or evicted.
 
-References use only the existing exact official-homepage allowlist in `static-links.ts`; every generic Google/provider search was removed. Unsupported concepts return an empty array. No new reference URLs or feed discovery were introduced.
+## Local archive
+
+Separate native IndexedDB database `tars-current-affairs-archive-v1`, schema 1, store `articles` keyed by canonical URL. Records contain only accepted active-source RSS metadata (title ≤400, description ≤600, publisher/section ≤100, source/URL/date/optional thumbnail URL) plus firstSeenAt/lastSeenAt. No article bodies, classification, personal state or stored counters. No Dexie schema/dependency change. Existing Workbox metadata seeds the archive on the first visit after upgrade.
+
+Refresh upserts without deleting omitted older URLs. Transactions prevent stale responses and failed writes from replacing retained metadata; quota/future-schema/busy errors surface. BroadcastChannel shares additions between tabs. Retained metadata is reclassified against the existing index; newer metadata wins. Read/save keeps the unchanged URL localStorage contract. Date views derive from IST publication dates; weeks start Monday, including across month/year boundaries. Daily/weekly/monthly/yearly views do not duplicate records.
+
+Capture occurs on visits, refresh, reconnect and hourly while this screen is visible/resumed. It cannot collect days while Tars is closed or before first use, and does not backfill historical publisher archives. No automatic age expiry; browser quota/eviction or clearing this origin limits retention. Offline metadata excludes article bodies and image binaries. Archive, personal state and short notes remain outside existing Dexie backup/export.
 
 ## Validation
 
-Typecheck, root **168/168 tests in 19 files**, build, production smoke **12/12** and **209 focused browser checks** pass. The final production build has 170 precache entries / 7,610.86 KiB. All four 375/1366 Paper/Night layouts have zero horizontal overflow and zero page errors; settled list, detail and Study screenshots were visually reviewed. Cross-tab updates, complete-today Study flow and reload read/save/note persistence are verified. `git diff --check` passes; new Job 6 files also have no trailing spaces. A focused source review corrected a misleading high-score reason without changing classifier acceptance. Focused tests cover personal persistence/errors/cluster identity, threshold/evidence, estimates, budgets, IST dates, progress and composed search/filters. `tools/perf/current-affairs-check.mjs` runs the four production layouts and actual Workbox successful-cache / 503 preservation / offline reload with HTTP cache disabled. Evidence and screenshots: ignored `tools/perf/out/current-affairs-workspace/`.
+Typecheck and **206/206 root tests (22 files)** pass; build passes with 172 precache entries / 7,625.72 KiB. **279 focused browser checks** cover 375/1366 Paper/Night, three exclusive queues/default and persistence, rolling 24-hour separation/descending archives, removal/Undo, analytics and immediate activity totals, 300-character dated notes/reload/escaped text/notes-only print, direct publisher links, grouped coverage, RSS images, filters and typography. Actual Workbox checks cover success/503/offline reload plus archive-only rendering after the latest API response is removed. Production smoke **12/12** and diff whitespace pass; zero page errors/overflow. List, archive, analytics and notes screenshots reviewed; notes-print.pdf generated by Chromium, extracted and rendered to confirm only dated personal notes. Fixtures include a removed RBI circular. Evidence: ignored tools/perf/out/current-affairs-direct/.
 
-## Preserved scope and limits
+Initial Job 6: 168 tests, 209 browser checks, smoke 12/12. First single-column cleanup: 237 browser checks, smoke 12/12. These are historical acceptance snapshots, superseded by the direct newspaper UI.
 
-Job 5’s gateway, 11 enabled feeds, source-failure isolation, canonical relevance asset/pipeline/classifier, clustering, original links and Workbox strategy remain unchanged. No publisher expansion, pipeline regeneration, Atlas profiling, Job 4 matrix or full offline-upgrade audit. Dates only cover the latest successful cached feed response, not a permanent news archive. Metadata heuristics remain conservative and approximate; saved articles whose metadata ages out are retained as URL state but cannot be displayed without feed metadata. Browser evidence uses deterministic feed fixtures; live feeds were not rediscovered. Hosted/physical-device validation remains unperformed.
+## Preserved boundaries and limits
+
+Gateway limits, failure isolation and Workbox strategy remain unchanged; no gateway rewrite, pipeline regeneration, dependencies or Dexie changes. No Atlas profiling, Job 4 matrix, full offline-upgrade audit or new milestone. Metadata, lexical relevance, clustering and information-value preference remain incomplete heuristics. Large retained sets are loaded/reclassified locally with paged rows; long-term multi-year scale is unprofiled. No historical backfill/closed-app collection. Hosted/physical-device validation remains unperformed. The /review command is unavailable in this environment; focused source/diff regression review was performed instead.

@@ -1,19 +1,15 @@
 /**
  * localStorage keys. The app was called Lodestar before it became Tars; keys
  * written under the old name are moved over once, so nobody loses a running
- * timer, their soundscape or their theme to the rename.
+ * theme or Atlas preferences to the rename. Obsolete timer/audio keys stay untouched.
  */
 export const KEYS = {
-  timer: 'tars.timer.v1',
-  audio: 'tars.audio.v1',
   theme: 'tars.theme',
   atlasVisit: 'tars.atlas.lastVisit',
   sidebar: 'tars.sidebar.collapsed',
 } as const
 
 const LEGACY: Partial<Record<keyof typeof KEYS, string>> = {
-  timer: 'lodestar.timer.v1',
-  audio: 'lodestar.audio.v1',
   theme: 'lodestar.theme',
   atlasVisit: 'lodestar:atlas:lastVisit',
 }

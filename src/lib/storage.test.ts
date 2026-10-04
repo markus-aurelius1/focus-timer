@@ -17,11 +17,13 @@ describe('storage keys after the rename to Tars', () => {
   it('moves values saved under the Lodestar keys', () => {
     const s = memoryStorage({ 'lodestar.timer.v1': '{"v":1}', 'lodestar.audio.v1': '{"master":0.5}', 'lodestar.theme': 'dark', 'lodestar:atlas:lastVisit': '123' })
     migrateLegacyKeys(s)
-    expect(s.getItem(KEYS.timer)).toBe('{"v":1}')
-    expect(s.getItem(KEYS.audio)).toBe('{"master":0.5}')
+    expect(s.getItem('lodestar.timer.v1')).toBe('{"v":1}')
+    expect(s.getItem('tars.timer.v1')).toBeNull()
+    expect(s.getItem('lodestar.audio.v1')).toBe('{"master":0.5}')
+    expect(s.getItem('tars.audio.v1')).toBeNull()
     expect(s.getItem(KEYS.theme)).toBe('dark')
     expect(s.getItem(KEYS.atlasVisit)).toBe('123')
-    expect([...s.data.keys()].some((k) => k.startsWith('lodestar'))).toBe(false)
+    expect(s.getItem('lodestar.theme')).toBeNull()
   })
 
   it('never overwrites a value already saved under the new key', () => {
@@ -32,8 +34,8 @@ describe('storage keys after the rename to Tars', () => {
   })
 
   it('does nothing when there is nothing to move', () => {
-    const s = memoryStorage({ [KEYS.timer]: 'x' })
+    const s = memoryStorage({ ['tars.timer.v1']: 'x' })
     migrateLegacyKeys(s)
-    expect([...s.data.entries()]).toEqual([[KEYS.timer, 'x']])
+    expect([...s.data.entries()]).toEqual([['tars.timer.v1', 'x']])
   })
 })

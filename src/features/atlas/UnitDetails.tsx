@@ -27,7 +27,7 @@ export function UnitDetails({ ex, unit, onSelect }: { ex: Exploration; unit: { t
   )
   return (
     <div>
-      <p className="text-[11px] font-bold tracking-[0.12em] text-ink-3 uppercase">
+      <p className="t-label text-[12px] text-ink-3">
         {state ? (state.type === 'ut' ? 'Union Territory' : 'State') : (country?.continent ?? 'Country')}
       </p>
       <h2 className="font-display text-[26px] leading-tight font-medium tracking-tight">{name}</h2>
@@ -49,8 +49,7 @@ export function UnitDetails({ ex, unit, onSelect }: { ex: Exploration; unit: { t
           <span className="text-[12px] text-ink-3">{DEVELOPMENT_HINT[dev.level]}</span>
         </p>
         <div className="mt-2.5 space-y-1.5">
-          {bar(dev.discovered, 'var(--ink-3)', 'Travelled')}
-          {bar(dev.familiar, MASTERY_COLOUR.familiar, 'Familiar')}
+                    {bar(dev.familiar, MASTERY_COLOUR.familiar, 'Familiar')}
           {bar(dev.strong, MASTERY_COLOUR.strong, 'Strong')}
           {bar(dev.mastered, MASTERY_COLOUR.mastered, 'Mastered')}
         </div>
@@ -58,7 +57,7 @@ export function UnitDetails({ ex, unit, onSelect }: { ex: Exploration; unit: { t
 
       {(state?.neighbours.length || country?.neighbours.length) ? (
         <div className="mt-4">
-          <p className="text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">Neighbours</p>
+          <p className="t-label text-[12px] text-ink-3">Neighbours</p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {state?.neighbours.map((n) => (
               <button key={n} type="button" onClick={() => onSelect({ type: 'state', id: n })} className="rounded-full border border-line px-2.5 py-1 text-[13px] font-semibold hover:bg-surface-2">
@@ -78,7 +77,7 @@ export function UnitDetails({ ex, unit, onSelect }: { ex: Exploration; unit: { t
       ) : null}
 
       <div className="mt-4">
-        <p className="text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">
+        <p className="t-label text-[12px] text-ink-3">
           Accessible here · {places.length} places
         </p>
         {places.length ? (

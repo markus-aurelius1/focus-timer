@@ -1,3 +1,7 @@
+**Current owner deployment authorization — 2026-10-05:** prepare one release checkpoint, push only `handoff/claude-overhaul`, and deploy the accepted Atlas/News/Settings application to Cloudflare Pages. Application behavior stays frozen; no performance work or J-25. No authentication configuration. Earlier publication prohibitions below describe prior tasks and are superseded for this deployment only.
+
+**Current owner release freeze (2026-10-04): STOP PERFORMANCE WORK.** Application source is accepted and frozen. No J-25 investigation, renderer/compositor experiments or further Windows/headless gesture attempts. The owner accepts private Cloudflare deployment with a documented synthetic gesture-benchmark exception on this host; the four failures and all unchanged budgets remain recorded for future stable/physical-device validation. Preserve profiling evidence and personal state. Run only the eight requested minimal sanity checks, update the release report/handoff, then stop. No deployment, authentication configuration, commit or push is authorized.
+
 # AGENTS.md
 
 This file is read automatically by Codex (and other agents) at the start of
@@ -9,31 +13,29 @@ correction.
 Read `CODEX_HANDOFF.md` next: it holds the architecture, the current state and
 the Output Quality Specs this file refers to.
 
+Current release decision: `docs/TARS-PRODUCTION-READINESS.md`; deployment-only handoff: `docs/TARS-CLOUDFLARE-DEPLOYMENT-HANDOFF.md`. `docs/TARS-J24-GESTURE-REPAIR.md` preserves historical investigation evidence (29/33 pass, four failed limits), not authorization to continue performance work. Preserve Phase 1, all accepted application/runtime changes, canonical content, migrations, stable IDs and user state. The exception is an explicit owner release decision, not a passing gesture test or permission to weaken budgets. No publication is authorized in this task.
+
 ---
 
 ## 1. Project summary
 
-Tars (called Lodestar until 2026-09-26) is a calm, local-first study app for UPSC / UPPCS aspirants. It combines a sleep- and reload-safe focus timer, a task planner with calendar and habits, analytics, and **The Atlas**: an offline atlas of India and the World (2,273 places) that are freely accessible, with focus minutes advancing Travelled history and spaced recall establishing mastery, with previous-year-question (PYQ) history and a study-priority score per place. It ships as an installable PWA (no account; IndexedDB only) plus Capacitor Android/iOS projects.
+Tars (called Lodestar until 2026-09-26) is a local-first Atlas and News app for UPSC / UPPCS study. Atlas provides offline geography, canonical PYQs and recall mastery; News is an RSS collection of external publisher links with Read, Saved, search, filters and archives. News has no reader, Notes controls or article-detail surface; both historical note stores remain dormant and intact. Focus, Planning and timer-driven expeditions were removed on 2026-10-03. The latest 2026-10-04 owner instruction authorizes the Editorial Cartography presentation/interaction redesign, superseding the earlier pause. See `docs/TARS-EDITORIAL-REDESIGN.md` and `docs/TARS-ATLAS-NEWS-ROADMAP.md`. J-23 remains accepted. The final owner contract supersedes the earlier broad runtime-repair authorization: J-24/J-25 and protected Atlas internals are out of scope. The only final-pass renderer change invalidates a removed packed GPU surface in the existing native fallback; camera, labels, painter and cache budgets stay unchanged. Never restore retired features to repair Atlas. No commit, push, PR or deployment is authorized.
 
 ## 2. Repo layout
 
-- `src/app` — shell, hash router (`#/focus`, `#/tasks`, `#/atlas`, `#/calendar`, `#/insights`, `#/settings`), theming, command palette, shortcuts
-- `src/data` — typed model (`types.ts`), Dexie schema (`db.ts`, DB name `lodestar`, schema v2), `repo.ts` (all writes; timestamps + tombstones), backup, CSV, sync, sample data (`demo.ts`)
-- `src/tars` — typed validated actions, deterministic intents/context, command ranking and restrained presence; future AI/voice uses `executeProposal`
-- `src/timer` — `engine.ts` (pure, timestamp-based; `reconcile(state, now)` replays sleep) + `store.ts` (effects, alerts, notification text)
-- `src/planner`, `src/stats`, `src/game` — quick-add grammar and recurrence; derived analytics; XP, ranks, challenges
-- `src/atlas` — gazetteer index, exploration, mastery/spaced review, recall question generators, living world
-- `src/audio`, `src/services`, `src/ui` — procedural sound (follows the timer), platform services, design-system primitives (`Sheet.tsx` for every dialog)
-- `src/features/<screen>` — screens; `features/atlas/AtlasMap.tsx` renders the bundled full-frame map and recall interactions
-- `public/atlas/v1/` — **generated** Atlas data (`places.json`, sheets, relief, overlays). Never hand-edit.
-- `tools/atlas-build/` — separate package: the offline data pipeline. Gazetteer content in `content/*.mjs`, v2 candidates in `content/candidates/`, generated v2 places in `content/generated/` (do not hand-edit), PYQ ledger in `content/pyq/`, review reports in `reports/`
-- `public/pyq-atlas/v1/` — immutable derived Job 1 curated canonical runtime; packs read lazily and the complete small subset precached
-- `public/atlas-assets/v1/` — additive content-hash asset inventory/hotspots, generated by `npm run atlas:assets`
-- `tools/map-spike/` — isolated development-only MapLibre/PMTiles comparison; never imported by the app
-- `tools/perf/` — separate package: headless-Chromium smoke, UI audit, Atlas interaction checks, profiling
-- `scripts/generate-icons.mjs` — renders `assets/icon.svg` into every PNG + `public/og-image.png`
-- `android/`, `ios/` — Capacitor projects; `docs/HANDOFF.md` — older milestone log with measurements
-- `pyq-sources/` — the user's copyrighted PYQ PDFs; git- and Vercel-ignored, exists only on the user's machine
+- `src/app` — shared shell, Atlas/News navigation, `#/atlas` landing, `#/current-affairs`, auxiliary `#/settings`, theme, commands and shortcuts
+- `src/data` — Dexie `lodestar` schema v2, legacy-compatible types, repo timestamps/tombstones, shared settings/hooks, JSON backups v1–v3 and sync. Historical Focus/Planning tables remain inert for preservation and backup compatibility; never delete them on boot.
+- `src/tars` — validated Atlas/News/navigation/preferences actions, deterministic intents and context
+- `src/atlas` — gazetteer, recall-based exploration, mastery, spaced review, PYQ runtime and living map; `src/game` — recall XP/ranks and existing recall challenges
+- `src/current-affairs`, `src/features/current-affairs` — feed/gateway, archive, Read/Saved state and external-link News UI; `src/features/notes` holds the dormant historical notes hook
+- `src/services`, `src/ui` — shared lifecycle, haptics, files, install/fullscreen and design-system primitives
+- `src/features/atlas` — map, filters/search, entity details, recall, questions and offline status
+- `public/atlas/v1/` — **generated** Atlas data; never hand-edit. Static legacy expedition metadata is retained in this immutable source package but has no runtime index/consumer.
+- `tools/atlas-build/` — authoritative offline data pipeline; source ids and generated facts are protected
+- `public/pyq-atlas/v1/` — curated canonical PYQs; `public/atlas-assets/v1/` — generated offline asset hashes/hotspots
+- `tools/map-spike/` — isolated comparison, outside the app; `tools/perf/` — product regressions and Atlas renderer profiling/parity tools
+- `scripts/generate-icons.mjs`, `android/`, `ios/` — brand assets and Capacitor projects; legacy app identifiers stay unchanged
+- `pyq-sources/` — local copyrighted source PDFs; never commit
 
 ## 3. Environment setup
 
@@ -42,9 +44,9 @@ The repo path may contain a space; quote paths.
 - Install: `npm ci` (Node 22 as in CI; Node 24 works). Pipeline: `cd tools/atlas-build && npm install`. QA: `cd tools/perf && npm install && npx playwright-core install chromium` (or set `CHROMIUM_PATH`)
 - Run locally: `npm run dev` (http://localhost:5173); production build: `npm run build && npm run preview` (http://localhost:4173)
 - Test: `npm test` (Vitest, `src/**/*.test.ts`); `cd tools/atlas-build && npm test` (pipeline, `node --test`)
-- Lint / typecheck: no linter or formatter is configured; `npm run typecheck` (`tsc -b`)
+- Lint / typecheck: `npm run lint` (ESLint; existing warnings permitted); `npm run typecheck` (`tsc -b`)
 - Build: `npm run build` (typecheck + Vite + service worker → `dist/`). Atlas data: `cd tools/atlas-build && node build.mjs --places-only` (offline; full `node build.mjs` downloads sources)
-- QA against the **preview** build (never the dev server): `node tools/perf/smoke.mjs http://localhost:4173/`, `node tools/perf/atlas-check.mjs`, `node tools/perf/ui-audit.mjs`; `node tools/perf/features-check.mjs` runs against `npm run dev`
+- QA against the **preview** build (never the dev server): `node tools/perf/smoke.mjs http://localhost:4173/`, `node tools/perf/atlas-check.mjs`, `node tools/perf/ui-audit.mjs`; `node tools/perf/current-affairs-check.mjs` serves production News fixtures
 - No environment variables are required. Optional: `BASE`, `SITE_URL`, `CHROMIUM_PATH`, `PLAYWRIGHT_FROM`
 
 Full command list: `CODEX_HANDOFF.md` §8.
@@ -53,10 +55,9 @@ Full command list: `CODEX_HANDOFF.md` §8.
 
 - **Style** (match surrounding code; no formatter): no semicolons, single quotes, 2-space indent, long lines (~160–200 chars) are normal, `const` arrow helpers, early returns. Each module opens with a `/** … */` block saying what it does and why; comments give reasons, not mechanics.
 - **Files:** components `PascalCase.tsx` under `src/features/<screen>/`; pure logic in lower-case `.ts` with colocated `*.test.ts`; import via `@/…` (= `src/`).
-- **Data:** every record has a UUID `id`, `createdAt`, `updatedAt`; write only through `src/data/repo.ts` (deletes leave tombstones). XP, mastery, exploration, streaks, reminders and challenge progress are **derived from history** — never add a stored counter.
-- **Determinism:** user-visible randomness uses `seededRandom(hashString(...))` so every device shows the same questions, challenges and sample data.
-- **Timer:** `setInterval` is never the source of truth; time comes from stored timestamps.
-- **UI:** Tailwind v4 tokens (`bg-surface`, `text-ink-2`, `text-accent`…), themes Paper (light) / Night (`.dark`); Manrope for UI and all numbers (tabular), Fraunces only for headings; motion tokens 140/220/320 ms; respect reduced motion; dialogs via `ui/Sheet.tsx` with actions in the footer; Undo toasts instead of confirm dialogs; no glass/`backdrop-filter`.
+- **Data:** every record has a UUID `id`, `createdAt`, `updatedAt`; write only through `src/data/repo.ts` (deletes leave tombstones). XP, mastery, exploration and challenge progress are **derived from history** — never add a stored counter.
+- **Determinism:** user-visible randomness uses `seededRandom(hashString(...))` so every device shows the same questions, challenges.
+- **UI:** Editorial Cartography; retained semantic tokens, Ivory Atlas / Midnight Atlas, blue interaction, gold knowledge, green success, red error plus text/icons. Locally licensed Geist UI and Newsreader editorial/display; protected Atlas label metrics retain Manrope. Desktop has a 56px product bar; mobile has a 52px top bar and 56px Atlas/News bottom switcher, plus safe areas. No permanent shell sidebar. Desktop News uses a 180px collection rail and the remaining width for editorial rows. Search expands on demand; filters/Sources and secondary map controls are contextual. Preserve Phase 1; contrast corrections retain semantic roles. Atlas uses a 400–432px contextual inspector and mobile detents. Shared single-question review retains the existing focus/Back lifecycle. No looping decorative map motion. Motion tokens and reduced-motion support remain. See `CODEX_HANDOFF.md` and `docs/TARS-PRODUCTION-READINESS.md`; earlier layout rules are historical.
 - **User-facing text** follows the house style in `CODEX_HANDOFF.md` §4.0 (sentence case, no exclamation marks, curly apostrophes, spaced en dash, `formatDuration` for durations).
 - **Atlas renderer:** no React state or SVG attribute writes per frame; point names are HTML; see `CODEX_HANDOFF.md` §7 for the specific regressions to avoid.
 - **Commits:** subject `<Area>: <what changed>`, sentence case, no trailing period (e.g. `Atlas data: PYQ ledger, alias matching and study-priority score`). Branches `claude/<name>` (or your own agent prefix); add commits on top.
@@ -114,7 +115,7 @@ free-form output), Section 4 of `CODEX_HANDOFF.md` (Output Quality Specs)
 must be updated to reflect the current standard for that feature — not just
 that the feature exists or was modified. In this project that includes
 place facts, PYQ ledger entries, study-priority reasons, recall questions,
-expeditions, challenges, notifications/toasts, sample data, exports and
+recall challenges, toasts, exports and
 brand assets.
 
 `CODEX_HANDOFF.md` exists (created 2026-09-27 from a full pass over the

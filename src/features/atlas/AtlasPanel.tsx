@@ -1,25 +1,23 @@
-/** The Atlas side panel: explorer rank, expedition, reviews, challenges, regions and journal. */
+/** The Atlas side panel: explorer rank, reviews, recall challenges, regions and map styles. */
 import { motion } from 'motion/react'
-import { BookOpen, Check, ChevronRight, Compass, Flag, GraduationCap, Lock, Map as MapIcon, Tent, Trophy } from 'lucide-react'
+import { Check, GraduationCap, Lock, Map as MapIcon, Trophy } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { atlasActivity } from '@/atlas/activity'
 import type { Exploration } from '@/atlas/useExploration'
 import { db } from '@/data/db'
-import { useClaims, useExpeditionRuns, useGoals, useRecalls, useSessions, useSettings, useTasks } from '@/data/hooks'
-import { buildContext, dailyChallenges, weeklyChallenges, type ChallengeInstance } from '@/game/challenges'
+import { useClaims, useRecalls, useSettings } from '@/data/hooks'
+import { dailyChallenges, weeklyChallenges, type ChallengeInstance } from '@/game/challenges'
 import { MAP_STYLES, RANKS } from '@/game/progression'
 import { cn } from '@/lib/cn'
 import { addDaysKey, startOfWeekKey } from '@/lib/time'
 import { haptics } from '@/services/haptics'
 import { Button } from '@/ui/controls'
 import { toast } from '@/ui/toast'
-import { DEVELOPMENT_LABEL, developmentOf, minutesText } from './util'
+import { DEVELOPMENT_LABEL, developmentOf } from './util'
 
 export interface PanelActions {
-  openExpeditions: () => void
   startReview: () => void
   pickState: (id: string) => void
-  openBaseCamp: () => void
 }
 
 export function ExplorerCard({ ex, compact }: { ex: Exploration; compact?: boolean }) {
@@ -45,45 +43,14 @@ export function ExplorerCard({ ex, compact }: { ex: Exploration; compact?: boole
   )
 }
 
-/** One line: where the active expedition is headed. */
-export function expeditionStatus(ex: Exploration): { title: string; line: string; color: string; blocked: boolean } | null {
-  const a = ex.state.active
-  if (!a) {
-    const next = ex.state.survey.next
-    return { title: 'Free survey', line: next ? `${minutesText(ex.state.survey.remaining)} to the next stop` : 'Everything nearby is explored', color: 'var(--ink-3)', blocked: false }
-  }
-  if (a.complete) return { title: a.expedition.title, line: 'Complete – choose your next expedition', color: a.expedition.color, blocked: false }
-  if (a.blockedBy) return { title: a.expedition.title, line: `Checkpoint: ${a.blockedBy.need - a.blockedBy.have} more place${a.blockedBy.need - a.blockedBy.have === 1 ? '' : 's'} to recall`, color: a.expedition.color, blocked: true }
-  if (a.next) return { title: a.expedition.title, line: `${minutesText(a.next.remaining)} to ${a.next.stop.place.name}`, color: a.expedition.color, blocked: false }
-  return { title: a.expedition.title, line: '', color: a.expedition.color, blocked: false }
-}
-
-export function AtlasPanel({ ex, actions }: { ex: Exploration; actions: PanelActions }) {
-  const status = expeditionStatus(ex)
-  const a = ex.state.active
+export function AtlasPanel({ ex, actions, hideExplorer }: { ex: Exploration; actions: PanelActions; hideExplorer?: boolean }) {
   return (
-    <div className="space-y-4">
-      <Section>
-        <ExplorerCard ex={ex} />
-      </Section>
-
-      <Section title="Expedition" icon={<Flag className="size-3.5" />} action={<LinkButton onClick={actions.openExpeditions}>All</LinkButton>}>
-        {status && (
-          <button type="button" onClick={actions.openExpeditions} className="block w-full text-left">
-            <p className="flex items-center gap-2 text-[15px] font-bold">
-              <span className="size-2.5 rounded-full" style={{ background: status.color }} />
-              {status.title}
-            </p>
-            <p className={cn('mt-0.5 text-[13.5px]', status.blocked ? 'font-semibold text-accent' : 'text-ink-2')}>{status.line}</p>
-            {a && (
-              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-line">
-                <div className="h-full rounded-full" style={{ width: `${(a.reached / Math.max(1, a.total)) * 100}%`, background: a.expedition.color }} />
-              </div>
-            )}
-            {a && <p className="mt-1 text-[12px] font-semibold text-ink-3">{a.reached} of {a.total} stops</p>}
-          </button>
-        )}
-      </Section>
+    <div className="mt-5">
+      {!hideExplorer && (
+        <Section>
+          <ExplorerCard ex={ex} />
+        </Section>
+      )}
 
       <Section title="Field review" icon={<GraduationCap className="size-3.5" />}>
         <p className="text-[13.5px] text-ink-2">
@@ -96,19 +63,19 @@ export function AtlasPanel({ ex, actions }: { ex: Exploration; actions: PanelAct
 
       <Challenges ex={ex} />
 
-      <Regions ex={ex} onPick={actions.pickState} onBaseCamp={actions.openBaseCamp} />
+      <Regions ex={ex} onPick={actions.pickState} />
 
-      <Journal ex={ex} />
+      <MapStyles ex={ex} />
     </div>
   )
 }
 
 function Section({ title, icon, action, children }: { title?: string; icon?: ReactNode; action?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-card border border-line bg-surface p-4 shadow-soft">
+    <section className="border-t border-line py-4 first:border-t-0 first:pt-0">
       {title && (
-        <div className="mb-2.5 flex items-center justify-between">
-          <h3 className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.12em] text-ink-2 uppercase">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="flex items-center gap-1.5 t-label text-[12px]">
             {icon}
             {title}
           </h3>
@@ -120,27 +87,14 @@ function Section({ title, icon, action, children }: { title?: string; icon?: Rea
   )
 }
 
-function LinkButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
-  return (
-    <button type="button" onClick={onClick} className="flex items-center gap-0.5 text-[12px] font-bold text-ink-2 hover:text-ink">
-      {children} <ChevronRight className="size-3.5" />
-    </button>
-  )
-}
-
 function Challenges({ ex }: { ex: Exploration }) {
   const settings = useSettings()
-  const sessions = useSessions()
-  const tasks = useTasks()
   const claims = useClaims()
-  const goals = useGoals()
-  const runs = useExpeditionRuns()
   const recalls = useRecalls()
   const today = ex.today
   const week = startOfWeekKey(today, settings.weekStartsOn)
-  const dailyGoalMinutes = goals.find((g) => g.active && g.period === 'day' && !g.labelId)?.targetMinutes ?? 120
-  const daily = dailyChallenges(today, buildContext(sessions, tasks, today, today, today, dailyGoalMinutes, atlasActivity(ex, sessions, runs, recalls, today, today)), claims)
-  const weekly = weeklyChallenges(today, settings.weekStartsOn, buildContext(sessions, tasks, week, addDaysKey(week, 6), today, dailyGoalMinutes, atlasActivity(ex, sessions, runs, recalls, week, addDaysKey(week, 6))), claims)
+  const daily = dailyChallenges(today, { atlas: atlasActivity(ex, recalls, today, today) }, claims)
+  const weekly = weeklyChallenges(today, settings.weekStartsOn, { atlas: atlasActivity(ex, recalls, week, addDaysKey(week, 6)) }, claims)
   const claim = async (c: ChallengeInstance) => {
     haptics.success()
     await db.claims.put({ id: c.key, challengeId: c.id, period: c.periodKey, reward: c.reward, createdAt: Date.now(), updatedAt: Date.now() })
@@ -178,19 +132,13 @@ function Challenges({ ex }: { ex: Exploration }) {
   )
 }
 
-function Regions({ ex, onPick, onBaseCamp }: { ex: Exploration; onPick: (id: string) => void; onBaseCamp: () => void }) {
+function Regions({ ex, onPick }: { ex: Exploration; onPick: (id: string) => void }) {
   const rows = ex.atlas.states
     .filter((s) => ex.state.explored.has(s.id))
     .map((s) => ({ s, d: developmentOf(ex, s.id) }))
     .sort((a, b) => b.d.discovered - a.d.discovered || a.s.name.localeCompare(b.s.name))
-  const camp = ex.atlas.state(ex.state.baseCamp)
   return (
-    <Section title="Regions" icon={<MapIcon className="size-3.5" />} action={<LinkButton onClick={onBaseCamp}>Base camp</LinkButton>}>
-      {camp && (
-        <p className="mb-2.5 flex items-center gap-1.5 text-[13px] text-ink-2">
-          <Tent className="size-3.5" /> Base camp: <b className="text-ink">{camp.name}</b>
-        </p>
-      )}
+    <Section title="Regions" icon={<MapIcon className="size-3.5" />}>
       <ul className="space-y-1">
         {rows.slice(0, 12).map(({ s, d }) => (
           <li key={s.id}>
@@ -198,7 +146,7 @@ function Regions({ ex, onPick, onBaseCamp }: { ex: Exploration; onPick: (id: str
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[14px] font-semibold">{s.name}</span>
                 <span className="block text-[12px] text-ink-3">
-                  {DEVELOPMENT_LABEL[d.level]} · {d.discovered}/{d.total} travelled
+                  {DEVELOPMENT_LABEL[d.level]} · {d.discovered}/{d.total} Familiar
                 </span>
               </span>
               <span className="h-1 w-16 overflow-hidden rounded-full bg-line">
@@ -208,30 +156,13 @@ function Regions({ ex, onPick, onBaseCamp }: { ex: Exploration; onPick: (id: str
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-[12px] text-ink-3">{ex.state.explored.size - 1} of 36 states and UTs explored</p>
+      <p className="mt-2 text-[12px] text-ink-3">{rows.length} of 36 states and UTs explored</p>
     </Section>
   )
 }
 
-function Journal({ ex }: { ex: Exploration }) {
-  const done = [...ex.state.expeditions.values()].filter((p) => p.complete)
-  return (
-    <Section title="Journal" icon={<BookOpen className="size-3.5" />}>
-      {done.length ? (
-        <ul className="space-y-2">
-          {done.map((p) => (
-            <li key={p.expedition.id} className="rounded-xl border border-line p-3">
-              <p className="flex items-center gap-2 text-[14px] font-bold">
-                <Compass className="size-4" style={{ color: p.expedition.color }} /> {p.expedition.reward.title}
-              </p>
-              <p className="mt-0.5 text-[12.5px] text-ink-2">{p.expedition.reward.body}</p>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-[13.5px] text-ink-2">Complete an expedition to add its journal page here.</p>
-      )}
-      <p className="mt-4 text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase">Map styles</p>
+function MapStyles({ ex }: { ex: Exploration }) {
+  return (<Section title="Map styles">
       <ul className="mt-1.5 space-y-1">
         {MAP_STYLES.map((s) => {
           const open = s.minRank <= ex.level.rankIndex

@@ -10,7 +10,14 @@ const event = (id = 'one', overrides: Partial<ClassifiedItem> = {}): NewsEvent =
 }
 const index: RelevanceIndex = { version: 1, provenance: {}, signals: [{ concept: 'RBI', aliases: ['rbi'], subject: 'Economy', topic: 'Monetary policy', subtopic: 'Regulators', taxonomyIds: ['eco-1'], prelimsCount: 20, mainsCount: 3, prelimsDemand: true, mainsDemand: true }] }
 const workspace = (id = 'one', overrides: Partial<WorkspaceEvent> = {}): WorkspaceEvent => ({ ...buildWorkspace([event(id)], index)[0], ...overrides })
-const filters: WorkspaceFilters = { day: '2026-10-01', tab: 'All CA', exam: 'All', subject: 'All subjects', publisher: 'All sources', query: '', budget: null }
+const filters: WorkspaceFilters = { day: '2026-10-01', tab: 'To be Read', exam: 'All', subject: 'All subjects', publisher: 'All sources', query: '', budget: null }
+it('publisher-curated general coverage does not imply Prelims/Mains demand or Must Read', () => {
+  const e = event('curated', { sourceId: 'ie-upsc', relevance: { accepted: true, score: 2, exam: 'general', subjects: ['General studies'], topics: [], staticAnchors: [], signals: [] } })
+  const rows = buildWorkspace([e], index)
+  expect(rows[0].mustRead).toBe(false)
+  expect(filterWorkspace(rows, empty(), filters)).toHaveLength(1)
+  for (const exam of ['Prelims', 'Mains', 'Both'] as const) expect(filterWorkspace(rows, empty(), { ...filters, exam })).toHaveLength(0)
+})
 function storage(): StateStorage { let value: string | null = null; return { getItem: () => value, setItem: (key, next) => { expect(key).toBe(CA_STATE_KEY); value = next } } }
 describe('Current Affairs local state', () => {
   it('roundtrips read/save/note only, supports clearing fields independently', () => {
@@ -56,14 +63,14 @@ describe('Current Affairs local state', () => {
   })
 })
 describe('Must Read and reading estimates', () => {
-  it('centralizes an inclusive threshold and uses official/explainer/cross-publisher evidence', () => {
+  it('centralizes an inclusive threshold and uses explainer/cross-publisher evidence without official-source boosts', () => {
     const standard = event()
     expect(mustReadEvidence(standard, index).priority).toBe(6)
     expect(mustReadEvidence(standard, index).mustRead).toBe(false)
     const explained = event('explained', { section: 'Explained' })
     expect(mustReadEvidence(explained, index).priority).toBe(MUST_READ_THRESHOLD)
     expect(mustReadEvidence(explained, index).mustRead).toBe(true)
-    expect(mustReadEvidence(event('official', { sourceId: 'rbi-releases' }), index).priority).toBe(8)
+    expect(mustReadEvidence(event('old circular', { sourceId: 'rbi-releases' }), index).priority).toBe(6)
     expect(mustReadEvidence({ ...standard, members: [standard.primary, { ...standard.primary, publisher: 'Mint' }] }, index).mustRead).toBe(true)
     expect(mustReadEvidence({ ...standard, members: [standard.primary, standard.primary] }, index).mustRead).toBe(false)
   })
@@ -73,9 +80,17 @@ describe('Must Read and reading estimates', () => {
     expect(mustReadEvidence(e, index).mustRead).toBe(false)
     expect(mustReadEvidence(event(), { ...index, signals: [] }).priority).toBe(3)
   })
-  it.each([['Economy', 'ie-economy', 3], ['UPSC Current Affairs', 'ie-upsc', 4], ['Explained', 'ie-explained', 6], ['Notifications', 'rbi-notifications', 4], ['Analysis', 'hindu-national', 7]])('estimates %s from source/section only', (section, sourceId, expected) => expect(readingMinutes(event('one', { section, sourceId }))).toBe(expected))
+  it.each([['Economy', 'ie-economy', 3], ['UPSC Current Affairs', 'ie-upsc', 4], ['Explained', 'ie-explained', 6], ['Editorial', 'ht-editorial', 7], ['Analysis', 'hindu-national', 7]])('estimates %s from source/section only', (section, sourceId, expected) => expect(readingMinutes(event('one', { section, sourceId }))).toBe(expected))
 })
 describe('Daily editions and filters', () => {
+  it('tracks read and saved independently across selected archive days', () => {
+    const a = workspace('a'), b = workspace('b', { day: '2026-09-30' }), c = workspace('c', { day: '2025-09-30' })
+    const state = patchPersonalState(patchPersonalState(empty(), [a.id], { readAt: 100 }), [b.id], { savedAt: 200 })
+    const selection = { ...filters, days: ['2026-09-30', '2026-10-01'] }
+    expect(filterWorkspace([a, b, c], state, { ...selection, tab: 'Read' }).map(e => e.id)).toEqual([a.id])
+    expect(filterWorkspace([a, b, c], state, { ...selection, tab: 'Saved' }).map(e => e.id)).toEqual([b.id])
+    expect(filterWorkspace([a, b, c], state, { ...selection, tab: 'To be Read' })).toEqual([])
+  })
   it('groups by IST publication date and keeps missing dates separate', () => {
     expect(publicationDay('2026-09-30T20:00:00Z')).toBe('2026-10-01')
     expect(publicationDay(null)).toBe(UNDATED)
@@ -107,8 +122,8 @@ describe('Daily editions and filters', () => {
     const a = workspace('a', { mustRead: true }), b = workspace('b', { mustRead: false }), old = workspace('old', { day: '2026-09-30' })
     const events = [a, b, old], state = patchPersonalState(empty(), [a.id], { savedAt: 100, readAt: 100 })
     expect(filterWorkspace(events, state, { ...filters, tab: 'Saved', publisher: 'Indian Express', subject: 'Economy', exam: 'Both' }).map(e => e.id)).toEqual([a.id])
-    expect(filterWorkspace(events, state, { ...filters, tab: 'Unread', budget: 15 }).map(e => e.id)).toEqual([b.id])
-    expect(filterWorkspace(events, state, { ...filters, tab: 'Must Read' }).map(e => e.id)).toEqual([a.id])
+    expect(filterWorkspace(events, state, { ...filters, tab: 'To be Read', budget: 15 }).map(e => e.id)).toEqual([b.id])
+    expect(filterWorkspace(events, state, { ...filters, tab: 'Read' })).toEqual([])
     expect(filterWorkspace(events, state, { ...filters, day: '2026-09-30' }).map(e => e.id)).toEqual([old.id])
     expect(filterWorkspace(events, state, { ...filters, subject: 'Polity' })).toEqual([])
     a.primary.relevance = { ...a.primary.relevance, exam: 'prelims' }

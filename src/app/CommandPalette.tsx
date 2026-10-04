@@ -1,7 +1,4 @@
-/**
- * Command palette (Ctrl/⌘ K): jump anywhere, run common actions, find a task,
- * or capture a new one in natural language ("Physics revision tomorrow 5pm #exam").
- */
+/** Atlas place search and validated Atlas, News and shared settings commands. */
 import { AnimatePresence, motion } from 'motion/react'
 import { CornerDownLeft, Search } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -12,7 +9,7 @@ import { DUR, EASE_IN, T } from '@/ui/motion'
 import { lockScroll } from '@/ui/scrollLock'
 import { isTopLayer, pushLayer, trapTab } from '@/ui/Sheet'
 import { useIsWide } from '@/ui/useMedia'
-import { useCommands, type Command } from '@/tars/commands'
+import { rememberCommand, useCommands, type Command } from '@/tars/commands'
 import { useUi } from './ui-store'
 
 const close = () => useUi.getState().set({ paletteOpen: false })
@@ -63,6 +60,7 @@ function Palette() {
   const run = async (c: Command | undefined) => {
     if (!c) return
     haptics.tap()
+    rememberCommand(c.id)
     close()
     await c.run()
   }
@@ -82,7 +80,7 @@ function Palette() {
         role="dialog"
         aria-modal="true"
         aria-label="Search and commands"
-        className="relative flex max-h-[min(72dvh,560px)] w-full max-w-xl flex-col overflow-hidden rounded-[22px] border border-line bg-surface shadow-dialog"
+        className="relative flex max-h-[min(72dvh,560px)] w-full max-w-[38rem] flex-col overflow-hidden rounded-[18px] bg-surface shadow-[0_0_0_1px_var(--line-strong),var(--shadow-dialog-value)]"
         initial={{ opacity: 0, scale: 0.97, y: wide ? -8 : -16 }}
         animate={{ opacity: 1, scale: 1, y: 0, transition: T.base }}
         exit={{ opacity: 0, scale: 0.98, y: -6, transition: T.exit }}
@@ -105,8 +103,8 @@ function Palette() {
                 void run(commands[active])
               }
             }}
-            placeholder="Ask Tars, find a place, or capture a task…"
-            className="h-14 min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-3"
+            placeholder="Search places or run a command…"
+            className="h-[3.25rem] min-w-0 flex-1 bg-transparent text-[16px] font-medium outline-none placeholder:font-normal placeholder:text-ink-3"
             role="combobox"
             aria-label="Search and commands"
             aria-expanded="true"
@@ -125,7 +123,7 @@ function Palette() {
             const Icon = c.icon
             return (
               <div key={c.id}>
-                {header && <p className="px-3 pt-3 pb-1.5 text-[11px] font-bold tracking-[0.1em] text-ink-3 uppercase first:pt-1">{c.section}</p>}
+                {header && <p className="t-label px-3 pt-3 pb-1 text-[12px] text-ink-3">{c.section}</p>}
                 <div
                   id={`${id}-${i}`}
                   data-index={i}
@@ -133,14 +131,14 @@ function Palette() {
                   aria-selected={i === active}
                   onPointerMove={() => i !== active && setActive(i)}
                   onClick={() => void run(c)}
-                  className={cn('flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors duration-100', i === active ? 'bg-surface-2' : 'hover:bg-surface-2/60')}
+                  className={cn('flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2 transition-colors duration-100', i === active ? 'bg-surface-2' : 'hover:bg-surface-2/60')}
                 >
-                  <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg', i === active ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-ink-2')}>
+                  <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-lg transition-colors duration-100', i === active ? 'text-accent' : 'text-ink-3')}>
                     <Icon className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14.5px] font-semibold">{c.label}</span>
-                    {c.hint && <span className="block truncate text-[12.5px] text-ink-2">{c.hint}</span>}
+                    <span className="block truncate text-[14px] font-semibold">{c.label}</span>
+                    {c.hint && <span className="block truncate text-[12.5px] text-ink-3">{c.hint}</span>}
                   </span>
                   {c.keys && <kbd className="kbd shrink-0">{c.keys}</kbd>}
                   {i === active && !c.keys && <CornerDownLeft className="size-4 shrink-0 text-ink-3" />}

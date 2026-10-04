@@ -6,8 +6,6 @@
  *   Quadrilateral when Delhi, Mumbai, Chennai and Kolkata are).
  * - Ships sail off the ports of Developed states.
  * - Wildlife returns to parks you have Mastered.
- * - Expedition rewards add their own element: the Silk Route, flowing rivers,
- *   shipping lanes…
  */
 import { atLeast, levelOf } from './mastery'
 import type { SheetId } from './types'
@@ -41,8 +39,6 @@ export interface LivingWorld {
   routes: LivingRoute[]
   ships: Ship[]
   wildlife: Wildlife[]
-  /** Sheet river ids that flow (animated). */
-  flowing: Set<string>
   /** Discovered cities and capitals, lit on the night chart. */
   lights: Set<string>
 }
@@ -54,8 +50,6 @@ interface RouteDef {
   sheet: SheetId
   /** Place ids in order; all must be discovered. */
   via: string[]
-  /** Expedition whose completion reveals the route (instead of discovery). */
-  reward?: string
 }
 
 const ROUTES: RouteDef[] = [
@@ -64,9 +58,6 @@ const ROUTES: RouteDef[] = [
   { id: 'east-west-corridor', name: 'East–West Corridor', kind: 'road', sheet: 'india', via: ['in.city.silchar', 'in.city.guwahati', 'in.city.siliguri', 'in.capital.patna', 'in.city.gorakhpur', 'in.capital.lucknow', 'in.city.jhansi', 'in.city.kota', 'in.city.udaipur', 'in.city.ahmedabad', 'in.city.bhuj'] },
   { id: 'konkan-railway', name: 'Konkan Railway', kind: 'rail', sheet: 'india', via: ['in.capital.mumbai', 'in.coast.konkan-coast', 'in.capital.panaji', 'in.port.new-mangalore-port'] },
   { id: 'kaladan', name: 'Kaladan Multi-Modal Project', kind: 'sea', sheet: 'india', via: ['in.port.kolkata-port', 'in.port.sittwe', 'in.capital.aizawl'] },
-  { id: 'silk-route', name: 'Old Silk Route', kind: 'trade', sheet: 'india', via: ['in.city.siliguri', 'in.capital.gangtok', 'in.pass.nathu-la', 'in.city.lhasa'], reward: 'himalayan' },
-  { id: 'suez-route', name: 'Suez shipping lane', kind: 'sea', sheet: 'world', via: ['w.capital.new-delhi', 'w.port.chabahar', 'w.strait.bab-el-mandeb', 'w.canal.suez-canal', 'w.strait.strait-of-gibraltar', 'w.port.rotterdam'], reward: 'world' },
-  { id: 'malacca-route', name: 'Malacca shipping lane', kind: 'sea', sheet: 'world', via: ['w.capital.new-delhi', 'w.strait.strait-of-malacca', 'w.capital.singapore', 'w.port.shanghai'], reward: 'world' },
 ]
 
 /** Parks and the animal that returns when they are mastered. */
@@ -87,32 +78,23 @@ const WILDLIFE: Record<string, Species> = {
   'in.park.keibul-lamjao-national-park': 'deer',
   'in.park.kuno-national-park': 'cheetah',
 }
-/** Expedition rewards that bring an animal regardless of mastery. */
-const REWARD_WILDLIFE: Record<string, string[]> = {
-  himalayan: ['in.park.hemis-national-park'],
-  peninsula: ['in.park.kanha-national-park'],
-  northeast: ['in.park.kaziranga-national-park'],
-}
-
 /** Every place id the living world refers to (checked against the gazetteer in tests). */
 export const livingRefs = () => [...ROUTES.flatMap((r) => r.via), ...Object.keys(WILDLIFE)]
 
 export function livingWorld(ex: Exploration, sheet: SheetId): LivingWorld {
   const { atlas, state, mastery } = ex
   const known = (id: string) => state.discovered.has(id)
-  const complete = (id: string) => !!state.expeditions.get(id)?.complete
 
   const routes: LivingRoute[] = []
   for (const r of ROUTES) {
     if (r.sheet !== sheet) continue
-    const shown = r.reward ? complete(r.reward) : r.via.every(known)
+    const shown = r.via.every(known)
     if (!shown) continue
     const points = r.via.map((id) => atlas.byId.get(id)).filter((p): p is NonNullable<typeof p> => !!p && p.sheet === sheet).map((p) => [p.x, p.y] as [number, number])
     if (points.length > 1) routes.push({ id: r.id, name: r.name, kind: r.kind, points })
   }
 
-  // Ships: discovered ports in Developed (60% Strong) states, or anywhere once Coastal India is done.
-  const coastDone = complete('coast')
+  // Ships: Familiar ports in Developed (60% Strong) states.
   const developed = new Set<string>()
   const byUnit = new Map<string, { total: number; strong: number }>()
   for (const p of atlas.bySheet.india) {
@@ -128,25 +110,21 @@ export function livingWorld(ex: Exploration, sheet: SheetId): LivingWorld {
   const ships: Ship[] = []
   for (const p of atlas.bySheet[sheet]) {
     if (p.kind !== 'port' || !known(p.id)) continue
-    if (!coastDone && !(p.unit && developed.has(p.unit))) continue
+    if (!(p.unit && developed.has(p.unit))) continue
     const len = Math.hypot(p.x - cx, p.y - cy) || 1
     ships.push({ id: p.id, x: p.x, y: p.y, dx: (p.x - cx) / len, dy: (p.y - cy) / len })
   }
 
   const wildlife: Wildlife[] = []
-  const rewarded = new Set(Object.entries(REWARD_WILDLIFE).flatMap(([e, ids]) => (complete(e) ? ids : [])))
   for (const [id, species] of Object.entries(WILDLIFE)) {
     const p = atlas.byId.get(id)
     if (!p || p.sheet !== sheet || !known(id)) continue
-    if (levelOf(id, true, mastery) === 'mastered' || rewarded.has(id)) wildlife.push({ id, x: p.x, y: p.y, species, name: p.name })
+    if (levelOf(id, true, mastery) === 'mastered') wildlife.push({ id, x: p.x, y: p.y, species, name: p.name })
   }
 
-  const flowing = new Set<string>()
-  if (complete('rivers') && sheet === 'india') for (const p of atlas.bySheet.india) if (p.kind === 'river' && p.geom && known(p.id)) flowing.add(p.geom.slice(6))
-  if (complete('world') && sheet === 'world') for (const p of atlas.bySheet.world) if (p.kind === 'river' && p.geom && known(p.id)) flowing.add(p.geom.slice(6))
 
   const lights = new Set<string>()
   for (const p of atlas.bySheet[sheet]) if ((p.kind === 'city' || p.kind === 'capital' || p.kind === 'port') && known(p.id)) lights.add(p.id)
 
-  return { routes, ships, wildlife, flowing, lights }
+  return { routes, ships, wildlife, lights }
 }

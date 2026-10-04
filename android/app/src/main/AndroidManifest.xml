@@ -22,7 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep links: tars://focus?start=1, tars://tasks?add=1 … (lodestar:// is the
+            <!-- Deep links: tars://atlas, tars://current-affairs (lodestar:// is the
                  pre-rename scheme, kept so links and shortcuts made before still open the app) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
