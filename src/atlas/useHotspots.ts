@@ -1,9 +1,26 @@
-/** Tiny build-derived PYQ metadata; never loads question packs merely to decorate the map. */
+/** Tiny build-derived PYQ metadata; question packs stay lazy and map disclosure uses only aggregate counts. */
 import { useEffect, useState } from 'react'
-let ids:ReadonlySet<string>|null=null
-let pending:Promise<ReadonlySet<string>>|null=null
-export function useHotspots(enabled:boolean) {
-  const [value,setValue]=useState(ids)
-  useEffect(()=>{if(!enabled)return;let live=true;pending??=fetch(`${import.meta.env.BASE_URL}atlas-assets/v1/pyq-hotspots.json`).then(r=>{if(!r.ok)throw new Error('Hotspots unavailable');return r.json()}).then(m=>ids=new Set(Object.keys(m.places)));pending.then(v=>{if(live)setValue(v)}).catch(()=>{pending=null});return()=>{live=false}},[enabled])
-  return enabled?value:undefined
+
+type HotspotCounts = { CSE: number; PCS: number; CDS: number }
+let weights: ReadonlyMap<string, number> | null = null
+let pending: Promise<ReadonlyMap<string, number>> | null = null
+
+export function useHotspots(enabled: boolean) {
+  const [value, setValue] = useState(weights)
+  useEffect(() => {
+    if (!enabled) return
+    let live = true
+    pending ??= fetch(`${import.meta.env.BASE_URL}atlas-assets/v1/pyq-hotspots.json`)
+      .then(r => {
+        if (!r.ok) throw new Error('Hotspots unavailable')
+        return r.json() as Promise<{ places: Record<string, HotspotCounts> }>
+      })
+      .then(m => {
+        weights = new Map(Object.entries(m.places).map(([id, count]) => [id, count.CSE + count.PCS + count.CDS]))
+        return weights
+      })
+    pending.then(v => { if (live) setValue(v) }).catch(() => { pending = null })
+    return () => { live = false }
+  }, [enabled])
+  return enabled ? value : undefined
 }

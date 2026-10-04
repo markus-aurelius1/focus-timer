@@ -607,6 +607,8 @@ Final source typecheck/build pass (154 precache entries/7015.33KiB),224/224 test
 
 ## 6. Recent changes (newest first)
 
+2026-10-05 — Atlas PYQ hotspots changed from a binary low-zoom exemption to frequency-weighted semantic zoom — overview stays legible while repeated PYQ places surface earlier and all places remain searchable.
+
 2026-10-05 — News navigation became cache-first with a two-hour TTL, background revalidation, explicit force refresh, in-flight deduplication and Cloudflare edge reuse — switching Atlas/News no longer fans out RSS requests.
 
 - **2026-10-05 — Authorized Cloudflare adapter follow-up:** first live deployment exposed Workers rejection of `redirect: error`. Owner explicitly authorized one additional adapter-fix commit and redeployment without rewriting the pushed release checkpoint. The Pages fetch adapter uses `manual`, so the unchanged gateway rejects all 3xx responses through its existing `!response.ok` check. No redirect following, registry/content/parser/timeout/limit/frontend changes. Contract tests cover manual mode, propagated abort signal, redirect rejection, partial/total failures and 405; typecheck passes. Local Workers returned 2,571 items from 38 populated sources with zero failures. Initial checkpoint: `0758615696eed2c53558920f4f17a8ce51181456`.

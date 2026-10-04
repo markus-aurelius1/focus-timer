@@ -60,7 +60,7 @@ export interface AtlasMapProps {
   places: Place[]
   mastery?: (id: string) => MasteryLevel
   newIds?: Set<string>
-  pyqPlaceIds?: ReadonlySet<string> | null
+  pyqWeights?: ReadonlyMap<string, number> | null
   selectedId?: string
   highlights?: Highlight[]
   /** Sheet labels to render muted (their place isn't discovered yet), keyed like `river:ganges`. */

@@ -34,6 +34,7 @@ import { useLabelLayout } from './renderer/useLabelLayout'
 import { useMapCamera } from './renderer/useMapCamera'
 import { attachGestures } from './renderer/gestures'
 import type { AtlasMapHandle, AtlasMapProps, MapPin, MapTarget } from './renderer/types'
+import { placeMinZoom } from './renderer/disclosure'
 export type { AtlasMapHandle, AtlasMapProps, MapPin, MapTarget, MapInsets, Highlight, Plate, Tone } from './renderer/types'
 export { TONES } from './renderer/palette'
 const NO_STATES: Set<string> = new Set()
@@ -231,10 +232,9 @@ export const AtlasMap = memo(
       const z = layoutT.k / kFit.current
       const { w, h, o } = layoutT
       const kinds = props.kinds
-      const minZ = (p: Place) => (p.kind === 'capital' ? (p.tags?.includes('national') || p.level === 1 ? 0 : 1.4) : p.level === 1 ? 1.3 : p.level === 2 ? 2 : 2.9)
       const prio = (p: Place) =>
         (p.id === props.selectedId ? 1000 : 0) +
-        (props.pyqPlaceIds?.has(p.id) ? 80 : 0) +
+        ((props.pyqWeights?.get(p.id) ?? 0) > 0 ? Math.min(160, 40 + (props.pyqWeights?.get(p.id) ?? 0) * 12) : 0) +
         (props.newIds?.has(p.id) ? 500 : 0) +
         (known(p.id) ? 200 : 0) +
         (p.kind === 'capital' ? 60 : 0) +
@@ -247,8 +247,8 @@ export const AtlasMap = memo(
           if (kinds && !kinds.has(p.kind)) return false
           const isKnown = known(p.id)
           if (!isKnown && !props.showUndiscovered) return false
-          if (p.geom && labelled.has(p.geom) && !props.pyqPlaceIds?.has(p.id)) return false
-          return z >= (props.pyqPlaceIds?.has(p.id) ? 0.9 : minZ(p) + (isKnown ? 0 : 0.35))
+          if (p.geom && labelled.has(p.geom) && !(props.pyqWeights?.get(p.id) ?? 0)) return false
+          return z >= placeMinZoom(p, isKnown, props.pyqWeights?.get(p.id) ?? 0)
         })
         .map((p) => ({ p, sx: p.x * layoutT.k + layoutT.x, sy: p.y * layoutT.k + layoutT.y }))
         .filter(({ sx, sy }) => sx > -20 - o && sx < w + 20 + o && sy > -20 - o && sy < h + 20 + o)
@@ -261,7 +261,7 @@ export const AtlasMap = memo(
         out.push(c.p)
       }
       return out
-    }, [layoutT, kFit, placeIndex, props.showPlaces, props.selectedId, props.newIds, props.kinds, props.showUndiscovered, props.pyqPlaceIds, known, labelled])
+    }, [layoutT, kFit, placeIndex, props.showPlaces, props.selectedId, props.newIds, props.kinds, props.showUndiscovered, props.pyqWeights, known, labelled])
 
     const labelInput = useMemo<LayoutInput | null>(() => {
       if (!layoutT) return null
@@ -452,7 +452,7 @@ export const AtlasMap = memo(
                   <PlaceSymbol
                     place={p}
                     studied={!!discovered && !muted}
-                    pyq={props.pyqPlaceIds?.has(p.id)}
+                    pyq={(props.pyqWeights?.get(p.id) ?? 0) > 0}
                     selected={props.selectedId === p.id}
                     mastery={props.mastery?.(p.id) ?? 'discovered'}
                     glowId={toneId === 'night' && props.living?.lights.has(p.id) ? ids.glow : undefined}

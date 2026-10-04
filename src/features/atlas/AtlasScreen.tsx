@@ -108,7 +108,7 @@ function Atlas({ ex }: { ex: Exploration }) {
   const [sheetHeight, setSheetHeight] = useState(0)
   const [browserFilter, setBrowserFilter] = useState<PyqFilter | null>(null)
   const [showHotspots, setShowHotspots] = useState(false)
-  const hotspotIds = useHotspots(showHotspots)
+  const hotspotWeights = useHotspots(showHotspots)
   const [searchQuery, setSearchQuery] = useState('')
   const [pyqId, setPyqId] = useState<string | null>(null)
   const [panel, setPanel] = useState<Panel>(null)
@@ -335,7 +335,7 @@ function Atlas({ ex }: { ex: Exploration }) {
                 featurePlaces={features}
                 mastery={mastery}
                 newIds={newIds}
-                pyqPlaceIds={hotspotIds}
+                pyqWeights={hotspotWeights}
                 selectedId={sel?.type === 'place' ? sel.id : undefined}
                 highlights={highlights}
                 mutedLabels={muted}
