@@ -9,7 +9,7 @@ import { NEWS_SOURCES, activeFeedItems, isActiveSource } from '@/current-affairs
 import { eventPersonalState } from '@/current-affairs/personal-state'
 import { buildWorkspace, editionProgress, filterWorkspace, publicationDay, UNDATED, type WorkspaceFilters } from '@/current-affairs/workspace'
 import { thumbnailUrl } from '@/current-affairs/feed'
-import { useFeeds, relativeAge } from './useFeeds'
+import { NEWS_REFRESH_TTL_MS, useFeeds, relativeAge } from './useFeeds'
 import { usePersonalState } from './usePersonalState'
 import { useArchive } from './useArchive'
 import { archiveDays, archivePeriods, periodKey, periodLabel, type ArchivePeriod } from '@/current-affairs/archive'
@@ -33,7 +33,7 @@ function FeedThumbnail({ url }: { url?: string }) {
 }
 export default function CurrentAffairsScreen() {
   const route = useRoute(), debug = route.params.get('debug') === '1' || new URLSearchParams(location.search).get('debug') === '1'
-  const { data, index, loading, error, cached, now, online, reload } = useFeeds()
+  const { data, index, loading, refreshing, error, cached, now, online, reload } = useFeeds()
   const { state, stateError, patch } = usePersonalState()
   const today = publicationDay(now)
   // The tab, filters and archive position are kept while the app is open (app/routeState.ts); the day always starts as today.
@@ -75,7 +75,7 @@ export default function CurrentAffairsScreen() {
   }, [scope, state, filters, days, view])
   const visibleScope = scope.filter(e => !eventPersonalState(e, state).ignoredAt)
   const progress = editionProgress(visibleScope, state), counts = queueCounts(scope, state)
-  const stale = !!data && (!online || cached || now - Date.parse(data.fetchedAt) > 3600000)
+  const stale = !!data && (!online || now - Date.parse(data.fetchedAt) >= NEWS_REFRESH_TTL_MS)
   const unavailable = data?.sources.filter(s => isActiveSource(s.sourceId) && s.status !== 'ok') ?? []
   const publishers = [...new Set(events.flatMap(e => e.members.map(m => m.publisher)))].sort()
   const updateFilters = (value: Partial<WorkspaceFilters>) => { if (value.tab) setCollection(value.tab); setFilters(f => ({ ...f, ...value })) }
@@ -106,7 +106,7 @@ export default function CurrentAffairsScreen() {
           <div className="ca-header-actions">
             <button ref={searchTrigger} type="button" aria-label="Search news" title="Search news" aria-expanded={searchOpen || !!filters.query} aria-controls="ca-search" onClick={() => setSearchOpen(true)} className={iconControl}><Search className="size-4" /></button>
             <button type="button" aria-label="Filters" title="Filters" aria-expanded={filtersOpen} aria-controls="ca-filters" onClick={() => setFiltersOpen(true)} className={cn(iconControl, (filtersOpen || activeFilterCount > 0) && 'text-accent')}><SlidersHorizontal className="size-4" />{activeFilterCount > 0 && <span className="ca-filter-count">{activeFilterCount}</span>}</button>
-            <button type="button" aria-label="Refresh news" title="Refresh news" onClick={reload} disabled={loading} className={iconControl}><RefreshCw className={cn('size-4', loading && 'animate-spin motion-reduce:animate-none')} /></button>
+            <button type="button" aria-label="Refresh news" title="Refresh news" onClick={reload} disabled={refreshing} className={iconControl}><RefreshCw className={cn('size-4', refreshing && 'animate-spin motion-reduce:animate-none')} /></button>
             <button type="button" aria-label={view === 'Archive' ? 'Back to Today' : 'Archive'} onClick={changeView} className={cn(control, 'ca-archive-trigger inline-flex shrink-0 items-center gap-2', view === 'Archive' && 'text-accent')}>
               {view === 'Archive' ? <ArrowLeft className="size-4" /> : <Archive className="size-4" />}
               <span className="hidden sm:inline">{view === 'Archive' ? 'Today' : 'Archive'}</span>
@@ -118,7 +118,7 @@ export default function CurrentAffairsScreen() {
           <div className="ca-status">
             <p role="status" className="t-meta min-w-0 flex-1 leading-relaxed">
               {data ? `Updated ${relativeAge(data.fetchedAt, now)}` : archived.length ? 'Local archive' : 'Trusted publisher feeds'}
-              {((data && stale) || (!data && cached && archived.length > 0)) && <span className="block">{!data ? !online ? 'Offline – local archive' : 'Refresh unavailable – local archive' : !online ? 'Offline – cached feed' : cached ? 'Cached feed – offline or refresh unavailable' : 'Stale feed'}</span>}
+              {data && refreshing && <span className="block">Refreshing in background…</span>}{((data && stale) || (!data && cached && archived.length > 0)) && <span className="block">{!data ? !online ? 'Offline – local archive' : 'Refresh unavailable – local archive' : !online ? 'Offline – cached feed' : 'Refresh due – showing cached feed'}</span>}
               {!!unavailable.length && <span className="block">Some sources unavailable</span>}
             </p>
 

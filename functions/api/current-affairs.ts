@@ -1,15 +1,41 @@
-/** Pages adapter for the existing registry-only News gateway; no ingestion or client changes. */
+/** Pages adapter for the registry-only News gateway, with a two-hour edge cache and explicit force-refresh bypass. */
 import { collectFeeds, FEED_CACHE_CONTROL } from '../../src/current-affairs/gateway.ts'
+import type { FeedResponse } from '../../src/current-affairs/types.ts'
 
-export async function onRequest({ request }: { request: Request }): Promise<Response> {
-  const headers = new Headers({ 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' })
+let pending: Promise<FeedResponse> | null = null
+
+const collectShared = () => {
+  pending ??= collectFeeds((input, init) => fetch(input, { ...init, redirect: 'manual' })).finally(() => { pending = null })
+  return pending
+}
+
+export async function onRequest({ request, waitUntil }: { request: Request; waitUntil: (promise: Promise<unknown>) => void }): Promise<Response> {
+  const baseHeaders = new Headers({ 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' })
   if (request.method !== 'GET') {
-    headers.set('Allow', 'GET')
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers })
+    baseHeaders.set('Allow', 'GET')
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: baseHeaders })
   }
-  // Workers rejects redirect: 'error'; manual keeps the gateway's existing !ok rejection of all 3xx responses.
-  const data = await collectFeeds((input, init) => fetch(input, { ...init, redirect: 'manual' }))
+
+  const url = new URL(request.url)
+  const force = url.searchParams.get('refresh') === '1'
+  const cache = (caches as CacheStorage & { default?: Cache }).default
+  const cacheKey = new Request(`${url.origin}${url.pathname}`, { method: 'GET' })
+
+  if (!force && cache) {
+    const hit = await cache.match(cacheKey)
+    if (hit) {
+      const headers = new Headers(hit.headers)
+      headers.set('X-Tars-News-Cache', 'hit')
+      return new Response(hit.body, { status: hit.status, statusText: hit.statusText, headers })
+    }
+  }
+
+  const data = await collectShared()
   const available = data.sources.some(source => source.status !== 'failed')
+  const headers = new Headers(baseHeaders)
   headers.set('Cache-Control', available ? FEED_CACHE_CONTROL : 'no-store')
-  return new Response(JSON.stringify(available ? data : { error: 'All publishers are unavailable', sources: data.sources }), { status: available ? 200 : 503, headers })
+  headers.set('X-Tars-News-Cache', 'miss')
+  const response = new Response(JSON.stringify(available ? data : { error: 'All publishers are unavailable', sources: data.sources }), { status: available ? 200 : 503, headers })
+  if (available && cache) waitUntil(cache.put(cacheKey, response.clone()))
+  return response
 }

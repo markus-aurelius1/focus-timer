@@ -2,7 +2,7 @@
 import { parseFeed, dedupeUrls } from './feed.ts'
 import { NEWS_SOURCES } from './sources.ts'
 import type { FeedResponse, NewsSource } from './types.ts'
-export const FEED_CACHE_CONTROL = 'public, max-age=0, s-maxage=3600, stale-while-revalidate=21600'
+export const FEED_CACHE_CONTROL = 'public, max-age=0, s-maxage=7200, stale-while-revalidate=21600'
 export async function collectFeeds(fetcher: typeof fetch = fetch, sources: NewsSource[] = NEWS_SOURCES, now = Date.now()): Promise<FeedResponse> {
   const results = await Promise.all(sources.filter(s => s.enabled).map(async source => {
     const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 10000)
