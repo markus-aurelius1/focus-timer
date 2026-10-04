@@ -607,6 +607,8 @@ Final source typecheck/build pass (154 precache entries/7015.33KiB),224/224 test
 
 ## 6. Recent changes (newest first)
 
+2026-10-05 — Added an opt-in MapLibre/OpenFreeMap Atlas preview (`?atlasRenderer=maplibre`) with clustered semantic study points and a generated controlled-India-border GeoJSON derived from the existing India sheet — production SVG remains the fallback until parity validation.
+
 2026-10-05 — Atlas PYQ hotspots changed from a binary low-zoom exemption to frequency-weighted semantic zoom — overview stays legible while repeated PYQ places surface earlier and all places remain searchable.
 
 2026-10-05 — News navigation became cache-first with a two-hour TTL, background revalidation, explicit force refresh, in-flight deduplication and Cloudflare edge reuse — switching Atlas/News no longer fans out RSS requests.

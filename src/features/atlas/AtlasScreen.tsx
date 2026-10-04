@@ -2,7 +2,7 @@
 import { useHotspots } from '@/atlas/useHotspots'
 import { AnimatePresence, motion } from 'motion/react'
 import { BookOpen, Check, ChevronUp, Crosshair, GraduationCap, Info, Lock, Maximize2, Minimize2, Minus, MoreHorizontal, PanelRightClose, PanelRightOpen, Plus, Search } from 'lucide-react'
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { consumeParams, currentRoute, useRoute, type Route } from '@/app/router'
 import { isTyping } from '@/app/shortcuts'
 import { useUi } from '@/app/ui-store'
@@ -42,6 +42,7 @@ import { masteryFn, viewFor } from './util'
 import { onRouteReset, useRouteState } from '@/app/routeState'
 import { useScreenActive } from '@/app/screenActive'
 
+const MapLibreAtlasMap = lazy(() => import('./MapLibreAtlasMap'))
 type Selection = { type: 'place'; id: string } | { type: 'state'; id: string } | { type: 'country'; id: string }
 type Panel = 'gazetteer' | 'legend' | 'more' | null
 
@@ -90,6 +91,7 @@ function MapLoading({ error }: { error?: boolean }) {
 function Atlas({ ex }: { ex: Exploration }) {
   const settings = useSettings()
   const desktop = useIsDesktop()
+  const mapLibrePreview = new URLSearchParams(location.search).get('atlasRenderer') === 'maplibre'
   // Kept for the session (app/routeState.ts): on devices where the Atlas is not kept alive, returning still opens the same sheet.
   const [sheetId, setSheetId] = useRouteState<SheetId>('atlas:sheet', () => (currentRoute().params.get('sheet') === 'world' ? 'world' : 'india'))
   const { sheet: loaded, error } = useSheet(sheetId)
@@ -321,7 +323,7 @@ function Atlas({ ex }: { ex: Exploration }) {
         {sheet ? (
           <AnimatePresence initial={false}>
             <motion.div key={sheet.id} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: prefersReducedMotion() ? 0 : 0.26, ease: 'easeOut' }}>
-              <AtlasMap
+              {mapLibrePreview ? <Suspense fallback={<MapLoading />}><MapLibreAtlasMap
                 ref={setMap}
                 sheet={sheet}
                 plate={view.plate}
@@ -344,7 +346,30 @@ function Atlas({ ex }: { ex: Exploration }) {
                 onSelect={select}
                 instantSelect={desktop}
                 insets={mapInsets}
-              />
+              /></Suspense> : <AtlasMap
+                ref={setMap}
+                sheet={sheet}
+                plate={view.plate}
+                tone={view.tone}
+                explored={explored}
+                places={places}
+                discovered={discovered}
+                showUndiscovered={true}
+                kinds={kinds}
+                showAreas={layers.areas}
+                featurePlaces={features}
+                mastery={mastery}
+                newIds={newIds}
+                pyqWeights={hotspotWeights}
+                selectedId={sel?.type === 'place' ? sel.id : undefined}
+                highlights={highlights}
+                mutedLabels={muted}
+                linkedLabels={linked}
+                living={living}
+                onSelect={select}
+                instantSelect={desktop}
+                insets={mapInsets}
+              />}
             </motion.div>
           </AnimatePresence>
         ) : (
