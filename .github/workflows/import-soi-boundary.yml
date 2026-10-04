@@ -1,5 +1,5 @@
 name: Import official Survey of India boundary
-# importer revision 3
+# importer revision 4
 
 on:
   push:
@@ -63,11 +63,31 @@ jobs:
           tools/atlas-build/node_modules/.bin/mapshaper "$shp" \
             -proj wgs84 \
             -o format=geojson /tmp/soi/Outline_of_India_wgs84.geojson
+          tools/atlas-build/node_modules/.bin/mapshaper /tmp/soi/Outline_of_India_wgs84.geojson \
+            -simplify 5% keep-shapes \
+            -o format=geojson /tmp/soi/Outline_of_India_display.geojson
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs'
+          import { validateSoiBoundary } from './tools/atlas-build/lib/soi-boundary.mjs'
+          const raw = validateSoiBoundary(JSON.parse(fs.readFileSync('/tmp/soi/Outline_of_India_wgs84.geojson', 'utf8')))
+          const display = validateSoiBoundary(JSON.parse(fs.readFileSync('/tmp/soi/Outline_of_India_display.geojson', 'utf8')))
+          for (const key of ['west', 'south', 'east', 'north']) {
+            if (Math.abs(raw[key] - display[key]) > 0.15) throw new Error(`Display simplification changed ${key} extent too much`)
+          }
+          if (display.points >= raw.points / 2) throw new Error('Display simplification did not materially reduce geometry')
+          console.log({ raw, display })
+          NODE
           node tools/atlas-build/import-soi-boundary.mjs \
-            --geojson=/tmp/soi/Outline_of_India_wgs84.geojson \
-            --source-sha256="$archive_sha"
+            --geojson=/tmp/soi/Outline_of_India_display.geojson \
+            --source-sha256="$archive_sha" \
+            --generalization="Survey of India 1:16M source; reprojected to WGS84; Mapshaper simplify 5% keep-shapes for display"
           node --test tools/atlas-build/test/soi-boundary.test.mjs
           node tools/build-atlas-assets.mjs
+          boundary_bytes="$(stat -c%s public/atlas-assets/v1/india-controlled-border.geojson)"
+          if [ "$boundary_bytes" -gt 2750000 ]; then
+            echo "Bundled boundary is too large: $boundary_bytes bytes" >&2
+            exit 1
+          fi
           node - <<'NODE'
           const fs = require('fs')
           const meta = JSON.parse(fs.readFileSync('public/atlas-assets/v1/india-boundary-source.json', 'utf8'))
