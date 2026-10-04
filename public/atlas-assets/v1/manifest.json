@@ -1,8 +1,8 @@
 {
   "schema": "tars-atlas-assets/v1",
-  "version": "d9eb9da8897a9c6120a47e96a105e014501a734c060acd53f2befb25cf847aab",
+  "version": "0847a558391b6d3b9634e6d16ea1df146a04999b91b0591b42aabecec7a5c6ba",
   "renderer": "tars-svg/v1",
-  "indiaBoundaryPolicy": "Existing controlled Atlas India sheet and overlays; no generic service substitution",
+  "indiaBoundaryPolicy": "MapLibre boundary is a locally bundled, validated Survey of India Outline of India vector asset.",
   "tiers": {
     "CORE": {
       "policy": "Always bundled and precached. Complete curated study data and world context."
@@ -15,11 +15,31 @@
       "packs": []
     },
     "ONLINE": {
-      "policy": "No online map provider in this release.",
+      "policy": "Production has no online map provider. Opt-in MapLibre preview uses OpenFreeMap and falls back to the bundled renderer if the style cannot initialize.",
       "cacheBudgetBytes": 0
     }
   },
   "assets": [
+    {
+      "id": "atlas-assets/v1/india-boundary-source.json",
+      "path": "atlas-assets/v1/india-boundary-source.json",
+      "version": "9fdb6d986933fd5c0dce847e81a449e55929676e1d2feeadb1be198d7b690b4c",
+      "bytes": 778,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
+    {
+      "id": "atlas-assets/v1/india-controlled-border.geojson",
+      "path": "atlas-assets/v1/india-controlled-border.geojson",
+      "version": "f3223ca776f82666ee93ac618408f87cecb11d7a453acae99ed992359a61b56a",
+      "bytes": 24683849,
+      "tier": "CORE",
+      "bundled": true,
+      "compatibility": "atlas-data/v2 + atlas-pyq/v1",
+      "removable": false
+    },
     {
       "id": "atlas-assets/v1/pyq-hotspots.json",
       "path": "atlas-assets/v1/pyq-hotspots.json",
@@ -33,8 +53,8 @@
     {
       "id": "atlas/v1/ATTRIBUTION.txt",
       "path": "atlas/v1/ATTRIBUTION.txt",
-      "version": "c52af706238ba233494c5ade637750de954f3f784b51e7836ef0dc289620ffef",
-      "bytes": 2025,
+      "version": "41e5866c9029c01c8e17fbb61b50bf3028fd0f6e3e4ef0e439be2d4d0d86ede3",
+      "bytes": 1988,
       "tier": "CORE",
       "bundled": true,
       "compatibility": "atlas-data/v2 + atlas-pyq/v1",
@@ -1131,5 +1151,5 @@
       "removable": false
     }
   ],
-  "totalBytes": 5762934
+  "totalBytes": 30447524
 }
