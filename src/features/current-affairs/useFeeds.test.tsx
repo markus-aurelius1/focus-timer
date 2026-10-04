@@ -12,14 +12,15 @@ const feed = (fetchedAt = new Date().toISOString()) => ({ version: 1 as const, f
 beforeEach(() => resetFeedCacheForTests())
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); resetFeedCacheForTests() })
 
-function installFetch(responses: Array<ReturnType<typeof feed>>) {
+function installFetch(responses: Array<ReturnType<typeof feed> | Promise<ReturnType<typeof feed>>>) {
   const apiCalls: string[] = []
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input)
     if (url.includes('relevance-index.json')) return new Response(JSON.stringify(index), { status: 200 })
     if (url.startsWith('/api/current-affairs')) {
       apiCalls.push(url)
-      return new Response(JSON.stringify(responses[Math.min(apiCalls.length - 1, responses.length - 1)]), { status: 200 })
+      const body = await responses[Math.min(apiCalls.length - 1, responses.length - 1)]
+      return new Response(JSON.stringify(body), { status: 200 })
     }
     throw new Error(`Unexpected fetch: ${url}`)
   }))
@@ -55,7 +56,9 @@ it('keeps stale articles visible while refreshing in the background', async () =
   vi.spyOn(Date, 'now').mockImplementation(() => now)
   const old = feed(new Date(now).toISOString())
   const fresh = feed(new Date(now + NEWS_REFRESH_TTL_MS + 60000).toISOString())
-  const calls = installFetch([old, fresh])
+  let release!: (value: ReturnType<typeof feed>) => void
+  const pending = new Promise<ReturnType<typeof feed>>(resolve => { release = resolve })
+  const calls = installFetch([old, pending])
   const first = renderHook(useFeeds)
   await waitFor(() => expect(first.result.current.loading).toBe(false))
   first.unmount()
@@ -65,7 +68,11 @@ it('keeps stale articles visible while refreshing in the background', async () =
   await waitFor(() => expect(calls).toHaveLength(2))
   expect(second.result.current.data?.fetchedAt).toBe(old.fetchedAt)
   expect(second.result.current.loading).toBe(false)
-  await waitFor(() => expect(second.result.current.data?.fetchedAt).toBe(fresh.fetchedAt))
+  expect(second.result.current.refreshing).toBe(true)
+
+  act(() => release(fresh))
+  await waitFor(() => expect(second.result.current.refreshing).toBe(false))
+  expect(second.result.current.data?.fetchedAt).toBe(fresh.fetchedAt)
 })
 
 it('deduplicates concurrent first-load feed requests', async () => {
